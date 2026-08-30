@@ -234,9 +234,16 @@ public sealed class GamesViewModel : ObservableObject
             return;
         }
 
-        await sessionEditor.DeleteSessionAsync(SelectedSession.Id, CancellationToken.None);
-        await LoadSessionsAsync();
-        StatusMessage = "Session gelöscht";
+        try
+        {
+            await sessionEditor.DeleteSessionAsync(SelectedSession.Id, CancellationToken.None);
+            await LoadSessionsAsync();
+            StatusMessage = "Session gelöscht";
+        }
+        catch (YFTimeTrackerException ex)
+        {
+            StatusMessage = ex.Message;
+        }
     }
 
     private async Task LoadSessionsAsync()

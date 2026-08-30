@@ -284,10 +284,9 @@ internal sealed class InMemoryGameSessionRepository(Func<long, Game?> gameResolv
         cancellationToken.ThrowIfCancellationRequested();
         var hasOverlap = sessions.Any(session =>
             session.GameId == gameId &&
-            session.EndedAtUtc is not null &&
             session.Id != excludedSessionId &&
             session.StartedAtUtc < endedAtUtc &&
-            session.EndedAtUtc.Value > startedAtUtc);
+            (session.EndedAtUtc is null || session.EndedAtUtc.Value > startedAtUtc));
         return Task.FromResult(hasOverlap);
     }
 

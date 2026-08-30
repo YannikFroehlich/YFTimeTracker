@@ -16,7 +16,7 @@ Die Schritte einmal mit einem installierten Steam-, Epic- beziehungsweise GOG-Sp
 ## Unterbrechungen
 
 1. **Tracking pausieren:** Während der Pause ein noch unbekanntes Launcher-Spiel starten. Es darf weder importiert noch als Session erfasst werden. Nach dem Fortsetzen beginnt die Erfassung ab diesem Zeitpunkt.
-2. **Standby:** Mit laufendem Spiel Windows für mehr als zwei Minuten in den Standby versetzen. Nach dem Aufwachen entsteht eine neue Session; die unbeobachtete Standby-Zeit wird nicht gezählt.
+2. **Standby (Best Effort):** Mit laufendem Spiel Windows für mehr als zwei Minuten in den Standby versetzen. YFTimeTracker versucht die unbeobachtete Zeit nach dem Aufwachen abzutrennen; je nach Windows-Energiesparmodus kann die Session jedoch durchlaufen.
 3. **App-Absturz simulieren:** Die App bei laufendem Spiel über den Task-Manager beenden und direkt neu starten. Im selben Windows-Start wird die offene Session fortgesetzt. Wurde das Spiel zwischenzeitlich beendet, endet sie am letzten gespeicherten Lebenszeichen.
 4. **Tray-Beenden:** Über **Beenden** im Tray schließen. Die aktuelle Session muss sauber enden, auch wenn das Spiel weiterläuft.
 

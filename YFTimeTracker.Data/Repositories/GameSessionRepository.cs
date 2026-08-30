@@ -110,7 +110,7 @@ public sealed class GameSessionRepository(IDbContextFactory<YFTimeTrackerDbConte
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var query = context.GameSessions
             .AsNoTracking()
-            .Where(session => session.GameId == gameId && session.EndedAtUtc != null);
+            .Where(session => session.GameId == gameId);
 
         if (excludedSessionId.HasValue)
         {
@@ -119,7 +119,7 @@ public sealed class GameSessionRepository(IDbContextFactory<YFTimeTrackerDbConte
 
         return await query.AnyAsync(session =>
             session.StartedAtUtc < endedAtUtc &&
-            session.EndedAtUtc!.Value > startedAtUtc,
+            (session.EndedAtUtc == null || session.EndedAtUtc.Value > startedAtUtc),
             cancellationToken);
     }
 }
