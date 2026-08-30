@@ -20,15 +20,18 @@ public sealed class TrayService : ITrayService
     private const int GwlpWndProc = -4;
     private const uint MfString = 0x00000000;
     private const uint MfGray = 0x00000001;
+    private const uint MfSeparator = 0x00000800;
     private const uint TpmReturnCmd = 0x0100;
     private const uint TpmNonotify = 0x0080;
     private const uint ImageIcon = 1;
     private const uint LrLoadFromFile = 0x00000010;
     private const int OpenCommand = 1001;
     private const int PauseCommand = 1002;
-    private const int ExitCommand = 1003;
+    private const int UpdateCommand = 1003;
+    private const int ExitCommand = 1004;
 
     private readonly IGameTrackingService trackingService;
+    private readonly IAppUpdateService updateService;
     private readonly WndProcDelegate wndProcDelegate;
     private MainWindow? mainWindow;
     private IntPtr hwnd;
@@ -36,11 +39,16 @@ public sealed class TrayService : ITrayService
     private IntPtr iconHandle;
     private bool ownsIconHandle;
     private TrackingState state = TrackingState.Stopped;
+    private AppUpdateState updateState;
     private bool iconAdded;
 
-    public TrayService(IGameTrackingService trackingService)
+    public TrayService(
+        IGameTrackingService trackingService,
+        IAppUpdateService updateService)
     {
         this.trackingService = trackingService;
+        this.updateService = updateService;
+        updateState = updateService.State;
         wndProcDelegate = WndProc;
     }
 
@@ -57,19 +65,20 @@ public sealed class TrayService : ITrayService
             iconHandle = LoadIcon(IntPtr.Zero, new IntPtr(32512));
         }
 
-        trackingService.StateChanged += (_, newState) =>
-        {
-            state = newState;
-            UpdateIcon(NimModify);
-        };
+        trackingService.StateChanged += TrackingService_StateChanged;
+        updateService.StateChanged += UpdateService_StateChanged;
 
         state = trackingService.State;
+        updateState = updateService.State;
         UpdateIcon(NimAdd);
         iconAdded = true;
     }
 
     public void Dispose()
     {
+        trackingService.StateChanged -= TrackingService_StateChanged;
+        updateService.StateChanged -= UpdateService_StateChanged;
+
         if (iconAdded)
         {
             UpdateIcon(NimDelete);
@@ -125,9 +134,13 @@ public sealed class TrayService : ITrayService
 
         try
         {
-            AppendMenu(menu, MfString, OpenCommand, "Oeffnen");
+            var updateMenu = CreateUpdateMenuPresentation(updateState);
+            AppendMenu(menu, MfString, OpenCommand, "Öffnen");
             AppendMenu(menu, MfString, PauseCommand, state.IsPaused ? "Tracking fortsetzen" : "Tracking pausieren");
             AppendMenu(menu, MfString | MfGray, 0, CreateActiveGameText());
+            AppendMenu(menu, MfSeparator, 0, string.Empty);
+            AppendMenu(menu, MfString | (updateMenu.IsEnabled ? 0 : MfGray), UpdateCommand, updateMenu.Text);
+            AppendMenu(menu, MfSeparator, 0, string.Empty);
             AppendMenu(menu, MfString, ExitCommand, "Beenden");
 
             GetCursorPos(out var point);
@@ -137,6 +150,7 @@ public sealed class TrayService : ITrayService
             {
                 OpenCommand => OpenAsync(),
                 PauseCommand => ToggleTrackingAsync(),
+                UpdateCommand => HandleUpdateAsync(),
                 ExitCommand => ExitAsync(),
                 _ => Task.CompletedTask
             };
@@ -165,6 +179,22 @@ public sealed class TrayService : ITrayService
         }
     }
 
+    private async Task HandleUpdateAsync()
+    {
+        if (mainWindow is null || !updateService.State.CanCheckForUpdates && !updateService.State.HasAvailableUpdate)
+        {
+            return;
+        }
+
+        if (updateService.State.HasAvailableUpdate)
+        {
+            await mainWindow.PromptForAvailableUpdateAsync();
+            return;
+        }
+
+        await mainWindow.CheckForUpdatesManuallyAsync();
+    }
+
     private async Task ExitAsync()
     {
         await App.ShutdownAsync();
@@ -185,7 +215,7 @@ public sealed class TrayService : ITrayService
             uFlags = NifMessage | NifIcon | NifTip,
             uCallbackMessage = CallbackMessage,
             hIcon = iconHandle,
-            szTip = TrimForTray(CreateActiveGameText())
+            szTip = TrimForTray(CreateTrayToolTip())
         };
 
         Shell_NotifyIcon(message, ref data);
@@ -201,6 +231,42 @@ public sealed class TrayService : ITrayService
         return state.RunningGames.Count == 0
             ? "YFTimeTracker - kein aktives Spiel"
             : "YFTimeTracker - " + string.Join(", ", state.RunningGames.Select(game => game.Name));
+    }
+
+    private string CreateTrayToolTip()
+    {
+        return updateState.HasAvailableUpdate
+            ? $"YFTimeTracker - Version {updateState.AvailableVersion ?? "neu"} verfügbar"
+            : CreateActiveGameText();
+    }
+
+    internal static TrayUpdateMenuPresentation CreateUpdateMenuPresentation(AppUpdateState state)
+    {
+        return state.Stage switch
+        {
+            AppUpdateStage.Checking => new TrayUpdateMenuPresentation("Suche nach Updates …", false),
+            AppUpdateStage.Downloading => new TrayUpdateMenuPresentation($"Update wird geladen · {state.DownloadProgress} %", false),
+            AppUpdateStage.Applying => new TrayUpdateMenuPresentation("Update wird installiert …", false),
+            AppUpdateStage.Available => new TrayUpdateMenuPresentation(
+                $"Neue Version {state.AvailableVersion ?? "verfügbar"} verfügbar",
+                true),
+            AppUpdateStage.ReadyToInstall => new TrayUpdateMenuPresentation(
+                $"Neue Version {state.AvailableVersion ?? "verfügbar"} installieren",
+                true),
+            _ => new TrayUpdateMenuPresentation("Nach Updates suchen", state.CanCheckForUpdates)
+        };
+    }
+
+    private void TrackingService_StateChanged(object? sender, TrackingState newState)
+    {
+        state = newState;
+        UpdateIcon(NimModify);
+    }
+
+    private void UpdateService_StateChanged(object? sender, AppUpdateState newState)
+    {
+        updateState = newState;
+        UpdateIcon(NimModify);
     }
 
     private static string TrimForTray(string text)
@@ -273,3 +339,5 @@ public sealed class TrayService : ITrayService
         public int Y;
     }
 }
+
+internal sealed record TrayUpdateMenuPresentation(string Text, bool IsEnabled);

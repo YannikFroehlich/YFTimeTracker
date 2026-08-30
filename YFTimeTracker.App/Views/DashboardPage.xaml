@@ -334,9 +334,9 @@
                     </Grid>
                     <ListView
                         Grid.Row="2"
-                        IsItemClickEnabled="False"
-                        IsTabStop="False"
+                        IsItemClickEnabled="True"
                         ItemContainerStyle="{StaticResource YFListViewItemStyle}"
+                        ItemClick="RecentGames_ItemClick"
                         ItemsSource="{Binding RecentGames}"
                         SelectionMode="None"
                         Visibility="{Binding RecentGamesVisibility}">
@@ -358,7 +358,7 @@
                                         </StackPanel>
                                         <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="#C7D2E6" Text="{Binding TotalPlaytime}" />
                                         <TextBlock Grid.Column="2" VerticalAlignment="Center" Foreground="{Binding LastSessionBrush}" Text="{Binding LastSession}" />
-                                        <FontIcon Grid.Column="3" VerticalAlignment="Center" FontSize="14" Foreground="{StaticResource YFMutedBrush}" Glyph="&#xE712;" />
+                                        <FontIcon Grid.Column="3" VerticalAlignment="Center" FontSize="14" Foreground="{StaticResource YFMutedBrush}" Glyph="&#xE76C;" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>

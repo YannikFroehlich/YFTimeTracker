@@ -41,9 +41,10 @@
             IsPaneOpen="True"
             IsPaneToggleButtonVisible="False"
             IsSettingsVisible="False"
+            ItemInvoked="Navigation_ItemInvoked"
             OpenPaneLength="272"
             PaneDisplayMode="Left"
-            SelectionChanged="Navigation_SelectionChanged">
+            SelectionFollowsFocus="Disabled">
             <NavigationView.Resources>
                 <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#040912" />
                 <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#040912" />
@@ -183,10 +184,11 @@
                         <TextBox
                             Height="46"
                             Padding="42,0,92,0"
+                            AutomationProperties.Name="Suche · Vorschau"
                             HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Center"
                             IsReadOnly="True"
                             IsTabStop="False"
-                            PlaceholderText="Spiele, Sessions oder Statistiken suchen …"
                             Style="{StaticResource YFTextBoxStyle}"
                             ToolTipService.ToolTip="Suche folgt in einer späteren Version" />
                         <FontIcon
@@ -197,6 +199,14 @@
                             Foreground="{StaticResource YFMutedBrush}"
                             Glyph="&#xE721;"
                             IsHitTestVisible="False" />
+                        <TextBlock
+                            Margin="42,0,92,0"
+                            VerticalAlignment="Center"
+                            FontSize="13"
+                            Foreground="{StaticResource YFMutedBrush}"
+                            IsHitTestVisible="False"
+                            Text="Spiele, Sessions oder Statistiken suchen …"
+                            TextTrimming="CharacterEllipsis" />
                         <Border
                             Margin="0,0,9,0"
                             Padding="9,4"

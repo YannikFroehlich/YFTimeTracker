@@ -2,9 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.UI;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
 
@@ -13,6 +11,12 @@ namespace YFTimeTracker.App.ViewModels;
 public sealed class DashboardViewModel : ObservableObject
 {
     private static readonly CultureInfo GermanCulture = CultureInfo.GetCultureInfo("de-DE");
+    private const string MutedColor = "#8391A8";
+    private const string RecentMutedColor = "#A7B2C7";
+    private const string GreenColor = "#29E7A4";
+    private const string RedColor = "#FF6B7A";
+    private const string CyanColor = "#2CE5F3";
+    private const string BlueColor = "#387BFF";
     private readonly IPlaytimeStatisticsService statistics;
     private readonly IGameTrackingService trackingService;
     private readonly IClock clock;
@@ -21,11 +25,11 @@ public sealed class DashboardViewModel : ObservableObject
     private string todayText = "0 min";
     private string todaySessionText = "Keine Sessions";
     private string todayComparisonText = "Keine Änderung";
-    private Brush todayComparisonBrush = CreateBrush(0x83, 0x91, 0xA8);
+    private string todayComparisonBrush = MutedColor;
     private string weekText = "0 min";
     private string weekSessionText = "Keine Sessions";
     private string weekComparisonText = "Keine Änderung";
-    private Brush weekComparisonBrush = CreateBrush(0x83, 0x91, 0xA8);
+    private string weekComparisonBrush = MutedColor;
     private string totalText = "0 min";
     private string gamesPlayedText = "Noch keine Spiele";
     private string pauseButtonText = "Tracking pausieren";
@@ -61,7 +65,7 @@ public sealed class DashboardViewModel : ObservableObject
 
     public string TodayComparisonText { get => todayComparisonText; private set => SetProperty(ref todayComparisonText, value); }
 
-    public Brush TodayComparisonBrush { get => todayComparisonBrush; private set => SetProperty(ref todayComparisonBrush, value); }
+    public string TodayComparisonBrush { get => todayComparisonBrush; private set => SetProperty(ref todayComparisonBrush, value); }
 
     public string WeekText { get => weekText; private set => SetProperty(ref weekText, value); }
 
@@ -69,7 +73,7 @@ public sealed class DashboardViewModel : ObservableObject
 
     public string WeekComparisonText { get => weekComparisonText; private set => SetProperty(ref weekComparisonText, value); }
 
-    public Brush WeekComparisonBrush { get => weekComparisonBrush; private set => SetProperty(ref weekComparisonBrush, value); }
+    public string WeekComparisonBrush { get => weekComparisonBrush; private set => SetProperty(ref weekComparisonBrush, value); }
 
     public string TotalText { get => totalText; private set => SetProperty(ref totalText, value); }
 
@@ -208,60 +212,98 @@ public sealed class DashboardViewModel : ObservableObject
 
     private void UpdateWeekChart(IReadOnlyList<DailyPlaytimeInfo> days)
     {
-        WeekDays.Clear();
         var maximumHours = Math.Max(2, Math.Ceiling(days.Count == 0 ? 0 : days.Max(day => day.Duration.TotalHours)));
         ChartMaximumText = $"{maximumHours:0} h";
         ChartMiddleText = $"{maximumHours / 2:0.#} h";
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(clock.UtcNow, TimeZoneInfo.Local).Date);
 
-        foreach (var day in days)
+        for (var index = 0; index < days.Count; index++)
         {
+            var day = days[index];
             var height = day.Duration <= TimeSpan.Zero
                 ? 4
                 : Math.Max(12, day.Duration.TotalHours / maximumHours * 132);
             var dayLabel = day.Date.ToDateTime(TimeOnly.MinValue).ToString("ddd", GermanCulture).TrimEnd('.');
-            WeekDays.Add(new WeeklyBarViewModel(
-                dayLabel,
-                TimeFormatter.Format(day.Duration),
-                height,
-                day.Date == today ? CreateBrush(0x2C, 0xE5, 0xF3) : CreateBrush(0x38, 0x7B, 0xFF)));
+            var durationText = TimeFormatter.Format(day.Duration);
+            var brush = day.Date == today ? CyanColor : BlueColor;
+            if (index < WeekDays.Count)
+            {
+                WeekDays[index].Update(dayLabel, durationText, height, maximumHours, brush);
+            }
+            else
+            {
+                WeekDays.Add(new WeeklyBarViewModel(dayLabel, durationText, height, maximumHours, brush));
+            }
+        }
+
+        while (WeekDays.Count > days.Count)
+        {
+            WeekDays.RemoveAt(WeekDays.Count - 1);
         }
     }
 
     private void UpdateRecentGames(IReadOnlyList<RecentGameInfo> games)
     {
-        RecentGames.Clear();
-        foreach (var game in games.Take(6))
+        var visibleGames = games.Take(6).ToArray();
+        for (var index = 0; index < visibleGames.Length; index++)
         {
-            RecentGames.Add(new RecentGameItemViewModel(
-                game.GameId,
+            var game = visibleGames[index];
+            var existingIndex = FindRecentGameIndex(game.GameId, index);
+            if (existingIndex < 0)
+            {
+                RecentGames.Insert(index, new RecentGameItemViewModel(game.GameId));
+            }
+            else if (existingIndex != index)
+            {
+                RecentGames.Move(existingIndex, index);
+            }
+
+            RecentGames[index].Update(
                 game.Name,
                 GetInitials(game.Name),
                 TimeFormatter.Format(game.TotalDuration),
                 game.IsRunning ? "Jetzt aktiv" : game.LastPlayedAtUtc.LocalDateTime.ToString("dd.MM.yyyy · HH:mm", GermanCulture),
-                game.IsRunning ? CreateBrush(0x29, 0xE7, 0xA4) : CreateBrush(0xA7, 0xB2, 0xC7)));
+                game.IsRunning ? GreenColor : RecentMutedColor);
+        }
+
+        while (RecentGames.Count > visibleGames.Length)
+        {
+            RecentGames.RemoveAt(RecentGames.Count - 1);
         }
 
         RecentGamesVisibility = RecentGames.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         RecentEmptyVisibility = RecentGames.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private static (string Text, Brush Brush) FormatComparison(TimeSpan current, TimeSpan previous)
+    private int FindRecentGameIndex(long gameId, int startIndex)
+    {
+        for (var index = startIndex; index < RecentGames.Count; index++)
+        {
+            if (RecentGames[index].GameId == gameId)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    private static (string Text, string Brush) FormatComparison(TimeSpan current, TimeSpan previous)
     {
         if (previous <= TimeSpan.Zero)
         {
             return current <= TimeSpan.Zero
-                ? ("Keine Änderung", CreateBrush(0x83, 0x91, 0xA8))
-                : ("Neu in diesem Zeitraum", CreateBrush(0x29, 0xE7, 0xA4));
+                ? ("Keine Änderung", MutedColor)
+                : ("Neu in diesem Zeitraum", GreenColor);
         }
 
         var change = (current.TotalSeconds - previous.TotalSeconds) / previous.TotalSeconds * 100;
         var prefix = change > 0 ? "+" : string.Empty;
         var brush = change > 0
-            ? CreateBrush(0x29, 0xE7, 0xA4)
+            ? GreenColor
             : change < 0
-                ? CreateBrush(0xFF, 0x6B, 0x7A)
-                : CreateBrush(0x83, 0x91, 0xA8);
+                ? RedColor
+                : MutedColor;
         return ($"{prefix}{change:0}%", brush);
     }
 
@@ -283,22 +325,84 @@ public sealed class DashboardViewModel : ObservableObject
         return string.Concat(words.Take(2).Select(word => char.ToUpperInvariant(word[0])));
     }
 
-    private static SolidColorBrush CreateBrush(byte red, byte green, byte blue)
+}
+
+public sealed class WeeklyBarViewModel : ObservableObject
+{
+    private string dayLabel;
+    private string durationText;
+    private double barHeight;
+    private double scaleMaximum;
+    private string barBrush;
+
+    public WeeklyBarViewModel(
+        string dayLabel,
+        string durationText,
+        double barHeight,
+        double scaleMaximum,
+        string barBrush)
     {
-        return new SolidColorBrush(ColorHelper.FromArgb(255, red, green, blue));
+        this.dayLabel = dayLabel;
+        this.durationText = durationText;
+        this.barHeight = barHeight;
+        this.scaleMaximum = scaleMaximum;
+        this.barBrush = barBrush;
+    }
+
+    public string DayLabel { get => dayLabel; private set => SetProperty(ref dayLabel, value); }
+
+    public string DurationText { get => durationText; private set => SetProperty(ref durationText, value); }
+
+    public double BarHeight { get => barHeight; private set => SetProperty(ref barHeight, value); }
+
+    public string BarBrush { get => barBrush; private set => SetProperty(ref barBrush, value); }
+
+    public void Update(string newDayLabel, string newDurationText, double newBarHeight, double newScaleMaximum, string newBarBrush)
+    {
+        DayLabel = newDayLabel;
+        var durationChanged = !string.Equals(DurationText, newDurationText, StringComparison.Ordinal);
+        DurationText = newDurationText;
+        if (durationChanged || !scaleMaximum.Equals(newScaleMaximum))
+        {
+            scaleMaximum = newScaleMaximum;
+            BarHeight = newBarHeight;
+        }
+
+        BarBrush = newBarBrush;
     }
 }
 
-public sealed record WeeklyBarViewModel(
-    string DayLabel,
-    string DurationText,
-    double BarHeight,
-    Brush BarBrush);
+public sealed class RecentGameItemViewModel(long gameId) : ObservableObject
+{
+    private string name = string.Empty;
+    private string initials = string.Empty;
+    private string totalPlaytime = string.Empty;
+    private string lastSession = string.Empty;
+    private string lastSessionBrush = "#A7B2C7";
 
-public sealed record RecentGameItemViewModel(
-    long GameId,
-    string Name,
-    string Initials,
-    string TotalPlaytime,
-    string LastSession,
-    Brush LastSessionBrush);
+    public long GameId { get; } = gameId;
+
+    public string Name { get => name; private set => SetProperty(ref name, value); }
+
+    public string Initials { get => initials; private set => SetProperty(ref initials, value); }
+
+    public string TotalPlaytime { get => totalPlaytime; private set => SetProperty(ref totalPlaytime, value); }
+
+    public string LastSession { get => lastSession; private set => SetProperty(ref lastSession, value); }
+
+    public string LastSessionBrush { get => lastSessionBrush; private set => SetProperty(ref lastSessionBrush, value); }
+
+    public void Update(
+        string newName,
+        string newInitials,
+        string newTotalPlaytime,
+        string newLastSession,
+        string newLastSessionBrush)
+    {
+        Name = newName;
+        Initials = newInitials;
+        TotalPlaytime = newTotalPlaytime;
+        LastSession = newLastSession;
+        LastSessionBrush = newLastSessionBrush;
+    }
+}
