@@ -24,6 +24,22 @@ public sealed partial class SettingsPage : Page
         UpdateLayout(e.NewSize.Width);
     }
 
+    private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.MainWindow is { } mainWindow)
+        {
+            await mainWindow.CheckForUpdatesManuallyAsync();
+        }
+    }
+
+    private async void InstallUpdate_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.MainWindow is { } mainWindow)
+        {
+            await mainWindow.PromptForAvailableUpdateAsync();
+        }
+    }
+
     private void UpdateLayout(double width)
     {
         var compact = width < 900;
@@ -37,9 +53,13 @@ public sealed partial class SettingsPage : Page
         Grid.SetColumn(DataSettingsCard, 0);
         Grid.SetColumnSpan(DataSettingsCard, compact ? 1 : 2);
         Grid.SetRow(DataSettingsCard, compact ? 2 : 1);
+        Grid.SetColumn(UpdateSettingsCard, 0);
+        Grid.SetColumnSpan(UpdateSettingsCard, compact ? 1 : 2);
+        Grid.SetRow(UpdateSettingsCard, compact ? 3 : 2);
 
         TrackingSettingsCard.Margin = compact ? new Thickness(0, 0, 0, 12) : new Thickness(0);
         WindowsSettingsCard.Margin = compact ? new Thickness(0, 0, 0, 12) : new Thickness(14, 0, 0, 0);
-        DataSettingsCard.Margin = compact ? new Thickness(0) : new Thickness(0, 14, 0, 0);
+        DataSettingsCard.Margin = compact ? new Thickness(0, 0, 0, 12) : new Thickness(0, 14, 0, 0);
+        UpdateSettingsCard.Margin = compact ? new Thickness(0) : new Thickness(0, 14, 0, 0);
     }
 }

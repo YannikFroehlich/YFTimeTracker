@@ -1,5 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 using YFTimeTracker.App.Services;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
@@ -15,6 +17,8 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly IFilePickerService filePicker;
     private readonly IGameTrackingService trackingService;
     private readonly IGameInstallationProvider installationProvider;
+    private readonly IAppUpdateService appUpdateService;
+    private readonly DispatcherQueue dispatcherQueue;
     private bool trackingEnabled = true;
     private bool launcherDiscoveryEnabled = true;
     private bool minimizeOnClose = true;
@@ -27,6 +31,13 @@ public sealed class SettingsViewModel : ObservableObject
     private string steamStatusText = "Nicht geprüft";
     private string epicStatusText = "Nicht geprüft";
     private string gogStatusText = "Nicht geprüft";
+    private string currentAppVersionText = "Installiert: unbekannt";
+    private string updateStatusText = "Update-Status wird geladen …";
+    private string availableUpdateText = string.Empty;
+    private bool canCheckForUpdates;
+    private double updateProgress;
+    private Visibility updateProgressVisibility = Visibility.Collapsed;
+    private Visibility installUpdateVisibility = Visibility.Collapsed;
 
     public SettingsViewModel(
         ISettingsStore settings,
@@ -34,7 +45,8 @@ public sealed class SettingsViewModel : ObservableObject
         IBackupService backupService,
         IFilePickerService filePicker,
         IGameTrackingService trackingService,
-        IGameInstallationProvider installationProvider)
+        IGameInstallationProvider installationProvider,
+        IAppUpdateService appUpdateService)
     {
         this.settings = settings;
         this.startupService = startupService;
@@ -42,11 +54,16 @@ public sealed class SettingsViewModel : ObservableObject
         this.filePicker = filePicker;
         this.trackingService = trackingService;
         this.installationProvider = installationProvider;
+        this.appUpdateService = appUpdateService;
+        dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         LoadCommand = new AsyncRelayCommand(LoadAsync);
         SaveCommand = new AsyncRelayCommand(SaveAsync);
         ExportCommand = new AsyncRelayCommand(ExportAsync);
         ImportCommand = new AsyncRelayCommand(ImportAsync);
+
+        ApplyUpdateState(appUpdateService.State);
+        appUpdateService.StateChanged += AppUpdateService_StateChanged;
     }
 
     public bool TrackingEnabled
@@ -121,6 +138,48 @@ public sealed class SettingsViewModel : ObservableObject
         private set => SetProperty(ref gogStatusText, value);
     }
 
+    public string CurrentAppVersionText
+    {
+        get => currentAppVersionText;
+        private set => SetProperty(ref currentAppVersionText, value);
+    }
+
+    public string UpdateStatusText
+    {
+        get => updateStatusText;
+        private set => SetProperty(ref updateStatusText, value);
+    }
+
+    public string AvailableUpdateText
+    {
+        get => availableUpdateText;
+        private set => SetProperty(ref availableUpdateText, value);
+    }
+
+    public bool CanCheckForUpdates
+    {
+        get => canCheckForUpdates;
+        private set => SetProperty(ref canCheckForUpdates, value);
+    }
+
+    public double UpdateProgress
+    {
+        get => updateProgress;
+        private set => SetProperty(ref updateProgress, value);
+    }
+
+    public Visibility UpdateProgressVisibility
+    {
+        get => updateProgressVisibility;
+        private set => SetProperty(ref updateProgressVisibility, value);
+    }
+
+    public Visibility InstallUpdateVisibility
+    {
+        get => installUpdateVisibility;
+        private set => SetProperty(ref installUpdateVisibility, value);
+    }
+
     public IAsyncRelayCommand LoadCommand { get; }
 
     public IAsyncRelayCommand SaveCommand { get; }
@@ -131,6 +190,7 @@ public sealed class SettingsViewModel : ObservableObject
 
     public async Task LoadAsync()
     {
+        ApplyUpdateState(appUpdateService.State);
         TrackingEnabled = await settings.GetBoolAsync(AppSettingKeys.TrackingEnabled, true, CancellationToken.None);
         LauncherDiscoveryEnabled = await settings.GetBoolAsync(AppSettingKeys.LauncherDiscoveryEnabled, true, CancellationToken.None);
         MinimizeOnClose = await settings.GetBoolAsync(AppSettingKeys.MinimizeOnClose, true, CancellationToken.None);
@@ -238,5 +298,45 @@ public sealed class SettingsViewModel : ObservableObject
             LauncherAvailability.Error => "Lesefehler",
             _ => "Nicht installiert"
         };
+    }
+
+    private void AppUpdateService_StateChanged(object? sender, AppUpdateState state)
+    {
+        if (dispatcherQueue.HasThreadAccess)
+        {
+            ApplyUpdateState(state);
+            return;
+        }
+
+        dispatcherQueue.TryEnqueue(() => ApplyUpdateState(state));
+    }
+
+    private void ApplyUpdateState(AppUpdateState state)
+    {
+        CurrentAppVersionText = $"Installiert: v{state.CurrentVersion}";
+        UpdateStatusText = state.Message;
+        AvailableUpdateText = state.AvailableVersion is null
+            ? "Stabiler Release-Kanal · GitHub"
+            : $"Verfügbar: v{state.AvailableVersion}{FormatDownloadSize(state.DownloadSize)}";
+        CanCheckForUpdates = state.CanCheckForUpdates;
+        UpdateProgress = state.DownloadProgress;
+        UpdateProgressVisibility = state.Stage == AppUpdateStage.Downloading
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        InstallUpdateVisibility = state.HasAvailableUpdate
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private static string FormatDownloadSize(long bytes)
+    {
+        if (bytes <= 0)
+        {
+            return string.Empty;
+        }
+
+        return bytes >= 1024L * 1024L
+            ? $" · {bytes / (1024d * 1024d):0.#} MB"
+            : $" · {bytes / 1024d:0.#} KB";
     }
 }

@@ -69,6 +69,7 @@ public partial class App : Application
                 services.AddSingleton<IFilePickerService, WinUiFilePickerService>();
                 services.AddSingleton<IStartupService, WinUiStartupService>();
                 services.AddSingleton<ITrayService, TrayService>();
+                services.AddSingleton<IAppUpdateService, VelopackAppUpdateService>();
                 services.AddSingleton<MainWindow>();
                 services.AddTransient<DashboardPage>();
                 services.AddTransient<GamesPage>();
@@ -90,7 +91,9 @@ public partial class App : Application
 
         await Services.GetRequiredService<IGameTrackingService>().StartAsync(CancellationToken.None);
 
-        if (args.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries).Contains("--minimized", StringComparer.OrdinalIgnoreCase))
+        var startMinimized = args.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Contains("--minimized", StringComparer.OrdinalIgnoreCase);
+        if (startMinimized)
         {
             MainWindow.HideToTray();
         }
@@ -98,6 +101,8 @@ public partial class App : Application
         {
             MainWindow.ShowDashboard();
         }
+
+        _ = MainWindow.CheckForUpdatesOnStartupAsync(showPrompt: !startMinimized);
     }
 
     public static async Task ShutdownAsync()

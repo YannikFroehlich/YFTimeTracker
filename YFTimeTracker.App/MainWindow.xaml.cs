@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using WinRT.Interop;
 using Windows.Graphics;
 using Windows.UI;
+using YFTimeTracker.App.Services;
 using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.App.Views;
 using YFTimeTracker.Core.Abstractions;
@@ -18,7 +19,9 @@ public sealed partial class MainWindow : Window
     private readonly DashboardViewModel dashboardViewModel;
     private readonly DispatcherTimer dashboardRefreshTimer = new() { Interval = TimeSpan.FromSeconds(5) };
     private readonly ISettingsStore settingsStore;
+    private readonly IAppUpdateService appUpdateService;
     private readonly AppWindow appWindow;
+    private readonly SemaphoreSlim updateDialogLock = new(1, 1);
     private bool minimizeOnClose = true;
 
     public MainWindow()
@@ -26,6 +29,7 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         dashboardViewModel = App.Services.GetRequiredService<DashboardViewModel>();
         settingsStore = App.Services.GetRequiredService<ISettingsStore>();
+        appUpdateService = App.Services.GetRequiredService<IAppUpdateService>();
         RootGrid.DataContext = dashboardViewModel;
 
         ExtendsContentIntoTitleBar = true;
@@ -82,9 +86,211 @@ public sealed partial class MainWindow : Window
         minimizeOnClose = value;
     }
 
+    public async Task CheckForUpdatesOnStartupAsync(bool showPrompt)
+    {
+        try
+        {
+            var state = appUpdateService.State.Stage == AppUpdateStage.ReadyToInstall
+                ? appUpdateService.State
+                : await appUpdateService.CheckForUpdatesAsync(CancellationToken.None);
+
+            if (showPrompt && state.HasAvailableUpdate)
+            {
+                await PromptForAvailableUpdateAsync();
+            }
+        }
+        catch (Exception)
+        {
+            // Update errors are exposed in the settings and must never interrupt app startup.
+        }
+    }
+
+    public async Task CheckForUpdatesManuallyAsync()
+    {
+        var state = appUpdateService.State.Stage == AppUpdateStage.ReadyToInstall
+            ? appUpdateService.State
+            : await appUpdateService.CheckForUpdatesAsync(CancellationToken.None);
+
+        if (state.HasAvailableUpdate)
+        {
+            await PromptForAvailableUpdateAsync();
+            return;
+        }
+
+        await ShowUpdateMessageAsync("App-Updates", state.Message);
+    }
+
+    public async Task PromptForAvailableUpdateAsync()
+    {
+        if (!await updateDialogLock.WaitAsync(0))
+        {
+            return;
+        }
+
+        try
+        {
+            var state = appUpdateService.State;
+            if (!state.HasAvailableUpdate || RootGrid.XamlRoot is null)
+            {
+                return;
+            }
+
+            var isReady = state.Stage == AppUpdateStage.ReadyToInstall;
+            var version = state.AvailableVersion ?? "neu";
+            var sizeText = FormatDownloadSize(state.DownloadSize);
+            var dialog = new ContentDialog
+            {
+                XamlRoot = RootGrid.XamlRoot,
+                Title = $"YFTimeTracker {version} ist verfügbar",
+                Content = new TextBlock
+                {
+                    MaxWidth = 470,
+                    Text = isReady
+                        ? "Das Update wurde bereits heruntergeladen. YFTimeTracker beendet offene Sessions sauber und startet nach der Installation neu."
+                        : $"Das Update{sizeText} wird aus dem öffentlichen GitHub-Release geladen. Danach beendet YFTimeTracker offene Sessions sauber und startet mit der neuen Version neu.",
+                    TextWrapping = TextWrapping.Wrap
+                },
+                PrimaryButtonText = isReady ? "Neu starten & installieren" : "Herunterladen & installieren",
+                CloseButtonText = "Später",
+                DefaultButton = ContentDialogButton.Primary
+            };
+
+            if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            {
+                return;
+            }
+
+            if (!isReady && !await DownloadUpdateWithProgressAsync())
+            {
+                return;
+            }
+
+            try
+            {
+                appUpdateService.ScheduleInstallAndRestart();
+                await App.ShutdownAsync();
+            }
+            catch (Exception)
+            {
+                await ShowUpdateMessageCoreAsync(
+                    "Update konnte nicht gestartet werden",
+                    "Die Installation konnte nicht vorbereitet werden. Bitte YFTimeTracker neu starten und erneut versuchen.");
+            }
+        }
+        finally
+        {
+            updateDialogLock.Release();
+        }
+    }
+
     private async void DashboardRefreshTimer_Tick(object? sender, object e)
     {
         await dashboardViewModel.RefreshAsync();
+    }
+
+    private async Task<bool> DownloadUpdateWithProgressAsync()
+    {
+        if (RootGrid.XamlRoot is null)
+        {
+            return false;
+        }
+
+        var progressBar = new ProgressBar
+        {
+            Minimum = 0,
+            Maximum = 100,
+            Value = 0,
+            Height = 6
+        };
+        var progressText = new TextBlock
+        {
+            Text = "Download wird vorbereitet …",
+            TextWrapping = TextWrapping.Wrap
+        };
+        var content = new StackPanel { Spacing = 12 };
+        content.Children.Add(progressText);
+        content.Children.Add(progressBar);
+
+        var progressDialog = new ContentDialog
+        {
+            XamlRoot = RootGrid.XamlRoot,
+            Title = "Update wird heruntergeladen",
+            Content = content
+        };
+
+        _ = progressDialog.ShowAsync();
+        await Task.Yield();
+
+        var progress = new Progress<int>(value =>
+        {
+            progressBar.Value = value;
+            progressText.Text = $"Neue Version wird sicher heruntergeladen · {value} %";
+        });
+
+        try
+        {
+            await appUpdateService.DownloadUpdateAsync(progress, CancellationToken.None);
+            progressDialog.Hide();
+            return true;
+        }
+        catch (Exception)
+        {
+            progressDialog.Hide();
+            await Task.Delay(150);
+            await ShowUpdateMessageCoreAsync("Download fehlgeschlagen", appUpdateService.State.Message);
+            return false;
+        }
+    }
+
+    private async Task ShowUpdateMessageAsync(string title, string message)
+    {
+        if (!await updateDialogLock.WaitAsync(0))
+        {
+            return;
+        }
+
+        try
+        {
+            await ShowUpdateMessageCoreAsync(title, message);
+        }
+        finally
+        {
+            updateDialogLock.Release();
+        }
+    }
+
+    private async Task ShowUpdateMessageCoreAsync(string title, string message)
+    {
+        if (RootGrid.XamlRoot is null)
+        {
+            return;
+        }
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = RootGrid.XamlRoot,
+            Title = title,
+            Content = new TextBlock
+            {
+                MaxWidth = 470,
+                Text = message,
+                TextWrapping = TextWrapping.Wrap
+            },
+            CloseButtonText = "Schließen"
+        };
+        await dialog.ShowAsync();
+    }
+
+    private static string FormatDownloadSize(long bytes)
+    {
+        if (bytes <= 0)
+        {
+            return string.Empty;
+        }
+
+        return bytes >= 1024L * 1024L
+            ? $" mit {bytes / (1024d * 1024d):0.#} MB"
+            : $" mit {bytes / 1024d:0.#} KB";
     }
 
     private void Navigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)

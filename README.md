@@ -4,6 +4,8 @@ YFTimeTracker ist eine lokale Windows-11-App zum automatischen Erfassen von Spie
 
 Das Tracking läuft im Tray weiter, wenn das Hauptfenster geschlossen wird. Der optionale Windows-Autostart startet die unpackaged App minimiert; er bleibt standardmäßig deaktiviert. Unbekannte Prozesse außerhalb erkannter Spieleordner werden nicht als Spiele behandelt.
 
+Installierte Setup-/MSI-Ausgaben prüfen beim Start automatisch den stabilen GitHub-Release-Kanal. Eine manuelle Prüfung ist unter **Einstellungen → App-Updates** möglich. Gefundene Updates werden erst nach Bestätigung heruntergeladen, zeigen ihren Fortschritt in der App und werden nach einem sauberen Neustart installiert.
+
 ## Projektstruktur
 
 - `YFTimeTracker.Core`: Domain-Modelle, Services, Tracking-Regeln, Statistik und Validierung.
@@ -52,3 +54,9 @@ Neue Funktionen werden auf `develop` entwickelt und anschliessend per Pull Reque
 - `[skip release]` ueberspringt die Veroeffentlichung.
 
 Das GitHub Release enthaelt einen Velopack-Installer, ein MSI, Updatepakete, das portable ZIP, dessen SHA-256-Pruefsumme und ein Release-Manifest. Die vollstaendigen Regeln stehen in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Automatische Updates
+
+Die App verwendet den öffentlichen Release-Feed von `https://github.com/YannikFroehlich/YFTimeTracker`. Es wird kein GitHub-Token in den Quellcode, den Build oder die installierte Anwendung eingebettet. Vorabversionen werden nicht automatisch angeboten.
+
+Self-Updates stehen in der mit Velopack installierten Setup-/MSI-Ausgabe zur Verfügung. Entwicklungs- und nicht installierte portable Builds zeigen ihren Versionsstatus an, verändern sich aber nicht selbst. Vor dem Neustart beendet YFTimeTracker das Tracking kontrolliert, damit offene Sessions korrekt gespeichert werden.
