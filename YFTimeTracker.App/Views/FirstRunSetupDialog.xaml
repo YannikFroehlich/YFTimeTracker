@@ -113,7 +113,7 @@
                             <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="#B18CFF" Glyph="&#xE7FC;" />
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
-                            <TextBlock FontWeight="SemiBold" Text="Steam, Epic und GOG erkennen" />
+                            <TextBlock FontWeight="SemiBold" Text="Steam, Epic, GOG und Xbox erkennen" />
                             <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Liest lokale Installationen und übernimmt ein Spiel erst beim tatsächlichen Start." TextWrapping="Wrap" />
                         </StackPanel>
                         <ToggleSwitch x:Name="LauncherToggle" Grid.Column="2" VerticalAlignment="Center" OffContent="Aus" OnContent="Aktiv" />

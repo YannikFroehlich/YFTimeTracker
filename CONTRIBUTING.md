@@ -74,7 +74,7 @@ Je nach Änderung sind zusätzlich manuell zu prüfen:
 - breite und schmale App-Fenster bei UI-Änderungen
 - leere Datenbank sowie vorhandene Spiele und Sessions
 - Tracking-Start, Sessionende, Pause und Tray-Betrieb
-- Launcher-Erkennung mit Steam, Epic oder GOG
+- Launcher-Erkennung mit Steam, Epic, GOG oder einem Xbox-/Microsoft-Store-Spiel
 - Backup, Import und Export bei Datenänderungen
 - installierte Ausgabe und Update-Ablauf bei Release- oder Updateänderungen
 - Einzelinstanz, Autostart und minimierter Start bei Lifecycle-Änderungen

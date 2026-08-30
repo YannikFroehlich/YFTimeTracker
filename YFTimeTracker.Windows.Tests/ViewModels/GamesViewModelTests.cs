@@ -9,6 +9,20 @@ namespace YFTimeTracker.Windows.Tests.ViewModels;
 public sealed class GamesViewModelTests
 {
     [TestMethod]
+    public void Xbox_games_have_source_label_and_library_filter()
+    {
+        var game = CreateGame(1, "Xbox Spiel", GameSource.Xbox, "game.exe");
+        var viewModel = CreateViewModel(
+            [game],
+            new FakeSessionRepository([]),
+            new FakeTrackingService(TrackingState.Stopped),
+            DateTimeOffset.Parse("2026-08-30T12:00:00Z"));
+
+        Assert.AreEqual("XBOX", new GameListItemViewModel(game).SourceLabel);
+        Assert.HasCount(1, viewModel.SourceFilters.Where(filter => filter.Source == GameSource.Xbox));
+    }
+
+    [TestMethod]
     public async Task Refresh_combines_sessions_and_tracking_then_filters_and_sorts()
     {
         var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");

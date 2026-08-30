@@ -8,7 +8,7 @@ Diese Prüfung deckt Windows-Abläufe ab, die nicht vollständig durch Unit-Test
 2. Unter **Einstellungen → Sicherung** ein Backup erstellen.
 3. Unter **Einstellungen → Diagnose & Support** den Daten- und Logordner kontrollieren.
 4. Tracking und Launcher-Erkennung aktivieren.
-5. Für Launcher-Tests mindestens ein installiertes Steam-, Epic- oder GOG-Spiel bereithalten.
+5. Für Launcher-Tests mindestens ein installiertes Steam-, Epic-, GOG- oder Xbox-/Microsoft-Store-Spiel bereithalten.
 
 ## Ersteinrichtung
 
@@ -29,7 +29,7 @@ Diese Prüfung deckt Windows-Abläufe ab, die nicht vollständig durch Unit-Test
 
 ## Pro Launcher
 
-Die Schritte einmal mit einem installierten Steam-, Epic- beziehungsweise GOG-Spiel durchführen:
+Die Schritte einmal mit einem installierten Steam-, Epic-, GOG- beziehungsweise Xbox-/Microsoft-Store-Spiel durchführen:
 
 1. Unter **Einstellungen → Launcher-Erkennung** prüfen, ob der Launcher als erkannt erscheint.
 2. Ein noch nicht importiertes Spiel starten. Falls keine eindeutige Start-EXE bekannt ist, muss es nach spätestens zwei Tracking-Scans auf dem Dashboard erscheinen.
@@ -41,6 +41,14 @@ Die Schritte einmal mit einem installierten Steam-, Epic- beziehungsweise GOG-Sp
 8. Das Spiel erneut starten. Es muss eine neue Session entstehen.
 
 Fehlende oder beschädigte Daten eines Launchers dürfen das Tracking manuell registrierter Spiele nicht beeinträchtigen.
+
+Für Xbox-/Microsoft-Store-Spiele zusätzlich prüfen:
+
+1. Unter **Einstellungen → Tracking** wird „Xbox / Microsoft Store“ als erkannt angezeigt.
+2. Ein installiertes, aber nie gestartetes Spiel erscheint noch nicht in der Bibliothek.
+3. Das Spiel über die Xbox-App oder das Startmenü starten.
+4. Prüfen, dass nicht `gamelaunchhelper.exe`, sondern der tatsächliche Spielprozess übernommen wird.
+5. Das Spiel beenden und kontrollieren, dass genau eine Session mit der Quelle **XBOX** gespeichert wurde.
 
 ## Pause und Unterbrechungen
 

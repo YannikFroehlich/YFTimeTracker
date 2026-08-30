@@ -32,6 +32,7 @@ public sealed class SettingsViewModel : ObservableObject
     private string steamStatusText = "Nicht geprüft";
     private string epicStatusText = "Nicht geprüft";
     private string gogStatusText = "Nicht geprüft";
+    private string xboxStatusText = "Nicht geprüft";
     private string currentAppVersionText = "Installiert: unbekannt";
     private string updateStatusText = "Update-Status wird geladen …";
     private string availableUpdateText = string.Empty;
@@ -148,6 +149,12 @@ public sealed class SettingsViewModel : ObservableObject
         private set => SetProperty(ref gogStatusText, value);
     }
 
+    public string XboxStatusText
+    {
+        get => xboxStatusText;
+        private set => SetProperty(ref xboxStatusText, value);
+    }
+
     public string CurrentAppVersionText
     {
         get => currentAppVersionText;
@@ -253,10 +260,11 @@ public sealed class SettingsViewModel : ObservableObject
             SteamStatusText = FormatLauncherState(GameSource.Steam, launchers);
             EpicStatusText = FormatLauncherState(GameSource.Epic, launchers);
             GogStatusText = FormatLauncherState(GameSource.Gog, launchers);
+            XboxStatusText = FormatLauncherState(GameSource.Xbox, launchers);
         }
         catch
         {
-            SteamStatusText = EpicStatusText = GogStatusText = "Prüfung fehlgeschlagen";
+            SteamStatusText = EpicStatusText = GogStatusText = XboxStatusText = "Prüfung fehlgeschlagen";
         }
     }
 

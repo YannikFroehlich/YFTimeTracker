@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace YFTimeTracker.Windows.Processes;
 
@@ -8,6 +9,8 @@ internal static partial class LauncherManifestParsers
     internal sealed record SteamManifest(string AppId, string Name, string InstallDirectoryName);
 
     internal sealed record EpicManifest(string ExternalId, string Name, string InstallDirectory, string? LaunchExecutable);
+
+    internal sealed record XboxManifest(string IdentityName, string? DisplayName, IReadOnlyList<string> LaunchExecutables);
 
     public static IReadOnlyList<string> ParseSteamLibraryPaths(string contents)
     {
@@ -68,6 +71,46 @@ internal static partial class LauncherManifestParsers
         }
 
         return Path.IsPathRooted(candidate) ? candidate : Path.Combine(installDirectory, candidate);
+    }
+
+    public static XboxManifest? ParseXboxGameConfig(string contents)
+    {
+        var document = XDocument.Parse(contents, LoadOptions.None);
+        if (document.Root is null || !string.Equals(document.Root.Name.LocalName, "Game", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var identityName = document
+            .Descendants()
+            .FirstOrDefault(element => string.Equals(element.Name.LocalName, "Identity", StringComparison.OrdinalIgnoreCase))
+            ?.Attribute("Name")
+            ?.Value;
+        var displayName = document
+            .Descendants()
+            .FirstOrDefault(element => string.Equals(element.Name.LocalName, "ShellVisuals", StringComparison.OrdinalIgnoreCase))
+            ?.Attribute("DefaultDisplayName")
+            ?.Value;
+        var executables = document
+            .Descendants()
+            .Where(element => string.Equals(element.Name.LocalName, "Executable", StringComparison.OrdinalIgnoreCase))
+            .Where(element => !bool.TryParse(element.Attribute("IsDevOnly")?.Value, out var isDevOnly) || !isDevOnly)
+            .Where(element =>
+            {
+                var target = element.Attribute("TargetDeviceFamily")?.Value;
+                return string.IsNullOrWhiteSpace(target) || string.Equals(target, "PC", StringComparison.OrdinalIgnoreCase);
+            })
+            .Select(element => element.Attribute("Name")?.Value)
+            .Where(path => !string.IsNullOrWhiteSpace(path)
+                && !Path.IsPathRooted(path)
+                && string.Equals(Path.GetExtension(path), ".exe", StringComparison.OrdinalIgnoreCase))
+            .Select(path => path!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return string.IsNullOrWhiteSpace(identityName) || executables.Length == 0
+            ? null
+            : new XboxManifest(identityName.Trim(), displayName?.Trim(), executables);
     }
 
     private static string? ReadVdfValue(string contents, string key)
