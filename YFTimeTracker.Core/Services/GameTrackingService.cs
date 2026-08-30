@@ -17,10 +17,23 @@ public sealed class GameTrackingService(
     private static readonly TimeSpan DefaultScanInterval = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan DefaultHeartbeatInterval = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan LauncherRefreshInterval = TimeSpan.FromMinutes(5);
+    private static readonly string[] ExcludedExecutableNames =
+    [
+        "beservice", "beservicex64", "cefprocess", "crashreportclient", "crashreporter", "eac",
+        "eaclauncher", "launcher", "reporter", "setup", "startprotectedgame", "uninstall",
+        "uninstaller", "update", "updater"
+    ];
+    private static readonly string[] ExcludedExecutablePrefixes =
+    [
+        "easyanticheat", "launcher", "unins", "unitycrashhandler"
+    ];
+    private static readonly string[] ExcludedExecutableSuffixes =
+    [
+        "launcher", "updater"
+    ];
     private static readonly string[] ExcludedExecutableParts =
     [
-        "unins", "uninstall", "crash", "reporter", "launcher", "updater", "update.exe",
-        "setup", "easyanticheat", "eac", "beservice", "battleye", "cefprocess"
+        "anticheat", "battleye", "crashhandler", "crashreport", "gamelauncher"
     ];
 
     private readonly SemaphoreSlim gate = new(1, 1);
@@ -29,6 +42,7 @@ public sealed class GameTrackingService(
     private Task? runTask;
     private LauncherDiscoveryResult launcherCatalog = LauncherDiscoveryResult.Empty;
     private DateTimeOffset launcherCatalogUpdatedAtUtc = DateTimeOffset.MinValue;
+    private DateTimeOffset? lastSuccessfulScanAtUtc;
     private long scanNumber;
     private bool isPaused;
 
@@ -51,6 +65,18 @@ public sealed class GameTrackingService(
             await RecoverOpenSessionsCoreAsync(cancellationToken);
             runTask = RunAsync(runCancellation.Token);
             await PublishStateAsync(true, cancellationToken);
+        }
+        catch
+        {
+            if (runCancellation is not null)
+            {
+                await runCancellation.CancelAsync();
+                runCancellation.Dispose();
+            }
+
+            runCancellation = null;
+            runTask = null;
+            throw;
         }
         finally
         {
@@ -205,14 +231,28 @@ public sealed class GameTrackingService(
 
     private async Task RecoverOpenSessionsCoreAsync(CancellationToken cancellationToken)
     {
-        var openSessions = await sessions.GetOpenSessionsAsync(cancellationToken);
-        if (openSessions.Count == 0)
+        var openSessions = await ResolveDuplicateOpenSessionsAsync(
+            await sessions.GetOpenSessionsAsync(cancellationToken),
+            cancellationToken);
+
+        if (isPaused)
         {
-            if (!isPaused)
+            foreach (var session in openSessions)
             {
-                await ScanOnceCoreAsync(cancellationToken);
+                session.Close(session.LastSeenAtUtc);
+                await sessions.UpdateAsync(session, cancellationToken);
+                logger.LogInformation(
+                    "Closed stale session {SessionId} for game {GameId} because tracking starts paused.",
+                    session.Id,
+                    session.GameId);
             }
 
+            return;
+        }
+
+        if (openSessions.Count == 0)
+        {
+            await ScanOnceCoreAsync(cancellationToken);
             return;
         }
 
@@ -231,22 +271,57 @@ public sealed class GameTrackingService(
             {
                 session.Close(session.LastSeenAtUtc);
                 await sessions.UpdateAsync(session, cancellationToken);
+                logger.LogInformation(
+                    "Recovered session {SessionId} for game {GameId} at its last heartbeat {EndedAtUtc}.",
+                    session.Id,
+                    session.GameId,
+                    session.EndedAtUtc);
+            }
+            else
+            {
+                logger.LogInformation(
+                    "Continued open session {SessionId} for game {GameId} after application restart.",
+                    session.Id,
+                    session.GameId);
             }
         }
 
-        if (!isPaused)
-        {
-            await ScanOnceCoreAsync(cancellationToken);
-        }
+        await ScanOnceCoreAsync(cancellationToken);
     }
 
     private async Task ScanOnceCoreAsync(CancellationToken cancellationToken)
     {
         scanNumber++;
         var now = clock.UtcNow;
+        var previousSuccessfulScanAtUtc = lastSuccessfulScanAtUtc;
+        if (previousSuccessfulScanAtUtc > now)
+        {
+            logger.LogWarning(
+                "The system clock moved backwards from {PreviousScanAtUtc} to {CurrentScanAtUtc}; resetting scan continuity.",
+                previousSuccessfulScanAtUtc,
+                now);
+            previousSuccessfulScanAtUtc = now;
+        }
+
         var runningProcesses = await processSnapshotProvider.GetRunningProcessesAsync(cancellationToken);
         var runningPathKeys = runningProcesses.Select(process => process.ExecutablePathKey).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var sessionStartOverrides = new Dictionary<long, DateTimeOffset>();
+        var scanIntervalSeconds = await settings.GetIntAsync(
+            AppSettingKeys.TrackingIntervalSeconds,
+            Convert.ToInt32(DefaultScanInterval.TotalSeconds),
+            cancellationToken);
+        var suspendGapThreshold = TimeSpan.FromSeconds(Math.Max(120, Math.Clamp(scanIntervalSeconds, 1, 60) * 3));
+        var hasUnobservedGap = previousSuccessfulScanAtUtc is { } previousScan
+            && now - previousScan > suspendGapThreshold;
+
+        if (hasUnobservedGap)
+        {
+            discoveryCandidates.Clear();
+            logger.LogInformation(
+                "Detected an unobserved tracking gap from {PreviousScanAtUtc} to {CurrentScanAtUtc}; sleep time will not be counted.",
+                previousSuccessfulScanAtUtc,
+                now);
+        }
 
         if (await settings.GetBoolAsync(AppSettingKeys.LauncherDiscoveryEnabled, true, cancellationToken))
         {
@@ -260,7 +335,9 @@ public sealed class GameTrackingService(
 
         var knownGames = await games.GetAllAsync(cancellationToken);
         var currentBootId = bootSessionProvider.GetCurrentBootSessionId();
-        var openSessions = await sessions.GetOpenSessionsAsync(cancellationToken);
+        var openSessions = await ResolveDuplicateOpenSessionsAsync(
+            await sessions.GetOpenSessionsAsync(cancellationToken),
+            cancellationToken);
         var openByGameId = openSessions.ToDictionary(session => session.GameId);
         var heartbeatSeconds = await settings.GetIntAsync(
             AppSettingKeys.HeartbeatIntervalSeconds,
@@ -271,15 +348,59 @@ public sealed class GameTrackingService(
         foreach (var openSession in openSessions)
         {
             var game = knownGames.FirstOrDefault(candidate => candidate.Id == openSession.GameId);
-            var stillRunning = game is not null
-                && game.Executables.Any(executable => runningPathKeys.Contains(executable.ExecutablePathKey))
-                && string.Equals(openSession.BootSessionId, currentBootId, StringComparison.Ordinal);
+            var matchingProcesses = game is null
+                ? []
+                : GetMatchingProcesses(game, runningProcesses);
+            var sameBootSession = string.Equals(openSession.BootSessionId, currentBootId, StringComparison.Ordinal);
+            var stillRunning = matchingProcesses.Count > 0
+                && sameBootSession;
+
+            if (hasUnobservedGap)
+            {
+                var endedAtUtc = previousSuccessfulScanAtUtc!.Value < openSession.StartedAtUtc
+                    ? openSession.StartedAtUtc
+                    : previousSuccessfulScanAtUtc.Value;
+                openSession.Close(endedAtUtc);
+                await sessions.UpdateAsync(openSession, cancellationToken);
+                openByGameId.Remove(openSession.GameId);
+                logger.LogInformation(
+                    "Split session {SessionId} for game {GameId} at {EndedAtUtc} after an unobserved tracking gap.",
+                    openSession.Id,
+                    openSession.GameId,
+                    endedAtUtc);
+                continue;
+            }
+
+            var processWasRestarted = stillRunning
+                && previousSuccessfulScanAtUtc is { } lastScan
+                && matchingProcesses.All(process =>
+                    process.StartedAtUtc is { } processStartedAtUtc && processStartedAtUtc > lastScan);
+
+            if (processWasRestarted)
+            {
+                openSession.Close(previousSuccessfulScanAtUtc!.Value);
+                await sessions.UpdateAsync(openSession, cancellationToken);
+                openByGameId.Remove(openSession.GameId);
+                sessionStartOverrides[openSession.GameId] = ClampSessionStart(
+                    matchingProcesses.Min(process => process.StartedAtUtc!.Value),
+                    previousSuccessfulScanAtUtc.Value,
+                    now);
+                logger.LogInformation(
+                    "Split session {SessionId} for game {GameId} because all associated processes restarted.",
+                    openSession.Id,
+                    openSession.GameId);
+                continue;
+            }
 
             if (!stillRunning)
             {
                 openSession.Close(now);
                 await sessions.UpdateAsync(openSession, cancellationToken);
                 openByGameId.Remove(openSession.GameId);
+                logger.LogInformation(
+                    "Closed session {SessionId} for game {GameId}; no associated process is running.",
+                    openSession.Id,
+                    openSession.GameId);
                 continue;
             }
 
@@ -300,24 +421,46 @@ public sealed class GameTrackingService(
             }
 
             var startedAtUtc = sessionStartOverrides.GetValueOrDefault(game.Id, now);
-            if (startedAtUtc > now)
+            if (!sessionStartOverrides.ContainsKey(game.Id) && previousSuccessfulScanAtUtc is { } lastScan)
             {
-                startedAtUtc = now;
+                var matchingProcesses = GetMatchingProcesses(game, runningProcesses);
+                var observedStarts = matchingProcesses
+                    .Where(process => process.StartedAtUtc is not null)
+                    .Select(process => process.StartedAtUtc!.Value)
+                    .ToArray();
+                if (observedStarts.Length == matchingProcesses.Count && observedStarts.Length > 0)
+                {
+                    var earliestStart = observedStarts.Min();
+                    if (earliestStart > lastScan)
+                    {
+                        startedAtUtc = ClampSessionStart(earliestStart, lastScan, now);
+                    }
+                }
             }
 
-            await sessions.AddAsync(new GameSession
+            startedAtUtc = ClampSessionStart(startedAtUtc, DateTimeOffset.MinValue, now);
+            var session = await sessions.AddAsync(new GameSession
             {
                 GameId = game.Id,
                 StartedAtUtc = startedAtUtc,
                 LastSeenAtUtc = now,
                 BootSessionId = currentBootId
             }, cancellationToken);
+            logger.LogInformation(
+                "Started session {SessionId} for game {GameId} at {StartedAtUtc}.",
+                session.Id,
+                session.GameId,
+                session.StartedAtUtc);
         }
+
+        lastSuccessfulScanAtUtc = now;
     }
 
     private async Task RefreshLauncherCatalogIfNeededAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
-        if (launcherCatalogUpdatedAtUtc != DateTimeOffset.MinValue && now - launcherCatalogUpdatedAtUtc < LauncherRefreshInterval)
+        if (launcherCatalogUpdatedAtUtc != DateTimeOffset.MinValue
+            && now >= launcherCatalogUpdatedAtUtc
+            && now - launcherCatalogUpdatedAtUtc < LauncherRefreshInterval)
         {
             return;
         }
@@ -355,8 +498,8 @@ public sealed class GameTrackingService(
             }
 
             var isExplicitLaunchExecutable = installation.LaunchExecutablePaths.Any(path =>
-                string.Equals(ExecutablePathNormalizer.CreateKey(path), process.ExecutablePathKey, StringComparison.OrdinalIgnoreCase));
-            if (!isExplicitLaunchExecutable && IsExcludedHelperExecutable(process.ExecutablePath))
+                IsSameExecutablePath(path, process.ExecutablePathKey));
+            if (IsExcludedHelperExecutable(process.ExecutablePath))
             {
                 continue;
             }
@@ -402,7 +545,7 @@ public sealed class GameTrackingService(
             {
                 Installation = installation,
                 IsExplicit = installation.LaunchExecutablePaths.Any(path =>
-                    string.Equals(ExecutablePathNormalizer.CreateKey(path), process.ExecutablePathKey, StringComparison.OrdinalIgnoreCase))
+                    IsSameExecutablePath(path, process.ExecutablePathKey))
             })
             .Where(candidate => candidate.IsExplicit || IsPathInside(process.ExecutablePathKey, candidate.Installation.InstallDirectoryKey))
             .OrderByDescending(candidate => candidate.IsExplicit)
@@ -435,10 +578,16 @@ public sealed class GameTrackingService(
         if (existing is not null)
         {
             await games.AddExecutableAsync(existing.Id, executable, cancellationToken);
+            logger.LogInformation(
+                "Added executable {ExecutableName} to discovered game {GameId} ({Source}:{ExternalGameId}).",
+                executable.ExecutableName,
+                existing.Id,
+                installation.Source,
+                installation.ExternalGameId);
             return await games.GetByIdAsync(existing.Id, cancellationToken) ?? existing;
         }
 
-        return await games.AddAsync(new Game
+        var game = await games.AddAsync(new Game
         {
             Name = installation.Name,
             Source = installation.Source,
@@ -448,28 +597,111 @@ public sealed class GameTrackingService(
             AddedAtUtc = clock.UtcNow,
             Executables = [executable]
         }, cancellationToken);
+        logger.LogInformation(
+            "Discovered game {GameId} ({Source}:{ExternalGameId}) from running executable {ExecutableName}.",
+            game.Id,
+            installation.Source,
+            installation.ExternalGameId,
+            executable.ExecutableName);
+        return game;
     }
 
     private static bool IsPathInside(string executablePathKey, string directoryPathKey)
     {
+        if (string.IsNullOrWhiteSpace(executablePathKey) || string.IsNullOrWhiteSpace(directoryPathKey))
+        {
+            return false;
+        }
+
         var prefix = directoryPathKey.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
         return executablePathKey.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool IsSameExecutablePath(string path, string executablePathKey)
+    {
+        try
+        {
+            return string.Equals(
+                ExecutablePathNormalizer.CreateKey(path),
+                executablePathKey,
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception exception) when (exception is ArgumentException or IOException or NotSupportedException)
+        {
+            return false;
+        }
+    }
+
     private static bool IsExcludedHelperExecutable(string executablePath)
     {
-        var name = Path.GetFileName(executablePath);
-        return ExcludedExecutableParts.Any(part => name.Contains(part, StringComparison.OrdinalIgnoreCase));
+        var name = new string(Path.GetFileNameWithoutExtension(executablePath)
+            .Where(char.IsLetterOrDigit)
+            .Select(char.ToLowerInvariant)
+            .ToArray());
+        return ExcludedExecutableNames.Contains(name, StringComparer.Ordinal)
+            || ExcludedExecutablePrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.Ordinal))
+            || ExcludedExecutableSuffixes.Any(suffix => name.EndsWith(suffix, StringComparison.Ordinal))
+            || ExcludedExecutableParts.Any(part => name.Contains(part, StringComparison.Ordinal));
     }
 
     private async Task CloseAllOpenSessionsAsync(DateTimeOffset endedAtUtc, CancellationToken cancellationToken)
     {
-        var openSessions = await sessions.GetOpenSessionsAsync(cancellationToken);
+        var openSessions = await ResolveDuplicateOpenSessionsAsync(
+            await sessions.GetOpenSessionsAsync(cancellationToken),
+            cancellationToken);
         foreach (var session in openSessions)
         {
             session.Close(endedAtUtc);
             await sessions.UpdateAsync(session, cancellationToken);
         }
+    }
+
+    private async Task<IReadOnlyList<GameSession>> ResolveDuplicateOpenSessionsAsync(
+        IReadOnlyList<GameSession> openSessions,
+        CancellationToken cancellationToken)
+    {
+        var resolved = new List<GameSession>(openSessions.Count);
+        foreach (var group in openSessions.GroupBy(session => session.GameId))
+        {
+            var ordered = group.OrderBy(session => session.StartedAtUtc).ThenBy(session => session.Id).ToArray();
+            resolved.Add(ordered[0]);
+            foreach (var duplicate in ordered.Skip(1))
+            {
+                duplicate.Close(duplicate.StartedAtUtc);
+                await sessions.UpdateAsync(duplicate, cancellationToken);
+                logger.LogWarning(
+                    "Closed duplicate open session {SessionId} for game {GameId} with zero duration.",
+                    duplicate.Id,
+                    duplicate.GameId);
+            }
+        }
+
+        return resolved;
+    }
+
+    private static IReadOnlyList<RunningProcessInfo> GetMatchingProcesses(
+        Game game,
+        IReadOnlyList<RunningProcessInfo> runningProcesses)
+    {
+        var executableKeys = game.Executables
+            .Select(executable => executable.ExecutablePathKey)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return runningProcesses
+            .Where(process => executableKeys.Contains(process.ExecutablePathKey))
+            .ToArray();
+    }
+
+    private static DateTimeOffset ClampSessionStart(
+        DateTimeOffset startedAtUtc,
+        DateTimeOffset minimumUtc,
+        DateTimeOffset nowUtc)
+    {
+        if (startedAtUtc < minimumUtc)
+        {
+            return minimumUtc;
+        }
+
+        return startedAtUtc > nowUtc ? nowUtc : startedAtUtc;
     }
 
     private async Task PublishStateAsync(bool isRunning, CancellationToken cancellationToken)
@@ -486,7 +718,22 @@ public sealed class GameTrackingService(
             .ToArray();
 
         State = new TrackingState(isRunning, isPaused, runningGames);
-        StateChanged?.Invoke(this, State);
+        if (StateChanged is not { } stateChanged)
+        {
+            return;
+        }
+
+        foreach (EventHandler<TrackingState> handler in stateChanged.GetInvocationList())
+        {
+            try
+            {
+                handler(this, State);
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "A tracking state listener failed.");
+            }
+        }
     }
 
     private sealed record DiscoveryCandidate(DateTimeOffset FirstSeenAtUtc, long LastSeenScan);

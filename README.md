@@ -4,6 +4,8 @@ YFTimeTracker ist eine lokale Windows-11-App zum automatischen Erfassen von Spie
 
 Das Tracking läuft im Tray weiter, wenn das Hauptfenster geschlossen wird. Der optionale Windows-Autostart startet die unpackaged App minimiert; er bleibt standardmäßig deaktiviert. Unbekannte Prozesse außerhalb erkannter Spieleordner werden nicht als Spiele behandelt.
 
+Mehrere Prozesse und alternative EXE-Dateien desselben Spiels werden zu genau einer laufenden Session zusammengefasst. Prozessneustarts erzeugen getrennte Sessions; längere unbeobachtete Zeiträume wie Windows-Standby werden nicht als Spielzeit gezählt. Nach einem App-Absturz stellt YFTimeTracker eine offene Session nur dann wieder her, wenn das Spiel im selben Windows-Start weiterhin läuft. Andernfalls endet sie am letzten gespeicherten Lebenszeichen.
+
 Installierte Setup-/MSI-Ausgaben prüfen beim Start automatisch den stabilen GitHub-Release-Kanal. Eine manuelle Prüfung ist unter **Einstellungen → App-Updates** möglich. Gefundene Updates werden erst nach Bestätigung heruntergeladen, zeigen ihren Fortschritt in der App und werden nach einem sauberen Neustart installiert.
 
 ## Projektstruktur
@@ -23,6 +25,8 @@ dotnet test YFTimeTracker.slnx --no-build --no-restore
 dotnet run --project YFTimeTracker.App\YFTimeTracker.App.csproj
 ```
 
+Die realen Launcher-, Tray-, Standby- und Wiederherstellungsabläufe stehen im [Tracking-Smoke-Test](docs/TRACKING_SMOKE_TEST.md).
+
 ## Packaging
 
 Der Entwicklungs-Build bleibt als unpackaged WinUI-App konfiguriert. Ein reproduzierbares, selbstenthaltendes Windows-x64-Release wird mit folgendem Befehl erstellt:
@@ -41,8 +45,6 @@ Eine abweichende Version kann uebergeben werden:
 ```powershell
 .\scripts\New-Release.ps1 -Version 0.1.1
 ```
-
-Das ZIP ist nicht digital signiert. Ein signiertes MSIX benoetigt zusaetzlich ein vertrauenswuerdiges Code-Signing-Zertifikat; ohne ein solches Zertifikat ist die portable Ausgabe die direkt nutzbare Release-Variante.
 
 ## Branches und automatische Releases
 
