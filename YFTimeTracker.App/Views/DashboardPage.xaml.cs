@@ -41,6 +41,14 @@ public sealed partial class DashboardPage : Page
         App.MainWindow?.ShowLibrary();
     }
 
+    private void RecentGames_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is RecentGameItemViewModel game)
+        {
+            App.MainWindow?.ShowGameDetails(game.GameId);
+        }
+    }
+
     private void UpdateLayout(double width)
     {
         var compact = width < 980;

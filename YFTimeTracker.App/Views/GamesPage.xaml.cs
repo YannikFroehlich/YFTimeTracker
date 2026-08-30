@@ -24,6 +24,14 @@ public sealed partial class GamesPage : Page
         UpdateLayout(e.NewSize.Width);
     }
 
+    private void OpenGameDetails_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: long gameId })
+        {
+            App.MainWindow?.ShowGameDetails(gameId);
+        }
+    }
+
     private void UpdateLayout(double width)
     {
         var compact = width < 980;

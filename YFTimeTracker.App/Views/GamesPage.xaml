@@ -70,6 +70,7 @@
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="56" />
                                                 <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="42" />
                                             </Grid.ColumnDefinitions>
                                             <Border Width="44" Height="44" Background="{StaticResource YFLogoGradientBrush}" CornerRadius="9">
                                                 <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Text="{Binding Initials}" />
@@ -82,6 +83,17 @@
                                                     <TextBlock FontSize="9" Foreground="{StaticResource YFCyanBrush}" Text="{Binding SourceLabel}" />
                                                 </StackPanel>
                                             </StackPanel>
+                                            <Button
+                                                Grid.Column="2"
+                                                Width="34"
+                                                Height="34"
+                                                VerticalAlignment="Center"
+                                                Click="OpenGameDetails_Click"
+                                                Style="{StaticResource YFIconButtonStyle}"
+                                                Tag="{Binding Id}"
+                                                ToolTipService.ToolTip="Spieldetails öffnen">
+                                                <FontIcon FontSize="13" Glyph="&#xE76C;" />
+                                            </Button>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>

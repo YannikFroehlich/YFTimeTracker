@@ -75,6 +75,17 @@ public sealed partial class MainWindow : Window
         });
     }
 
+    public void ShowGameDetails(long gameId)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            Navigation.SelectedItem = Navigation.MenuItems[1];
+            ContentFrame.Navigate(typeof(GameDetailsPage), gameId);
+            appWindow.Show();
+            Activate();
+        });
+    }
+
     public void HideToTray()
     {
         appWindow.Hide();
@@ -293,9 +304,9 @@ public sealed partial class MainWindow : Window
             : $" mit {bytes / 1024d:0.#} KB";
     }
 
-    private void Navigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    private void Navigation_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
-        if (args.SelectedItemContainer?.Tag is not string tag)
+        if (args.InvokedItemContainer?.Tag is not string tag)
         {
             return;
         }

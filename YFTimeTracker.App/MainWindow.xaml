@@ -41,9 +41,10 @@
             IsPaneOpen="True"
             IsPaneToggleButtonVisible="False"
             IsSettingsVisible="False"
+            ItemInvoked="Navigation_ItemInvoked"
             OpenPaneLength="272"
             PaneDisplayMode="Left"
-            SelectionChanged="Navigation_SelectionChanged">
+            SelectionFollowsFocus="Disabled">
             <NavigationView.Resources>
                 <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#040912" />
                 <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#040912" />

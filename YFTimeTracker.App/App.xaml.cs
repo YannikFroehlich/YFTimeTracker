@@ -75,11 +75,13 @@ public partial class App : Application
                 services.AddSingleton<MainWindow>();
                 services.AddTransient<DashboardPage>();
                 services.AddTransient<GamesPage>();
+                services.AddTransient<GameDetailsPage>();
                 services.AddTransient<SessionsPage>();
                 services.AddTransient<StatisticsPage>();
                 services.AddTransient<SettingsPage>();
                 services.AddSingleton<DashboardViewModel>();
                 services.AddSingleton<GamesViewModel>();
+                services.AddTransient<GameDetailsViewModel>();
                 services.AddSingleton<SessionsViewModel>();
                 services.AddSingleton<StatisticsViewModel>();
                 services.AddSingleton<SettingsViewModel>();
