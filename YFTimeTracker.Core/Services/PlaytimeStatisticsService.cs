@@ -74,6 +74,78 @@ public sealed class PlaytimeStatisticsService(
             recent);
     }
 
+    public async Task<PlaytimeStatistics> GetStatisticsAsync(
+        StatisticsPeriodKind period,
+        TimeZoneInfo localTimeZone,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(localTimeZone);
+
+        var allSessions = await sessions.GetSessionsAsync(null, null, cancellationToken);
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(clock.UtcNow, localTimeZone).Date);
+        var range = CreateStatisticsRange(period, today, allSessions, localTimeZone);
+        var rangeStartUtc = LocalDateStartToUtc(range.Start, localTimeZone);
+        var rangeEndUtc = LocalDateStartToUtc(range.EndExclusive, localTimeZone);
+
+        var contributions = allSessions
+            .Select(session => new SessionContribution(
+                session,
+                GetOverlap(session, rangeStartUtc, rangeEndUtc)))
+            .Where(contribution => contribution.Duration > TimeSpan.Zero)
+            .ToArray();
+
+        var totalDuration = TimeSpan.FromTicks(contributions.Sum(contribution => contribution.Duration.Ticks));
+        var sessionCount = contributions.Length;
+        var averageDuration = sessionCount == 0
+            ? TimeSpan.Zero
+            : TimeSpan.FromTicks(totalDuration.Ticks / sessionCount);
+        var longest = contributions
+            .OrderByDescending(contribution => contribution.Duration)
+            .FirstOrDefault();
+
+        var timeline = CreateTimeline(range, allSessions, localTimeZone);
+        var games = contributions
+            .GroupBy(contribution => contribution.Session.GameId)
+            .Select(group =>
+            {
+                var game = group.Select(contribution => contribution.Session.Game).FirstOrDefault(candidate => candidate is not null);
+                return new GamePlaytimeStatistics(
+                    group.Key,
+                    game?.Name ?? "Unbekanntes Spiel",
+                    game?.Source ?? GameSource.Manual,
+                    TimeSpan.FromTicks(group.Sum(contribution => contribution.Duration.Ticks)),
+                    group.Count(),
+                    group.Max(contribution => GetEffectiveSessionEnd(contribution.Session)));
+            })
+            .OrderByDescending(game => game.Duration)
+            .ThenBy(game => game.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToArray();
+
+        TimeSpan? previousPeriodDuration = null;
+        if (range.PreviousStart is { } previousStart && range.PreviousEndExclusive is { } previousEnd)
+        {
+            previousPeriodDuration = GetDurationForUtcRange(
+                allSessions,
+                LocalDateStartToUtc(previousStart, localTimeZone),
+                LocalDateStartToUtc(previousEnd, localTimeZone));
+        }
+
+        return new PlaytimeStatistics(
+            period,
+            range.Start,
+            range.EndExclusive,
+            totalDuration,
+            previousPeriodDuration,
+            sessionCount,
+            games.Length,
+            averageDuration,
+            longest?.Duration ?? TimeSpan.Zero,
+            longest?.Session.Game?.Name,
+            timeline,
+            games,
+            CreateWeekdayDistribution(contributions, rangeStartUtc, rangeEndUtc, localTimeZone));
+    }
+
     public async Task<TimeSpan> GetTotalDurationAsync(CancellationToken cancellationToken)
     {
         var allSessions = await sessions.GetSessionsAsync(null, null, cancellationToken);
@@ -108,6 +180,153 @@ public sealed class PlaytimeStatisticsService(
         return new DateTimeOffset(localDateTime, offset).ToUniversalTime();
     }
 
+    private StatisticsRange CreateStatisticsRange(
+        StatisticsPeriodKind period,
+        DateOnly today,
+        IReadOnlyList<GameSession> allSessions,
+        TimeZoneInfo localTimeZone)
+    {
+        return period switch
+        {
+            StatisticsPeriodKind.Last7Days => CreateDayRange(period, today, 7),
+            StatisticsPeriodKind.Last30Days => CreateDayRange(period, today, 30),
+            StatisticsPeriodKind.Last12Months => CreateMonthRange(today),
+            StatisticsPeriodKind.AllTime => CreateAllTimeRange(today, allSessions, localTimeZone),
+            _ => throw new ArgumentOutOfRangeException(nameof(period), period, null)
+        };
+    }
+
+    private static StatisticsRange CreateDayRange(StatisticsPeriodKind period, DateOnly today, int dayCount)
+    {
+        var start = today.AddDays(-(dayCount - 1));
+        var endExclusive = today.AddDays(1);
+        return new StatisticsRange(
+            period,
+            start,
+            endExclusive,
+            StatisticsBucketKind.Day,
+            start.AddDays(-dayCount),
+            start);
+    }
+
+    private static StatisticsRange CreateMonthRange(DateOnly today)
+    {
+        var currentMonth = new DateOnly(today.Year, today.Month, 1);
+        var start = currentMonth.AddMonths(-11);
+        return new StatisticsRange(
+            StatisticsPeriodKind.Last12Months,
+            start,
+            currentMonth.AddMonths(1),
+            StatisticsBucketKind.Month,
+            start.AddMonths(-12),
+            start);
+    }
+
+    private StatisticsRange CreateAllTimeRange(
+        DateOnly today,
+        IReadOnlyList<GameSession> allSessions,
+        TimeZoneInfo localTimeZone)
+    {
+        var earliestDate = allSessions.Count == 0
+            ? today
+            : DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(
+                allSessions.Min(session => session.StartedAtUtc),
+                localTimeZone).Date);
+        var dayCount = today.DayNumber - earliestDate.DayNumber + 1;
+        var bucketKind = dayCount <= 31 ? StatisticsBucketKind.Day : StatisticsBucketKind.Month;
+        var start = bucketKind == StatisticsBucketKind.Day
+            ? earliestDate
+            : new DateOnly(earliestDate.Year, earliestDate.Month, 1);
+        var endExclusive = bucketKind == StatisticsBucketKind.Day
+            ? today.AddDays(1)
+            : new DateOnly(today.Year, today.Month, 1).AddMonths(1);
+
+        return new StatisticsRange(
+            StatisticsPeriodKind.AllTime,
+            start,
+            endExclusive,
+            bucketKind,
+            null,
+            null);
+    }
+
+    private IReadOnlyList<StatisticsTimelinePoint> CreateTimeline(
+        StatisticsRange range,
+        IReadOnlyList<GameSession> allSessions,
+        TimeZoneInfo localTimeZone)
+    {
+        var points = new List<StatisticsTimelinePoint>();
+        for (var bucketStart = range.Start; bucketStart < range.EndExclusive;)
+        {
+            var bucketEnd = range.BucketKind == StatisticsBucketKind.Day
+                ? bucketStart.AddDays(1)
+                : bucketStart.AddMonths(1);
+            if (bucketEnd > range.EndExclusive)
+            {
+                bucketEnd = range.EndExclusive;
+            }
+
+            points.Add(new StatisticsTimelinePoint(
+                bucketStart,
+                bucketEnd,
+                range.BucketKind,
+                GetDurationForUtcRange(
+                    allSessions,
+                    LocalDateStartToUtc(bucketStart, localTimeZone),
+                    LocalDateStartToUtc(bucketEnd, localTimeZone))));
+            bucketStart = bucketEnd;
+        }
+
+        return points;
+    }
+
+    private IReadOnlyList<WeekdayPlaytimeStatistics> CreateWeekdayDistribution(
+        IReadOnlyList<SessionContribution> contributions,
+        DateTimeOffset rangeStartUtc,
+        DateTimeOffset rangeEndUtc,
+        TimeZoneInfo localTimeZone)
+    {
+        var totals = Enum.GetValues<DayOfWeek>().ToDictionary(day => day, _ => TimeSpan.Zero);
+
+        foreach (var contribution in contributions)
+        {
+            var effectiveEnd = GetEffectiveSessionEnd(contribution.Session);
+            var overlapStart = contribution.Session.StartedAtUtc > rangeStartUtc
+                ? contribution.Session.StartedAtUtc
+                : rangeStartUtc;
+            var overlapEnd = effectiveEnd < rangeEndUtc ? effectiveEnd : rangeEndUtc;
+            var firstDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(overlapStart, localTimeZone).Date);
+            var lastDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(overlapEnd.AddTicks(-1), localTimeZone).Date);
+
+            for (var date = firstDate; date <= lastDate; date = date.AddDays(1))
+            {
+                var duration = GetOverlap(
+                    contribution.Session,
+                    LocalDateStartToUtc(date, localTimeZone),
+                    LocalDateStartToUtc(date.AddDays(1), localTimeZone));
+                totals[date.DayOfWeek] += duration;
+            }
+        }
+
+        return Enumerable.Range(0, 7)
+            .Select(offset => (DayOfWeek)(((int)DayOfWeek.Monday + offset) % 7))
+            .Select(day => new WeekdayPlaytimeStatistics(day, totals[day]))
+            .ToArray();
+    }
+
+    private TimeSpan GetOverlap(
+        GameSession session,
+        DateTimeOffset rangeStartUtc,
+        DateTimeOffset rangeEndUtc)
+    {
+        var sessionEnd = GetEffectiveSessionEnd(session);
+        var overlapStart = session.StartedAtUtc > rangeStartUtc ? session.StartedAtUtc : rangeStartUtc;
+        var overlapEnd = sessionEnd < rangeEndUtc ? sessionEnd : rangeEndUtc;
+        return overlapEnd > overlapStart ? overlapEnd - overlapStart : TimeSpan.Zero;
+    }
+
+    private DateTimeOffset GetEffectiveSessionEnd(GameSession session) => session.EndedAtUtc ?? clock.UtcNow;
+
     private TimeSpan GetDurationForUtcRange(
         IEnumerable<GameSession> relevantSessions,
         DateTimeOffset rangeStartUtc,
@@ -116,14 +335,7 @@ public sealed class PlaytimeStatisticsService(
         var total = TimeSpan.Zero;
         foreach (var session in relevantSessions)
         {
-            var sessionEnd = session.EndedAtUtc ?? clock.UtcNow;
-            var overlapStart = session.StartedAtUtc > rangeStartUtc ? session.StartedAtUtc : rangeStartUtc;
-            var overlapEnd = sessionEnd < rangeEndUtc ? sessionEnd : rangeEndUtc;
-
-            if (overlapEnd > overlapStart)
-            {
-                total += overlapEnd - overlapStart;
-            }
+            total += GetOverlap(session, rangeStartUtc, rangeEndUtc);
         }
 
         return total;
@@ -146,4 +358,14 @@ public sealed class PlaytimeStatisticsService(
         return session.DurationSeconds
             ?? Math.Max(0, Convert.ToInt64(Math.Floor(session.GetEffectiveDuration(clock.UtcNow).TotalSeconds)));
     }
+
+    private sealed record StatisticsRange(
+        StatisticsPeriodKind Period,
+        DateOnly Start,
+        DateOnly EndExclusive,
+        StatisticsBucketKind BucketKind,
+        DateOnly? PreviousStart,
+        DateOnly? PreviousEndExclusive);
+
+    private sealed record SessionContribution(GameSession Session, TimeSpan Duration);
 }
