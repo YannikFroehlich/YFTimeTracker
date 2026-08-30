@@ -20,7 +20,7 @@ public sealed class GameTrackingService(
     private static readonly string[] ExcludedExecutableNames =
     [
         "beservice", "beservicex64", "cefprocess", "crashreportclient", "crashreporter", "eac",
-        "eaclauncher", "launcher", "reporter", "setup", "startprotectedgame", "uninstall",
+        "eaclauncher", "gamelaunchhelper", "launcher", "reporter", "setup", "startprotectedgame", "uninstall",
         "uninstaller", "update", "updater"
     ];
     private static readonly string[] ExcludedExecutablePrefixes =

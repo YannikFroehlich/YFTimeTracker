@@ -7,8 +7,24 @@ using YFTimeTracker.Core.Services;
 
 namespace YFTimeTracker.Windows.Processes;
 
-public sealed class WindowsGameInstallationProvider(ILogger<WindowsGameInstallationProvider> logger) : IGameInstallationProvider
+public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
 {
+    private readonly ILogger<WindowsGameInstallationProvider> logger;
+    private readonly IXboxPackageCatalog xboxPackages;
+
+    public WindowsGameInstallationProvider(ILogger<WindowsGameInstallationProvider> logger)
+        : this(logger, new WindowsXboxPackageCatalog())
+    {
+    }
+
+    internal WindowsGameInstallationProvider(
+        ILogger<WindowsGameInstallationProvider> logger,
+        IXboxPackageCatalog xboxPackages)
+    {
+        this.logger = logger;
+        this.xboxPackages = xboxPackages;
+    }
+
     public Task<LauncherDiscoveryResult> DiscoverAsync(CancellationToken cancellationToken)
     {
         var games = new List<GameInstallationInfo>();
@@ -17,6 +33,7 @@ public sealed class WindowsGameInstallationProvider(ILogger<WindowsGameInstallat
         DiscoverSafely(GameSource.Steam, () => DiscoverSteam(games, cancellationToken), sources);
         DiscoverSafely(GameSource.Epic, () => DiscoverEpic(games, cancellationToken), sources);
         DiscoverSafely(GameSource.Gog, () => DiscoverGog(games, cancellationToken), sources);
+        DiscoverSafely(GameSource.Xbox, () => DiscoverXbox(games, cancellationToken), sources);
 
         var distinctGames = games
             .GroupBy(game => (game.Source, game.ExternalGameId), new SourceIdComparer())
@@ -161,6 +178,107 @@ public sealed class WindowsGameInstallationProvider(ILogger<WindowsGameInstallat
 
         return foundRoot;
     }
+
+    private bool DiscoverXbox(ICollection<GameInstallationInfo> games, CancellationToken cancellationToken)
+    {
+        var packages = xboxPackages.GetInstalledPackages();
+        var xboxInstalled = packages.Any(package => IsXboxInfrastructurePackage(package.PackageName));
+        var gameFound = false;
+
+        foreach (var package in packages)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(package.EffectiveLocationPath)
+                || !Directory.Exists(package.EffectiveLocationPath))
+            {
+                continue;
+            }
+
+            foreach (var configPath in GetXboxConfigPaths(package.EffectiveLocationPath))
+            {
+                try
+                {
+                    var manifest = LauncherManifestParsers.ParseXboxGameConfig(File.ReadAllText(configPath));
+                    if (manifest is null)
+                    {
+                        continue;
+                    }
+
+                    var installDirectory = Path.GetDirectoryName(configPath)!;
+                    var launchPaths = manifest.LaunchExecutables
+                        .Select(path => ResolveXboxLaunchPath(installDirectory, path))
+                        .Where(path => path is not null)
+                        .Select(path => path!)
+                        .ToArray();
+                    if (launchPaths.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    AddInstallation(
+                        games,
+                        GameSource.Xbox,
+                        string.IsNullOrWhiteSpace(package.PackageFamilyName) ? manifest.IdentityName : package.PackageFamilyName,
+                        ResolveXboxDisplayName(package.DisplayName, manifest.DisplayName, manifest.IdentityName),
+                        installDirectory,
+                        launchPaths);
+                    gameFound = true;
+                    break;
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Xml.XmlException)
+                {
+                    logger.LogDebug(exception, "Could not read Xbox game manifest {ManifestPath}.", configPath);
+                }
+            }
+        }
+
+        return xboxInstalled || gameFound;
+    }
+
+    private static IEnumerable<string> GetXboxConfigPaths(string effectiveLocationPath)
+    {
+        var rootConfig = Path.Combine(effectiveLocationPath, "MicrosoftGame.config");
+        if (File.Exists(rootConfig))
+        {
+            yield return rootConfig;
+        }
+
+        var contentConfig = Path.Combine(effectiveLocationPath, "Content", "MicrosoftGame.config");
+        if (File.Exists(contentConfig))
+        {
+            yield return contentConfig;
+        }
+    }
+
+    private static string? ResolveXboxLaunchPath(string installDirectory, string relativePath)
+    {
+        try
+        {
+            var normalizedDirectory = ExecutablePathNormalizer.NormalizePath(installDirectory);
+            var normalizedPath = ExecutablePathNormalizer.NormalizePath(Path.Combine(normalizedDirectory, relativePath));
+            var directoryPrefix = normalizedDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                + Path.DirectorySeparatorChar;
+            return normalizedPath.StartsWith(directoryPrefix, StringComparison.OrdinalIgnoreCase)
+                ? normalizedPath
+                : null;
+        }
+        catch (Exception exception) when (exception is ArgumentException or IOException or NotSupportedException)
+        {
+            return null;
+        }
+    }
+
+    private static string ResolveXboxDisplayName(string? packageDisplayName, string? manifestDisplayName, string identityName)
+    {
+        return new[] { packageDisplayName, manifestDisplayName, identityName }
+            .First(candidate => !string.IsNullOrWhiteSpace(candidate) && !candidate.StartsWith("ms-resource:", StringComparison.OrdinalIgnoreCase))!
+            .Trim();
+    }
+
+    private static bool IsXboxInfrastructurePackage(string packageName) =>
+        string.Equals(packageName, "Microsoft.GamingApp", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(packageName, "Microsoft.GamingServices", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(packageName, "Microsoft.XboxApp", StringComparison.OrdinalIgnoreCase);
 
     private static void AddInstallation(
         ICollection<GameInstallationInfo> games,

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Xml;
 using YFTimeTracker.Windows.Processes;
 
 namespace YFTimeTracker.Windows.Tests.Processes;
@@ -67,5 +68,42 @@ public sealed class LauncherManifestParsersTests
         Assert.AreEqual(@"D:\GOG\Neon\bin\game.exe", quoted);
         Assert.AreEqual(@"D:\GOG\Neon\game.exe", plain);
         Assert.IsNull(invalid);
+    }
+
+    [TestMethod]
+    public void Xbox_game_config_reads_pc_executables_and_ignores_dev_or_console_entries()
+    {
+        const string config = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Game configVersion="1">
+              <Identity Name="Contoso.NeonGame" Publisher="CN=Contoso" Version="1.0.0.0" />
+              <ExecutableList>
+                <Executable Name="NeonGame.exe" Id="Game" TargetDeviceFamily="PC" />
+                <Executable Name="bin\Renderer.exe" Id="Renderer" />
+                <Executable Name="Tools\Editor.exe" IsDevOnly="true" />
+                <Executable Name="Console.exe" TargetDeviceFamily="Scarlett" />
+                <Executable Name="readme.txt" />
+              </ExecutableList>
+              <ShellVisuals DefaultDisplayName="Neon Game" />
+            </Game>
+            """;
+
+        var game = LauncherManifestParsers.ParseXboxGameConfig(config);
+
+        Assert.IsNotNull(game);
+        Assert.AreEqual("Contoso.NeonGame", game.IdentityName);
+        Assert.AreEqual("Neon Game", game.DisplayName);
+        CollectionAssert.AreEqual(new[] { "NeonGame.exe", @"bin\Renderer.exe" }, game.LaunchExecutables.ToArray());
+    }
+
+    [TestMethod]
+    public void Xbox_game_config_requires_identity_and_launch_executable()
+    {
+        const string missingIdentity = "<Game><ExecutableList><Executable Name=\"game.exe\" /></ExecutableList></Game>";
+        const string missingExecutable = "<Game><Identity Name=\"Contoso.Empty\" /></Game>";
+
+        Assert.IsNull(LauncherManifestParsers.ParseXboxGameConfig(missingIdentity));
+        Assert.IsNull(LauncherManifestParsers.ParseXboxGameConfig(missingExecutable));
+        Assert.Throws<XmlException>(() => LauncherManifestParsers.ParseXboxGameConfig("not xml"));
     }
 }

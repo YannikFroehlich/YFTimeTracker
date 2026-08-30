@@ -4,7 +4,7 @@
   <img src="YFTimeTracker.App/Assets/YFTimeTrackerLogo.png" alt="YFTimeTracker-Logo" width="180">
 </p>
 
-YFTimeTracker ist eine lokale Windows-11-App zum automatischen Erfassen und Auswerten von Spielzeit. Sie erkennt manuell hinterlegte Programmdateien sowie lokale Steam-, Epic- und GOG-Installationen. Ein Launcher-Spiel wird erst beim ersten tatsächlichen Start in die Bibliothek übernommen.
+YFTimeTracker ist eine lokale Windows-11-App zum automatischen Erfassen und Auswerten von Spielzeit. Sie erkennt manuell hinterlegte Programmdateien sowie lokale Steam-, Epic-, GOG- und Xbox-/Microsoft-Store-Installationen. Ein Launcher-Spiel wird erst beim ersten tatsächlichen Start in die Bibliothek übernommen.
 
 Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Konten, Cloud-Dienste und Launcher-Web-APIs sind für das Tracking nicht erforderlich.
 
@@ -12,7 +12,8 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 
 - Automatische Erkennung laufender Spiele und sekundengenaue Sessions
 - Mehrere EXE-Dateien und Prozesse pro Spiel ohne doppelte Sessions
-- Lokale Launcher-Erkennung für Steam, Epic Games und GOG
+- Lokale Launcher-Erkennung für Steam, Epic Games, GOG und Xbox-/Microsoft-Store-Spiele
+- Xbox-Erkennung über die lokale Windows-Paketverwaltung und `MicrosoftGame.config`, ohne Xbox-Anmeldung oder Web-API
 - Dashboard mit Live-Tracking, Tages-, Wochen- und Gesamtwerten
 - Bibliothek mit Suche, Sortierung, Spieldetails und EXE-Verwaltung
 - Anlegen, Bearbeiten und Löschen manueller Sessions

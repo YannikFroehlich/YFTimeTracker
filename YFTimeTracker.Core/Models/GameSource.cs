@@ -5,5 +5,6 @@ public enum GameSource
     Manual = 0,
     Steam = 1,
     Epic = 2,
-    Gog = 3
+    Gog = 3,
+    Xbox = 4
 }

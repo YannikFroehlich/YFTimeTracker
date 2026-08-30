@@ -12,7 +12,7 @@ namespace YFTimeTracker.Data.Tests.Backup;
 public sealed class JsonZipBackupServiceTests
 {
     [TestMethod]
-    public async Task Version2_export_and_import_preserve_launcher_executables()
+    public async Task Version2_export_and_import_preserve_xbox_launcher_executables()
     {
         using var paths = new TestRepositories.TempAppPathProvider();
         var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
@@ -27,19 +27,19 @@ public sealed class JsonZipBackupServiceTests
         var game = await repository.AddAsync(new Game
         {
             Name = "Neon Game",
-            Source = GameSource.Epic,
-            ExternalGameId = "catalog-1",
-            InstallDirectory = @"D:\Epic\Neon",
-            InstallDirectoryKey = @"D:\EPIC\NEON",
-            ExecutablePath = @"D:\Epic\Neon\game.exe",
-            ExecutablePathKey = @"D:\EPIC\NEON\GAME.EXE",
+            Source = GameSource.Xbox,
+            ExternalGameId = "Contoso.Neon_123",
+            InstallDirectory = @"D:\XboxGames\Neon\Content",
+            InstallDirectoryKey = @"D:\XBOXGAMES\NEON\CONTENT",
+            ExecutablePath = @"D:\XboxGames\Neon\Content\game.exe",
+            ExecutablePathKey = @"D:\XBOXGAMES\NEON\CONTENT\GAME.EXE",
             ExecutableName = "game.exe",
             AddedAtUtc = clock.UtcNow
         }, CancellationToken.None);
         await repository.AddExecutableAsync(game.Id, new GameExecutable
         {
-            ExecutablePath = @"D:\Epic\Neon\bin\renderer.exe",
-            ExecutablePathKey = @"D:\EPIC\NEON\BIN\RENDERER.EXE",
+            ExecutablePath = @"D:\XboxGames\Neon\Content\bin\renderer.exe",
+            ExecutablePathKey = @"D:\XBOXGAMES\NEON\CONTENT\BIN\RENDERER.EXE",
             ExecutableName = "renderer.exe",
             AddedAtUtc = clock.UtcNow
         }, CancellationToken.None);
@@ -49,7 +49,7 @@ public sealed class JsonZipBackupServiceTests
         await backup.ExportAsync(archivePath, CancellationToken.None);
         await backup.ImportAsync(archivePath, CancellationToken.None);
 
-        var imported = await repository.GetByExternalIdAsync(GameSource.Epic, "catalog-1", CancellationToken.None);
+        var imported = await repository.GetByExternalIdAsync(GameSource.Xbox, "Contoso.Neon_123", CancellationToken.None);
         Assert.IsNotNull(imported);
         Assert.HasCount(2, imported.Executables);
         Assert.HasCount(1, imported.Executables.Where(executable => executable.IsPrimary));

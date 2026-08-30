@@ -49,18 +49,18 @@ public sealed class GameTrackingServiceTests
     }
 
     [TestMethod]
-    public async Task Launcher_game_with_explicit_executable_is_imported_on_first_scan()
+    public async Task Xbox_game_with_explicit_executable_is_imported_on_first_scan()
     {
         var clock = new FakeClock(DateTimeOffset.Parse("2026-08-30T12:00:00Z"));
         var games = new InMemoryGameRepository();
         var sessions = new InMemoryGameSessionRepository(_ => null);
-        var executablePath = @"C:\Epic\NeonGame\NeonGame.exe";
+        var executablePath = @"D:\XboxGames\NeonGame\Content\NeonGame.exe";
         var processSnapshot = CreateProcessSnapshot(executablePath);
         var installations = CreateInstallationProvider(
-            GameSource.Epic,
-            "catalog-1",
+            GameSource.Xbox,
+            "Contoso.NeonGame_123",
             "Neon Game",
-            @"C:\Epic\NeonGame",
+            @"D:\XboxGames\NeonGame\Content",
             [executablePath]);
         var tracking = CreateTracking(games, sessions, processSnapshot, installations, clock);
 
@@ -68,8 +68,8 @@ public sealed class GameTrackingServiceTests
 
         var storedGames = await games.GetAllAsync(CancellationToken.None);
         Assert.HasCount(1, storedGames);
-        Assert.AreEqual(GameSource.Epic, storedGames[0].Source);
-        Assert.AreEqual("catalog-1", storedGames[0].ExternalGameId);
+        Assert.AreEqual(GameSource.Xbox, storedGames[0].Source);
+        Assert.AreEqual("Contoso.NeonGame_123", storedGames[0].ExternalGameId);
         Assert.HasCount(1, storedGames[0].Executables);
         Assert.HasCount(1, await sessions.GetOpenSessionsAsync(CancellationToken.None));
     }
@@ -482,6 +482,33 @@ public sealed class GameTrackingServiceTests
             sessions,
             CreateProcessSnapshot(path),
             CreateInstallationProvider(GameSource.Epic, "neon", "Neon Game", @"C:\Epic\NeonGame", [path]),
+            clock);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+        clock.UtcNow = clock.UtcNow.AddSeconds(3);
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        Assert.IsEmpty(await games.GetAllAsync(CancellationToken.None));
+        Assert.IsEmpty(await sessions.GetOpenSessionsAsync(CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task Xbox_game_launch_helper_is_never_imported_as_a_game()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-30T12:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var sessions = new InMemoryGameSessionRepository(_ => null);
+        var path = @"D:\XboxGames\NeonGame\Content\gamelaunchhelper.exe";
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(path),
+            CreateInstallationProvider(
+                GameSource.Xbox,
+                "Contoso.NeonGame_123",
+                "Neon Game",
+                @"D:\XboxGames\NeonGame\Content",
+                [path]),
             clock);
 
         await tracking.ScanOnceAsync(CancellationToken.None);
