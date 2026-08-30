@@ -1,22 +1,67 @@
 # YFTimeTracker
 
-YFTimeTracker ist eine lokale Windows-11-App zum automatischen Erfassen von Spielzeit. Manuell registrierte `.exe`-Dateien werden direkt erkannt; zusätzlich liest die App lokale Steam-, Epic- und GOG-Installationen und nimmt ein Launcher-Spiel beim ersten tatsächlichen Start in die Bibliothek auf. Daten, Logs, Backups und Exporte bleiben lokal unter `%LocalAppData%\YFTimeTracker`.
+<p align="center">
+  <img src="YFTimeTracker.App/Assets/YFTimeTrackerLogo.png" alt="YFTimeTracker-Logo" width="180">
+</p>
 
-Das Tracking läuft im Tray weiter, wenn das Hauptfenster geschlossen wird. Der optionale Windows-Autostart startet die unpackaged App minimiert; er bleibt standardmäßig deaktiviert. Unbekannte Prozesse außerhalb erkannter Spieleordner werden nicht als Spiele behandelt.
+YFTimeTracker ist eine lokale Windows-11-App zum automatischen Erfassen und Auswerten von Spielzeit. Sie erkennt manuell hinterlegte Programmdateien sowie lokale Steam-, Epic- und GOG-Installationen. Ein Launcher-Spiel wird erst beim ersten tatsächlichen Start in die Bibliothek übernommen.
 
-Mehrere Prozesse und alternative EXE-Dateien desselben Spiels werden zu genau einer laufenden Session zusammengefasst. Prozessneustarts erzeugen getrennte Sessions. Längere unbeobachtete Zeiträume werden nach Möglichkeit getrennt, die Standby-Erkennung bleibt jedoch vom jeweiligen Windows-Energiesparmodus abhängig. Nach einem App-Absturz stellt YFTimeTracker eine offene Session nur dann wieder her, wenn das Spiel im selben Windows-Start weiterhin läuft. Andernfalls endet sie am letzten gespeicherten Lebenszeichen.
+Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Konten, Cloud-Dienste und Launcher-Web-APIs sind für das Tracking nicht erforderlich.
 
-Installierte Setup-/MSI-Ausgaben prüfen beim Start automatisch den stabilen GitHub-Release-Kanal. Eine manuelle Prüfung ist unter **Einstellungen → App-Updates** möglich. Gefundene Updates werden erst nach Bestätigung heruntergeladen, zeigen ihren Fortschritt in der App und werden nach einem sauberen Neustart installiert.
+## Funktionen
 
-## Projektstruktur
+- Automatische Erkennung laufender Spiele und sekundengenaue Sessions
+- Mehrere EXE-Dateien und Prozesse pro Spiel ohne doppelte Sessions
+- Lokale Launcher-Erkennung für Steam, Epic Games und GOG
+- Dashboard mit Live-Tracking, Tages-, Wochen- und Gesamtwerten
+- Bibliothek mit Suche, Sortierung, Spieldetails und EXE-Verwaltung
+- Anlegen, Bearbeiten und Löschen manueller Sessions
+- Statistiken für frei wählbare Zeiträume und einzelne Spiele
+- Tray-Betrieb, Tracking-Pause, optionaler Autostart und Einzelinstanz-Schutz
+- Lokale Backups sowie Import und Export
+- Automatische Update-Prüfung für installierte Ausgaben
+- Diagnoseansicht und Export eines datensparsamen Diagnose-ZIP
 
-- `YFTimeTracker.Core`: Domain-Modelle, Services, Tracking-Regeln, Statistik und Validierung.
-- `YFTimeTracker.Data`: EF Core, SQLite, Migration, Repositories, Backup, Export und Import.
-- `YFTimeTracker.Windows`: Windows-Pfade, Prozess-Snapshot, Boot-Session- und lokale Launcher-Erkennung.
-- `YFTimeTracker.App`: WinUI-3-App mit Dashboard, Sessionverwaltung, echten Zeitraumauswertungen, Spieleverwaltung und Einstellungen.
-- `YFTimeTracker.Core.Tests`, `YFTimeTracker.Data.Tests` und `YFTimeTracker.Windows.Tests`: Tracking-, Migrations-, Backup- und Launcher-Tests.
+## Installation
 
-## Entwickeln
+Die aktuelle stabile Version steht unter [GitHub Releases](https://github.com/YannikFroehlich/YFTimeTracker/releases/latest) bereit.
+
+- **Setup (`YFTimeTracker-win-Setup.exe`)**: empfohlene Installation mit automatischen Updates.
+- **MSI (`YFTimeTracker-win.msi`)**: alternative Windows-Installation, ebenfalls updatefähig.
+- **Portable ZIP**: vollständig entpacken und `YFTimeTracker.App.exe` starten. Portable Builds zeigen ihren Versionsstatus an, unterstützen aber keine automatischen Updates.
+
+YFTimeTracker wird für Windows 11 x64 veröffentlicht und bringt die benötigte .NET- und Windows-App-SDK-Laufzeit mit. Die Pakete sind bewusst nicht digital signiert; Windows SmartScreen kann deshalb beim ersten Start einen Hinweis anzeigen.
+
+Beim Schließen des Fensters läuft das Tracking standardmäßig im Infobereich weiter. Vollständig beendet wird die App über **Beenden** im Tray-Menü.
+
+## Lokale Daten und Datenschutz
+
+Alle dauerhaften Daten liegen unter `%LocalAppData%\YFTimeTracker`:
+
+| Pfad | Inhalt |
+| --- | --- |
+| `yftimetracker.db` | Spiele, EXE-Zuordnungen, Sessions und Einstellungen |
+| `Backups` | automatische und manuelle Sicherungen |
+| `Exports` | vom Benutzer erstellte Exporte |
+| `Logs` | lokale Diagnoseprotokolle |
+
+Das Diagnose-ZIP enthält Systeminformationen und höchstens drei aktuelle Logdateien, aber keine Datenbank, Backups oder Spielsessions.
+
+## Automatisches Tracking
+
+Manuell registrierte EXE-Pfade werden direkt erkannt. Zusätzlich aktualisiert YFTimeTracker den lokalen Launcher-Katalog beim Start und anschließend alle fünf Minuten. Ist bei einer Launcher-Installation keine eindeutige Startdatei bekannt, muss ein passender Prozess innerhalb des Installationsordners in zwei aufeinanderfolgenden Scans laufen. Hilfsprogramme wie Launcher, Uninstaller, Crash Reporter und Anti-Cheat-Installer werden ausgeschlossen.
+
+Mehrere Prozesse desselben Spiels werden zu einer Session zusammengefasst. Prozessneustarts erzeugen getrennte Sessions. Nach einem App-Absturz wird eine offene Session nur dann fortgesetzt, wenn das Spiel im selben Windows-Start weiterhin läuft; andernfalls endet sie am letzten gespeicherten Lebenszeichen. Das Abtrennen längerer Standby-Zeiten ist technisch nur nach bestem Ermessen möglich und hängt vom Windows-Energiesparmodus ab.
+
+Die manuellen Prüfschritte stehen im [Tracking-Smoke-Test](docs/TRACKING_SMOKE_TEST.md).
+
+## Entwicklung
+
+Voraussetzungen:
+
+- Windows 11 x64 ab Build 22621
+- .NET 10 SDK
+- PowerShell
 
 ```powershell
 dotnet restore YFTimeTracker.slnx --configfile NuGet.config
@@ -25,44 +70,45 @@ dotnet test YFTimeTracker.slnx --no-build --no-restore
 dotnet run --project YFTimeTracker.App\YFTimeTracker.App.csproj
 ```
 
-Die realen Launcher-, Tray-, Standby- und Wiederherstellungsabläufe stehen im [Tracking-Smoke-Test](docs/TRACKING_SMOKE_TEST.md).
+Die Befehle müssen einzeln ausgeführt werden. Insbesondere dürfen `dotnet test` und `dotnet run` nicht ohne Zeilenumbruch hintereinander stehen.
 
-## Packaging
+### Projektstruktur
 
-Der Entwicklungs-Build bleibt als unpackaged WinUI-App konfiguriert. Ein reproduzierbares, selbstenthaltendes Windows-x64-Release wird mit folgendem Befehl erstellt:
+- `YFTimeTracker.Core`: Domain-Modelle, Schnittstellen, Tracking-Regeln, Statistik und Validierung
+- `YFTimeTracker.Data`: Entity Framework Core, SQLite, Migrationen, Repositories, Backups, Import und Export
+- `YFTimeTracker.Windows`: Windows-Prozesse, Pfade, Boot-Sitzung und lokale Launcher-Erkennung
+- `YFTimeTracker.App`: WinUI-3-Oberfläche, Tray, Autostart, Updates und Diagnose
+- `YFTimeTracker.Core.Tests`: Tests für Tracking, Statistik und Domain-Logik
+- `YFTimeTracker.Data.Tests`: Tests für Persistenz, Migration, Backup und Import/Export
+- `YFTimeTracker.Windows.Tests`: Tests für Launcher-Metadaten und Windows-nahe Logik
+
+## Lokales Release-Paket
+
+Ein reproduzierbares, selbstenthaltendes Windows-x64-Paket lässt sich lokal erstellen:
 
 ```powershell
-.\scripts\New-Release.ps1
+.\scripts\New-Release.ps1 -Version 0.5.0
 ```
 
-Das Skript erzeugt die Logo-Assets neu, fuehrt Restore, Release-Build und alle Tests aus und legt danach diese Dateien unter `artifacts\release` ab:
-
-- `YFTimeTracker-v0.1.0-win-x64.zip`: portable App inklusive Windows App SDK und .NET Runtime.
-- `YFTimeTracker-v0.1.0-win-x64.zip.sha256`: SHA-256-Pruefsumme.
-
-Eine abweichende Version kann uebergeben werden:
-
-```powershell
-.\scripts\New-Release.ps1 -Version 0.1.1
-```
+Das Skript erzeugt die App-Assets neu, stellt NuGet-Pakete wieder her, führt den Release-Testlauf aus und schreibt das portable ZIP samt SHA-256-Prüfsumme nach `artifacts\release`. Setup, MSI und Velopack-Updatepakete werden anschließend in der GitHub-Release-Pipeline erzeugt.
 
 ## Branches und automatische Releases
 
-Neue Funktionen werden auf `develop` entwickelt und anschliessend per Pull Request nach `main` gemergt. Jeder Merge nach `main` startet die automatische Semantic-Versioning- und Release-Pipeline. Die Commit- beziehungsweise Squash-Merge-Nachricht bestimmt die Versionsstufe:
+Neue Änderungen werden auf `develop` entwickelt und anschließend nach `main` gemergt. Jeder Push nach `main` startet die semantische Versionierung und – sofern nicht übersprungen – ein neues GitHub Release. Conventional-Commit-Nachrichten bestimmen die Versionsstufe:
 
-- `fix:` erzeugt einen Patch-Release.
-- `feat:` erzeugt einen Minor-Release.
-- `feat!:` oder `BREAKING CHANGE:` erzeugt einen Major-Release.
-- `[skip release]` ueberspringt die Veroeffentlichung.
+- `fix:` → Patch-Version
+- `feat:` → Minor-Version
+- `feat!:` oder `BREAKING CHANGE:` → Major-Version
+- `[skip release]` → keine Veröffentlichung
 
-Das GitHub Release enthaelt einen Velopack-Installer, ein MSI, Updatepakete, das portable ZIP, dessen SHA-256-Pruefsumme und ein Release-Manifest. Die vollstaendigen Regeln stehen in [CONTRIBUTING.md](CONTRIBUTING.md).
+Ein Release enthält Setup, MSI, Velopack-Pakete, portables ZIP, SHA-256-Prüfsumme und Release-Manifest. Details enthält [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Automatische Updates
 
-Die App verwendet den öffentlichen Release-Feed von `https://github.com/YannikFroehlich/YFTimeTracker`. Es wird kein GitHub-Token in den Quellcode, den Build oder die installierte Anwendung eingebettet. Vorabversionen werden nicht automatisch angeboten.
+Installierte Setup- und MSI-Ausgaben prüfen beim Start den stabilen öffentlichen GitHub-Release-Kanal. Eine manuelle Prüfung ist unter **Einstellungen → App-Updates** und im Tray-Menü möglich. Verfügbare Updates werden erst nach Bestätigung heruntergeladen, zeigen ihren Fortschritt an und werden nach einem kontrollierten Neustart installiert.
 
-Self-Updates stehen in der mit Velopack installierten Setup-/MSI-Ausgabe zur Verfügung. Entwicklungs- und nicht installierte portable Builds zeigen ihren Versionsstatus an, verändern sich aber nicht selbst. Vor dem Neustart beendet YFTimeTracker das Tracking kontrolliert, damit offene Sessions korrekt gespeichert werden.
+Es wird kein GitHub-Token in Quellcode, Build oder Anwendung eingebettet. Vorabversionen werden nicht automatisch angeboten.
 
-## Diagnose und Support
+## Mitwirken und Support
 
-Unter **Einstellungen → Diagnose & Support** zeigt die App ihre Version, Runtime sowie Installations-, Daten- und Logordner an. Der Logordner kann direkt geöffnet und ein Diagnose-ZIP exportiert werden. Dieses enthält Systeminformationen und höchstens drei aktuelle Logdateien, aber keine Datenbank, Backups oder Spielsessions. Bei einem kritischen Startfehler zeigt YFTimeTracker unabhängig von WinUI eine verständliche Windows-Meldung mit dem Speicherort der Fehlerprotokolle.
+Hinweise zu Branches, Commits, Tests und Pull Requests stehen in [CONTRIBUTING.md](CONTRIBUTING.md). Fehlerberichte sollten die betroffene Version, die Schritte zur Reproduktion und – sofern sinnvoll – das unter **Einstellungen → Diagnose & Support** erzeugte Diagnose-ZIP enthalten.
