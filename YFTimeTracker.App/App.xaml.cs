@@ -81,6 +81,7 @@ public partial class App : Application
                 services.AddSingleton<DashboardViewModel>();
                 services.AddSingleton<GamesViewModel>();
                 services.AddSingleton<SessionsViewModel>();
+                services.AddSingleton<StatisticsViewModel>();
                 services.AddSingleton<SettingsViewModel>();
             })
             .Build();

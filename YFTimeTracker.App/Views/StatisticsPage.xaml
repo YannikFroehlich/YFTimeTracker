@@ -1,84 +1,370 @@
 <Page
     x:Class="YFTimeTracker.App.Views.StatisticsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:YFTimeTracker.App.Converters"
+    Loaded="Page_Loaded"
+    Unloaded="Page_Unloaded">
+    <Page.Resources>
+        <converters:HexColorBrushConverter x:Key="HexColorBrushConverter" />
+    </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-        <Grid Padding="24,4,24,28">
+        <Grid
+            x:Name="StatisticsRoot"
+            Padding="24,4,24,28"
+            SizeChanged="StatisticsRoot_SizeChanged">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Grid Margin="0,0,0,14">
+            <Grid x:Name="HeaderGrid" Margin="0,0,0,14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Style="{StaticResource YFPageTitleStyle}" Text="Statistiken" />
-                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Langzeittrends, Vergleiche und persönliche Spielmuster" />
+                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Deine Spielmuster, Rekorde und Langzeittrends" />
                 </StackPanel>
-                <Border Padding="11,5" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#281B52" BorderBrush="#6545A8" BorderThickness="1" CornerRadius="9">
-                    <StackPanel Orientation="Horizontal" Spacing="7">
-                        <FontIcon FontSize="11" Foreground="#B18CFF" Glyph="&#xE7BA;" />
-                        <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="#C8AEFF" Text="VORSCHAU" />
-                    </StackPanel>
+                <StackPanel
+                    x:Name="HeaderActions"
+                    Grid.Column="1"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="9">
+                    <ComboBox
+                        Width="150"
+                        DisplayMemberPath="Label"
+                        ItemsSource="{Binding Periods}"
+                        SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}" />
+                    <Button Command="{Binding RefreshCommand}" Style="{StaticResource YFOutlineButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="13" Glyph="&#xE72C;" />
+                            <TextBlock Text="Aktualisieren" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <Grid x:Name="SummaryGrid" Grid.Row="1" Margin="0,0,0,14" ColumnSpacing="12" RowSpacing="12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="TotalCard" MinHeight="132" Padding="18" Background="{StaticResource YFBlueCardGradientBrush}" BorderBrush="#214A91" BorderThickness="1" CornerRadius="14">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <TextBlock Style="{StaticResource YFCaptionStyle}" Text="SPIELZEIT" />
+                            <FontIcon HorizontalAlignment="Right" FontSize="18" Foreground="#72A8FF" Glyph="&#xE823;" />
+                        </Grid>
+                        <TextBlock Grid.Row="1" Margin="0,8,0,4" VerticalAlignment="Center" FontFamily="Segoe UI Variable Display" FontSize="28" FontWeight="SemiBold" Text="{Binding TotalDurationText}" />
+                        <TextBlock Grid.Row="2" FontSize="12" Foreground="{Binding ComparisonColor, Converter={StaticResource HexColorBrushConverter}}" Text="{Binding ComparisonText}" TextWrapping="Wrap" />
+                    </Grid>
+                </Border>
+
+                <Border x:Name="SessionCard" Grid.Column="1" MinHeight="132" Padding="18" Style="{StaticResource YFCardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <TextBlock Style="{StaticResource YFCaptionStyle}" Text="SESSIONS" />
+                            <FontIcon HorizontalAlignment="Right" FontSize="18" Foreground="{StaticResource YFPurpleBrush}" Glyph="&#xE787;" />
+                        </Grid>
+                        <TextBlock Grid.Row="1" Margin="0,8,0,4" VerticalAlignment="Center" FontFamily="Segoe UI Variable Display" FontSize="26" FontWeight="SemiBold" Text="{Binding SessionCountText}" />
+                        <TextBlock Grid.Row="2" Style="{StaticResource YFMutedTextStyle}" Text="Im ausgewählten Zeitraum" />
+                    </Grid>
+                </Border>
+
+                <Border x:Name="AverageCard" Grid.Column="2" MinHeight="132" Padding="18" Style="{StaticResource YFCardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <TextBlock Style="{StaticResource YFCaptionStyle}" Text="Ø PRO SESSION" />
+                            <FontIcon HorizontalAlignment="Right" FontSize="18" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE9D2;" />
+                        </Grid>
+                        <TextBlock Grid.Row="1" Margin="0,8,0,4" VerticalAlignment="Center" FontFamily="Segoe UI Variable Display" FontSize="28" FontWeight="SemiBold" Text="{Binding AverageDurationText}" />
+                        <TextBlock Grid.Row="2" Style="{StaticResource YFMutedTextStyle}" Text="Durchschnittliche Dauer" />
+                    </Grid>
+                </Border>
+
+                <Border x:Name="GamesCard" Grid.Column="3" MinHeight="132" Padding="18" Background="{StaticResource YFCyanCardGradientBrush}" BorderBrush="#176179" BorderThickness="1" CornerRadius="14">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <TextBlock Style="{StaticResource YFCaptionStyle}" Text="AKTIVE SPIELE" />
+                            <FontIcon HorizontalAlignment="Right" FontSize="18" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE7FC;" />
+                        </Grid>
+                        <TextBlock Grid.Row="1" Margin="0,8,0,4" VerticalAlignment="Center" FontFamily="Segoe UI Variable Display" FontSize="26" FontWeight="SemiBold" Text="{Binding GamesPlayedText}" />
+                        <TextBlock Grid.Row="2" Style="{StaticResource YFMutedTextStyle}" Text="Mit erfasster Spielzeit" />
+                    </Grid>
                 </Border>
             </Grid>
 
-            <Grid Grid.Row="1" ColumnSpacing="14">
+            <Grid x:Name="MainContentGrid" Grid.Row="2" ColumnSpacing="14" RowSpacing="14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.25*" />
-                    <ColumnDefinition Width="0.75*" />
+                    <ColumnDefinition Width="1.35*" />
+                    <ColumnDefinition Width="0.65*" />
                 </Grid.ColumnDefinitions>
-                <Border MinHeight="340" Style="{StaticResource YFCardStyle}">
+
+                <Border x:Name="TrendCard" MinHeight="410" Style="{StaticResource YFCardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SPIELZEIT-TREND" />
+                                <TextBlock Margin="0,4,0,0" Style="{StaticResource YFMutedTextStyle}" Text="{Binding PeriodDescription}" />
+                            </StackPanel>
+                            <Border Padding="10,5" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#10233E" BorderBrush="#244D7E" BorderThickness="1" CornerRadius="8">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Ellipse Width="7" Height="7" Fill="{StaticResource YFCyanBrush}" />
+                                    <TextBlock FontSize="10" Foreground="#A8DFFF" Text="AKTUELLER ZEITRAUM" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Grid Grid.Row="2" Margin="0,18,0,0" Visibility="{Binding DataVisibility}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="42" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid Height="202">
+                                <TextBlock VerticalAlignment="Top" Style="{StaticResource YFMutedTextStyle}" Text="{Binding ChartMaximumText}" />
+                                <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="{Binding ChartMiddleText}" />
+                                <TextBlock VerticalAlignment="Bottom" Style="{StaticResource YFMutedTextStyle}" Text="0 h" />
+                            </Grid>
+                            <Grid Grid.Column="1">
+                                <Border Height="1" Margin="0,10,0,0" VerticalAlignment="Top" Background="#1A2B43" />
+                                <Border Height="1" VerticalAlignment="Center" Background="#1A2B43" />
+                                <Border Height="1" Margin="0,0,0,24" VerticalAlignment="Bottom" Background="#1A2B43" />
+                                <ScrollViewer HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled" VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
+                                    <ItemsControl MinWidth="{Binding ChartMinimumWidth}" ItemsSource="{Binding Timeline}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="8" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Width="{Binding ItemWidth}" Height="226" ToolTipService.ToolTip="{Binding TooltipText}">
+                                                    <TextBlock Height="24" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="{Binding DurationText}" TextTrimming="CharacterEllipsis" />
+                                                    <Grid Height="160">
+                                                        <Border Width="{Binding BarWidth}" Height="{Binding BarHeight}" VerticalAlignment="Bottom" Background="{Binding BarColor, Converter={StaticResource HexColorBrushConverter}}" CornerRadius="6,6,2,2" />
+                                                    </Grid>
+                                                    <TextBlock Margin="0,8,0,0" HorizontalAlignment="Center" FontSize="11" Foreground="{StaticResource YFMutedBrush}" Text="{Binding Label}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Grid>
+                        </Grid>
+
+                        <StackPanel Grid.Row="2" Margin="0,28,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" Visibility="{Binding EmptyVisibility}">
+                            <Border Width="70" Height="70" Background="#101E35" BorderBrush="#24446D" BorderThickness="1" CornerRadius="35">
+                                <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="27" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE9D2;" />
+                            </Border>
+                            <TextBlock HorizontalAlignment="Center" FontSize="17" FontWeight="SemiBold" Text="Noch keine Statistikdaten" />
+                            <TextBlock MaxWidth="390" TextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="Sobald eine Session erfasst wurde, erscheint hier dein echter Spielzeitverlauf." TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border x:Name="TopGamesCard" Grid.Column="1" MinHeight="410" Style="{StaticResource YFCardStyle}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
                         <Grid>
-                            <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SPIELZEIT-TREND" />
-                            <TextBlock HorizontalAlignment="Right" Style="{StaticResource YFCaptionStyle}" Text="BEISPIELDARSTELLUNG" />
+                            <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="TOP-SPIELE" />
+                            <TextBlock HorizontalAlignment="Right" Style="{StaticResource YFCaptionStyle}" Text="NACH SPIELZEIT" />
                         </Grid>
-                        <Grid Grid.Row="1" Margin="0,22,0,0">
-                            <Border Height="1" VerticalAlignment="Top" Background="#182840" />
-                            <Border Height="1" VerticalAlignment="Center" Background="#182840" />
-                            <Border Height="1" VerticalAlignment="Bottom" Background="#182840" />
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Bottom" Orientation="Horizontal" Spacing="18">
-                                <Border Width="42" Height="76" VerticalAlignment="Bottom" Background="#173764" CornerRadius="6,6,2,2" />
-                                <Border Width="42" Height="122" VerticalAlignment="Bottom" Background="#225BB4" CornerRadius="6,6,2,2" />
-                                <Border Width="42" Height="96" VerticalAlignment="Bottom" Background="#38228A" CornerRadius="6,6,2,2" />
-                                <Border Width="42" Height="164" VerticalAlignment="Bottom" Background="#347BFF" CornerRadius="6,6,2,2" />
-                                <Border Width="42" Height="130" VerticalAlignment="Bottom" Background="#6942DC" CornerRadius="6,6,2,2" />
-                                <Border Width="42" Height="184" VerticalAlignment="Bottom" Background="#2B9FC1" CornerRadius="6,6,2,2" />
-                            </StackPanel>
-                            <Border Padding="12,7" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#E608111F" BorderBrush="#475C7A" BorderThickness="1" CornerRadius="8">
-                                <TextBlock FontSize="11" Foreground="{StaticResource YFTextBrush}" Text="VORSCHAU · keine echten Werte" />
-                            </Border>
-                        </Grid>
+
+                        <ListView
+                            Grid.Row="1"
+                            Margin="0,14,0,0"
+                            IsItemClickEnabled="False"
+                            ItemContainerStyle="{StaticResource YFListViewItemStyle}"
+                            ItemsSource="{Binding TopGames}"
+                            SelectionMode="None"
+                            Visibility="{Binding DataVisibility}">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Padding="0,10" ColumnSpacing="10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="22" />
+                                            <ColumnDefinition Width="42" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource YFMutedBrush}" Text="{Binding Rank}" />
+                                        <Border Grid.Column="1" Width="40" Height="40" Background="#142845" BorderBrush="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" BorderThickness="1" CornerRadius="10">
+                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Text="{Binding Initials}" />
+                                        </Border>
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4">
+                                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                                <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock FontSize="9" Foreground="{StaticResource YFMutedBrush}" Text="{Binding Source}" />
+                                            </StackPanel>
+                                            <ProgressBar Height="5" Maximum="100" Background="#132239" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Value="{Binding Progress}" />
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <TextBlock FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="{Binding SessionText}" />
+                                                <TextBlock FontSize="10" Foreground="#52627A" Text="·" />
+                                                <TextBlock FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="{Binding LastPlayedText}" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                            <TextBlock HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Text="{Binding DurationText}" />
+                                            <TextBlock HorizontalAlignment="Right" FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="{Binding ShareText}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+
+                        <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" Visibility="{Binding EmptyVisibility}">
+                            <FontIcon FontSize="28" Foreground="{StaticResource YFMutedBrush}" Glyph="&#xE7FC;" />
+                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Noch keine Spiele im Zeitraum" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Grid x:Name="LowerContentGrid" Grid.Row="3" Margin="0,14,0,0" ColumnSpacing="14" RowSpacing="14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.05*" />
+                    <ColumnDefinition Width="0.95*" />
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="WeekdayCard" MinHeight="300" Style="{StaticResource YFCardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="WOCHENTAGE" />
+                            <TextBlock Margin="0,4,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Verteilung deiner Spielzeit von Montag bis Sonntag" />
+                        </StackPanel>
+                        <ItemsControl Grid.Row="1" Margin="0,18,0,0" ItemsSource="{Binding Weekdays}" Visibility="{Binding DataVisibility}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,10" ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="82" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="78" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center" FontSize="12" Text="{Binding DayName}" />
+                                        <ProgressBar Grid.Column="1" Height="7" Maximum="100" Background="#132239" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Value="{Binding Progress}" />
+                                        <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Text="{Binding DurationText}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="Noch keine Wochentagsdaten" Visibility="{Binding EmptyVisibility}" />
                     </Grid>
                 </Border>
 
-                <Border Grid.Column="1" MinHeight="340" Style="{StaticResource YFCardStyle}">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="LIEBLINGSSPIELE" />
-                        <StackPanel Margin="0,24,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14">
-                            <Grid Width="160" Height="160">
-                                <Ellipse Stroke="#192B45" StrokeThickness="20" />
-                                <Ellipse Stroke="{StaticResource YFPurpleBrush}" StrokeDashArray="3,3" StrokeThickness="20" />
-                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource YFMutedBrush}" Text="Demnächst" />
-                            </Grid>
-                            <TextBlock MaxWidth="250" TextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="Verteilung der Spielzeit nach Spielen" TextWrapping="Wrap" />
-                        </StackPanel>
+                <Border x:Name="InsightsCard" Grid.Column="1" MinHeight="300" Style="{StaticResource YFCardStyle}">
+                    <StackPanel Spacing="14">
+                        <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="DEINE BESTWERTE" />
+                        <Grid x:Name="InsightsGrid" ColumnSpacing="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="TopGameInsight" MinHeight="190" Padding="14" Background="#0A1A30" BorderBrush="#244D7E" BorderThickness="1" CornerRadius="11">
+                                <StackPanel Spacing="9">
+                                    <Border Width="38" Height="38" HorizontalAlignment="Left" Background="#152E55" CornerRadius="19">
+                                        <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE7FC;" />
+                                    </Border>
+                                    <TextBlock Style="{StaticResource YFCaptionStyle}" Text="TOP-SPIEL" />
+                                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding TopGameText}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
+                                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding TopGameDetailText}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                            <Border x:Name="WeekdayInsight" Grid.Column="1" MinHeight="190" Padding="14" Background="#15122E" BorderBrush="#4D357C" BorderThickness="1" CornerRadius="11">
+                                <StackPanel Spacing="9">
+                                    <Border Width="38" Height="38" HorizontalAlignment="Left" Background="#2C2054" CornerRadius="19">
+                                        <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Foreground="{StaticResource YFPurpleBrush}" Glyph="&#xE787;" />
+                                    </Border>
+                                    <TextBlock Style="{StaticResource YFCaptionStyle}" Text="AKTIVSTER TAG" />
+                                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding FavoriteWeekdayText}" TextWrapping="Wrap" />
+                                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding FavoriteWeekdayDetailText}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                            <Border x:Name="LongestInsight" Grid.Column="2" MinHeight="190" Padding="14" Background="#09232D" BorderBrush="#176179" BorderThickness="1" CornerRadius="11">
+                                <StackPanel Spacing="9">
+                                    <Border Width="38" Height="38" HorizontalAlignment="Left" Background="#0C3946" CornerRadius="19">
+                                        <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE823;" />
+                                    </Border>
+                                    <TextBlock Style="{StaticResource YFCaptionStyle}" Text="LÄNGSTE SESSION" />
+                                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding LongestSessionText}" />
+                                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding LongestSessionDetailText}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
                     </StackPanel>
                 </Border>
             </Grid>
 
-            <Border Grid.Row="2" Margin="0,14,0,0" Padding="18" Background="#0A1728" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="12">
-                <StackPanel Orientation="Horizontal" Spacing="12">
-                    <FontIcon FontSize="18" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE9D2;" />
-                    <StackPanel>
-                        <TextBlock FontWeight="SemiBold" Text="Statistik-Modul in Vorbereitung" />
-                        <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Das Dashboard verwendet bereits echte Tages- und Wochenwerte. Erweiterte Filter und Langzeitvergleiche folgen später." TextWrapping="Wrap" />
-                    </StackPanel>
+            <Border Grid.Row="4" Margin="0,14,0,0" Padding="12,9" Background="#0A1728" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
+                <StackPanel Orientation="Horizontal" Spacing="9">
+                    <FontIcon FontSize="13" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE946;" />
+                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
         </Grid>

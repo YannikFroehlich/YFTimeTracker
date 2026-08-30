@@ -13,7 +13,7 @@ Installierte Setup-/MSI-Ausgaben prüfen beim Start automatisch den stabilen Git
 - `YFTimeTracker.Core`: Domain-Modelle, Services, Tracking-Regeln, Statistik und Validierung.
 - `YFTimeTracker.Data`: EF Core, SQLite, Migration, Repositories, Backup, Export und Import.
 - `YFTimeTracker.Windows`: Windows-Pfade, Prozess-Snapshot, Boot-Session- und lokale Launcher-Erkennung.
-- `YFTimeTracker.App`: WinUI-3-App mit Dashboard, Spieleverwaltung und Einstellungen.
+- `YFTimeTracker.App`: WinUI-3-App mit Dashboard, Sessionverwaltung, echten Zeitraumauswertungen, Spieleverwaltung und Einstellungen.
 - `YFTimeTracker.Core.Tests`, `YFTimeTracker.Data.Tests` und `YFTimeTracker.Windows.Tests`: Tracking-, Migrations-, Backup- und Launcher-Tests.
 
 ## Entwickeln
