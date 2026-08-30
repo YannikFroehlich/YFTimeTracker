@@ -23,12 +23,21 @@ dotnet run --project YFTimeTracker.App\YFTimeTracker.App.csproj
 
 ## Packaging
 
-Der Entwicklungs-Build ist als unpackaged WinUI-App konfiguriert, damit er ohne lokale WinUI-Vorlage stabil baut. `Package.appxmanifest` und die MSIX-Assets sind vorbereitet.
-
-Ein Test mit
+Der Entwicklungs-Build bleibt als unpackaged WinUI-App konfiguriert. Ein reproduzierbares, selbstenthaltendes Windows-x64-Release wird mit folgendem Befehl erstellt:
 
 ```powershell
-dotnet publish YFTimeTracker.App\YFTimeTracker.App.csproj -c Release -r win-x64 --no-restore -p:EnableMsixTooling=true -p:WindowsPackageType=MSIX -p:GenerateAppxPackageOnBuild=true -p:AppxPackageSigningEnabled=false
+.\scripts\New-Release.ps1
 ```
 
-erzeugt die Release-DLLs, scheitert in dieser lokalen Toolchain aber in `Microsoft.Windows.SDK.BuildTools.MSIX` an der fehlenden MSBuild-Task-Abhaengigkeit `System.Security.Permissions, Version=8.0.0.0`. Fuer ein installierbares MSIX-Paket ist deshalb noch eine Packaging-Toolchain-Korrektur plus ein vertrauenswuerdiges Signierzertifikat noetig.
+Das Skript erzeugt die Logo-Assets neu, fuehrt Restore, Release-Build und alle Tests aus und legt danach diese Dateien unter `artifacts\release` ab:
+
+- `YFTimeTracker-v0.1.0-win-x64.zip`: portable App inklusive Windows App SDK und .NET Runtime.
+- `YFTimeTracker-v0.1.0-win-x64.zip.sha256`: SHA-256-Pruefsumme.
+
+Eine abweichende Version kann uebergeben werden:
+
+```powershell
+.\scripts\New-Release.ps1 -Version 0.1.1
+```
+
+Das ZIP ist nicht digital signiert. Ein signiertes MSIX benoetigt zusaetzlich ein vertrauenswuerdiges Code-Signing-Zertifikat; ohne ein solches Zertifikat ist die portable Ausgabe die direkt nutzbare Release-Variante.

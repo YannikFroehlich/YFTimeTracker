@@ -22,6 +22,8 @@ public sealed class TrayService : ITrayService
     private const uint MfGray = 0x00000001;
     private const uint TpmReturnCmd = 0x0100;
     private const uint TpmNonotify = 0x0080;
+    private const uint ImageIcon = 1;
+    private const uint LrLoadFromFile = 0x00000010;
     private const int OpenCommand = 1001;
     private const int PauseCommand = 1002;
     private const int ExitCommand = 1003;
@@ -32,6 +34,7 @@ public sealed class TrayService : ITrayService
     private IntPtr hwnd;
     private IntPtr originalWndProc;
     private IntPtr iconHandle;
+    private bool ownsIconHandle;
     private TrackingState state = TrackingState.Stopped;
     private bool iconAdded;
 
@@ -46,7 +49,13 @@ public sealed class TrayService : ITrayService
         mainWindow = window;
         hwnd = WindowNative.GetWindowHandle(window);
         originalWndProc = SetWindowLongPtr(hwnd, GwlpWndProc, Marshal.GetFunctionPointerForDelegate(wndProcDelegate));
-        iconHandle = LoadIcon(IntPtr.Zero, new IntPtr(32512));
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "YFTimeTracker.ico");
+        iconHandle = LoadImage(IntPtr.Zero, iconPath, ImageIcon, 16, 16, LrLoadFromFile);
+        ownsIconHandle = iconHandle != IntPtr.Zero;
+        if (!ownsIconHandle)
+        {
+            iconHandle = LoadIcon(IntPtr.Zero, new IntPtr(32512));
+        }
 
         trackingService.StateChanged += (_, newState) =>
         {
@@ -70,6 +79,13 @@ public sealed class TrayService : ITrayService
         if (hwnd != IntPtr.Zero && originalWndProc != IntPtr.Zero)
         {
             SetWindowLongPtr(hwnd, GwlpWndProc, originalWndProc);
+        }
+
+        if (ownsIconHandle && iconHandle != IntPtr.Zero)
+        {
+            DestroyIcon(iconHandle);
+            iconHandle = IntPtr.Zero;
+            ownsIconHandle = false;
         }
     }
 
@@ -203,6 +219,18 @@ public sealed class TrayService : ITrayService
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr LoadImage(
+        IntPtr hInstance,
+        string name,
+        uint type,
+        int desiredWidth,
+        int desiredHeight,
+        uint loadFlags);
+
+    [DllImport("user32.dll")]
+    private static extern bool DestroyIcon(IntPtr icon);
 
     [DllImport("user32.dll")]
     private static extern IntPtr CreatePopupMenu();

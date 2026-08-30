@@ -19,7 +19,12 @@
     <PublishSingleFile>false</PublishSingleFile>
     <PublishTrimmed>false</PublishTrimmed>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\YFTimeTracker.ico</ApplicationIcon>
     <Version>0.1.0</Version>
+    <Product>YFTimeTracker</Product>
+    <Authors>YFroe</Authors>
+    <Description>Lokaler Windows-Spielzeit-Tracker mit automatischer Launcher-Erkennung.</Description>
+    <Copyright>Copyright © 2026 YFroe</Copyright>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" />
@@ -40,6 +45,7 @@
   <ItemGroup>
     <None Include="Package.appxmanifest" />
     <Content Include="Assets\*.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\*.ico" CopyToOutputDirectory="PreserveNewest" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 </Project>

@@ -144,6 +144,12 @@ public sealed partial class MainWindow : Window
 
         appWindow.MoveAndResize(new RectInt32(x, y, width, height));
         appWindow.Title = "YFTimeTracker";
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "YFTimeTracker.ico");
+        if (File.Exists(iconPath))
+        {
+            appWindow.SetIcon(iconPath);
+        }
+
         appWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
         appWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
         appWindow.TitleBar.ButtonForegroundColor = Color.FromArgb(255, 244, 247, 255);

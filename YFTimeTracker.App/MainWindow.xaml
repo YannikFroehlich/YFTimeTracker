@@ -12,12 +12,22 @@
         <Grid
             x:Name="TitleBarDragRegion"
             Background="{StaticResource YFNavigationBrush}">
-            <TextBlock
-                Margin="16,0,0,0"
+            <StackPanel
+                Margin="12,0,0,0"
                 VerticalAlignment="Center"
-                FontSize="11"
-                Foreground="{StaticResource YFMutedBrush}"
-                Text="YFTimeTracker" />
+                Orientation="Horizontal"
+                Spacing="8">
+                <Image
+                    Width="20"
+                    Height="20"
+                    Source="Assets/YFTimeTrackerLogo.png"
+                    Stretch="Uniform" />
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="11"
+                    Foreground="{StaticResource YFMutedBrush}"
+                    Text="YFTimeTracker" />
+            </StackPanel>
         </Grid>
 
         <NavigationView
@@ -56,17 +66,11 @@
                         Height="42"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
-                        Background="{StaticResource YFLogoGradientBrush}"
+                        Background="#040912"
                         CornerRadius="12">
-                        <TextBlock
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            FontFamily="Segoe UI Variable Display"
-                            FontSize="18"
-                            FontStyle="Italic"
-                            FontWeight="Bold"
-                            Foreground="White"
-                            Text="YF" />
+                        <Image
+                            Source="Assets/YFTimeTrackerLogo.png"
+                            Stretch="Uniform" />
                     </Border>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
                         <TextBlock
