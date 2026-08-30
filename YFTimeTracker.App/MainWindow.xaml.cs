@@ -20,9 +20,12 @@ public sealed partial class MainWindow : Window
     private readonly DispatcherTimer dashboardRefreshTimer = new() { Interval = TimeSpan.FromSeconds(5) };
     private readonly ISettingsStore settingsStore;
     private readonly IAppUpdateService appUpdateService;
+    private readonly IFirstRunSetupService firstRunSetupService;
+    private readonly IGameTrackingService trackingService;
     private readonly AppWindow appWindow;
-    private readonly SemaphoreSlim updateDialogLock = new(1, 1);
+    private readonly SemaphoreSlim dialogLock = new(1, 1);
     private bool minimizeOnClose = true;
+    private bool firstRunSetupActive;
 
     public MainWindow()
     {
@@ -30,6 +33,8 @@ public sealed partial class MainWindow : Window
         dashboardViewModel = App.Services.GetRequiredService<DashboardViewModel>();
         settingsStore = App.Services.GetRequiredService<ISettingsStore>();
         appUpdateService = App.Services.GetRequiredService<IAppUpdateService>();
+        firstRunSetupService = App.Services.GetRequiredService<IFirstRunSetupService>();
+        trackingService = App.Services.GetRequiredService<IGameTrackingService>();
         RootGrid.DataContext = dashboardViewModel;
 
         ExtendsContentIntoTitleBar = true;
@@ -97,6 +102,55 @@ public sealed partial class MainWindow : Window
         minimizeOnClose = value;
     }
 
+    public async Task<bool> ShowFirstRunSetupIfRequiredAsync(bool force = false)
+    {
+        if (!force && await firstRunSetupService.IsCompletedAsync(CancellationToken.None))
+        {
+            return false;
+        }
+
+        if (!await dialogLock.WaitAsync(0))
+        {
+            return false;
+        }
+
+        try
+        {
+            await WaitForRootGridAsync();
+            var options = await firstRunSetupService.LoadOptionsAsync(CancellationToken.None);
+            var dialog = new FirstRunSetupDialog(firstRunSetupService, options)
+            {
+                XamlRoot = RootGrid.XamlRoot
+            };
+
+            firstRunSetupActive = true;
+            await dialog.ShowAsync();
+            if (dialog.WasCompleted)
+            {
+                var selectedOptions = dialog.SelectedOptions;
+                minimizeOnClose = selectedOptions.MinimizeOnClose;
+                if (trackingService.State.IsRunning)
+                {
+                    if (selectedOptions.TrackingEnabled && trackingService.State.IsPaused)
+                    {
+                        await trackingService.ResumeAsync(CancellationToken.None);
+                    }
+                    else if (!selectedOptions.TrackingEnabled && !trackingService.State.IsPaused)
+                    {
+                        await trackingService.PauseAsync(CancellationToken.None);
+                    }
+                }
+            }
+
+            return true;
+        }
+        finally
+        {
+            firstRunSetupActive = false;
+            dialogLock.Release();
+        }
+    }
+
     public async Task CheckForUpdatesOnStartupAsync(bool showPrompt)
     {
         try
@@ -133,7 +187,7 @@ public sealed partial class MainWindow : Window
 
     public async Task PromptForAvailableUpdateAsync()
     {
-        if (!await updateDialogLock.WaitAsync(0))
+        if (!await dialogLock.WaitAsync(0))
         {
             return;
         }
@@ -190,7 +244,7 @@ public sealed partial class MainWindow : Window
         }
         finally
         {
-            updateDialogLock.Release();
+            dialogLock.Release();
         }
     }
 
@@ -255,7 +309,7 @@ public sealed partial class MainWindow : Window
 
     private async Task ShowUpdateMessageAsync(string title, string message)
     {
-        if (!await updateDialogLock.WaitAsync(0))
+        if (!await dialogLock.WaitAsync(0))
         {
             return;
         }
@@ -266,7 +320,7 @@ public sealed partial class MainWindow : Window
         }
         finally
         {
-            updateDialogLock.Release();
+            dialogLock.Release();
         }
     }
 
@@ -304,6 +358,24 @@ public sealed partial class MainWindow : Window
             : $" mit {bytes / 1024d:0.#} KB";
     }
 
+    private Task WaitForRootGridAsync()
+    {
+        if (RootGrid.XamlRoot is not null)
+        {
+            return Task.CompletedTask;
+        }
+
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        RoutedEventHandler? loadedHandler = null;
+        loadedHandler = (_, _) =>
+        {
+            RootGrid.Loaded -= loadedHandler;
+            completion.TrySetResult(true);
+        };
+        RootGrid.Loaded += loadedHandler;
+        return completion.Task;
+    }
+
     private void Navigation_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
         if (args.InvokedItemContainer?.Tag is not string tag)
@@ -339,6 +411,13 @@ public sealed partial class MainWindow : Window
         }
 
         args.Cancel = true;
+        if (firstRunSetupActive)
+        {
+            appWindow.Show();
+            Activate();
+            return;
+        }
+
         if (minimizeOnClose)
         {
             HideToTray();

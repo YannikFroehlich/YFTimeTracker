@@ -40,6 +40,17 @@ public sealed partial class SettingsPage : Page
         }
     }
 
+    private async void OpenSetupAssistant_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.MainWindow is not { } mainWindow)
+        {
+            return;
+        }
+
+        await mainWindow.ShowFirstRunSetupIfRequiredAsync(force: true);
+        await ((SettingsViewModel)DataContext).LoadAsync();
+    }
+
     private void UpdateLayout(double width)
     {
         var compact = width < 900;

@@ -23,6 +23,7 @@ public sealed class SqliteDatabaseInitializer(
         Directory.CreateDirectory(appPathProvider.BackupDirectory);
         Directory.CreateDirectory(appPathProvider.ExportDirectory);
         Directory.CreateDirectory(appPathProvider.LogDirectory);
+        var databaseExistedBeforeStartup = File.Exists(appPathProvider.DatabasePath);
 
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var pendingMigrations = await context.Database.GetPendingMigrationsAsync(cancellationToken);
@@ -40,6 +41,10 @@ public sealed class SqliteDatabaseInitializer(
         await SetDefaultIfMissingAsync(AppSettingKeys.HeartbeatIntervalSeconds, "30", cancellationToken);
         await SetDefaultIfMissingAsync(AppSettingKeys.BackupRetentionDays, "14", cancellationToken);
         await SetDefaultIfMissingAsync(AppSettingKeys.MinimizeOnClose, bool.TrueString, cancellationToken);
+        await SetDefaultIfMissingAsync(
+            AppSettingKeys.FirstRunSetupCompleted,
+            databaseExistedBeforeStartup.ToString(),
+            cancellationToken);
 
         await backupService.CreateDailyBackupAsync(cancellationToken);
         await backupService.PruneBackupsAsync(cancellationToken);

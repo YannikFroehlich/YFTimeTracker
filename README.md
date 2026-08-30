@@ -17,6 +17,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Bibliothek mit Suche, Sortierung, Spieldetails und EXE-Verwaltung
 - Anlegen, Bearbeiten und Löschen manueller Sessions
 - Statistiken für frei wählbare Zeiträume und einzelne Spiele
+- Ersteinrichtungs-Assistent für Tracking, Launcher, Tray und Autostart
 - Tray-Betrieb, Tracking-Pause, optionaler Autostart und Einzelinstanz-Schutz
 - Lokale Backups sowie Import und Export
 - Automatische Update-Prüfung für installierte Ausgaben
@@ -33,6 +34,8 @@ Die aktuelle stabile Version steht unter [GitHub Releases](https://github.com/Ya
 YFTimeTracker wird für Windows 11 x64 veröffentlicht und bringt die benötigte .NET- und Windows-App-SDK-Laufzeit mit. Die Pakete sind bewusst nicht digital signiert; Windows SmartScreen kann deshalb beim ersten Start einen Hinweis anzeigen.
 
 Beim Schließen des Fensters läuft das Tracking standardmäßig im Infobereich weiter. Vollständig beendet wird die App über **Beenden** im Tray-Menü.
+
+Bei einer neuen Installation führt ein kurzer Assistent durch die wichtigsten Tracking- und Windows-Optionen. Er lässt sich später unter **Einstellungen → Windows & Tray** erneut öffnen. Bestehende Installationen werden durch ein Update nicht ungefragt in den Assistenten versetzt.
 
 ## Lokale Daten und Datenschutz
 

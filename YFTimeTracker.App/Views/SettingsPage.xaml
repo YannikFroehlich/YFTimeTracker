@@ -154,6 +154,16 @@
                                 <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Das Tray-Symbol zeigt den aktuellen Trackingstatus." TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
+
+                        <Button
+                            HorizontalAlignment="Stretch"
+                            Click="OpenSetupAssistant_Click"
+                            Style="{StaticResource YFOutlineButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="9">
+                                <FontIcon FontSize="14" Glyph="&#xE897;" />
+                                <TextBlock Text="Einrichtungs-Assistent erneut öffnen" />
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </Border>
 
