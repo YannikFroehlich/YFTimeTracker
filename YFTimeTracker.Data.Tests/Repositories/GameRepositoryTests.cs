@@ -95,6 +95,44 @@ public sealed class GameRepositoryTests
     }
 
     [TestMethod]
+    public async Task SessionRepository_reports_overlap_with_open_session()
+    {
+        using var paths = new TempAppPathProvider();
+        var factory = new TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var games = new GameRepository(factory);
+        var sessions = new GameSessionRepository(factory);
+        var game = await games.AddAsync(new Game
+        {
+            Name = "Test",
+            ExecutablePath = @"C:\Games\Test.exe",
+            ExecutablePathKey = @"C:\GAMES\TEST.EXE",
+            ExecutableName = "Test.exe",
+            AddedAtUtc = DateTimeOffset.Parse("2026-08-30T10:00:00Z")
+        }, CancellationToken.None);
+        await sessions.AddAsync(new GameSession
+        {
+            GameId = game.Id,
+            StartedAtUtc = DateTimeOffset.Parse("2026-08-30T10:00:00Z"),
+            LastSeenAtUtc = DateTimeOffset.Parse("2026-08-30T11:00:00Z"),
+            BootSessionId = "boot"
+        }, CancellationToken.None);
+
+        var overlaps = await sessions.HasOverlapAsync(
+            game.Id,
+            DateTimeOffset.Parse("2026-08-30T10:30:00Z"),
+            DateTimeOffset.Parse("2026-08-30T11:30:00Z"),
+            null,
+            CancellationToken.None);
+
+        Assert.IsTrue(overlaps);
+    }
+
+    [TestMethod]
     public async Task Repository_persists_launcher_identity_and_multiple_executables()
     {
         using var paths = new TempAppPathProvider();

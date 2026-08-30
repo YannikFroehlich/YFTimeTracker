@@ -80,6 +80,7 @@ public partial class App : Application
                 services.AddTransient<SettingsPage>();
                 services.AddSingleton<DashboardViewModel>();
                 services.AddSingleton<GamesViewModel>();
+                services.AddSingleton<SessionsViewModel>();
                 services.AddSingleton<SettingsViewModel>();
             })
             .Build();

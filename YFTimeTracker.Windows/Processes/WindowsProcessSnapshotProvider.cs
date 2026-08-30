@@ -41,6 +41,15 @@ public sealed class WindowsProcessSnapshotProvider(ILogger<WindowsProcessSnapsho
                         {
                         }
 
+                        if (processes.TryGetValue(pathKey, out var existing))
+                        {
+                            startedAtUtc = existing.StartedAtUtc is null || startedAtUtc is null
+                                ? null
+                                : DateTimeOffset.Compare(existing.StartedAtUtc.Value, startedAtUtc.Value) <= 0
+                                    ? existing.StartedAtUtc
+                                    : startedAtUtc;
+                        }
+
                         processes[pathKey] = new RunningProcessInfo(normalizedPath, pathKey, startedAtUtc);
                     }
                 }

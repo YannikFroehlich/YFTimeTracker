@@ -38,14 +38,14 @@ public sealed class GameTrackingServiceTests
         await tracking.ScanOnceAsync(CancellationToken.None);
         Assert.HasCount(1, await sessions.GetOpenSessionsAsync(CancellationToken.None));
 
-        clock.UtcNow = DateTimeOffset.Parse("2026-08-30T10:20:00Z");
+        clock.UtcNow = DateTimeOffset.Parse("2026-08-30T10:01:00Z");
         processSnapshot.RunningPathKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         await tracking.ScanOnceAsync(CancellationToken.None);
 
         var storedSessions = await sessions.GetSessionsForGameAsync(game.Id, CancellationToken.None);
         Assert.HasCount(1, storedSessions);
         Assert.IsNotNull(storedSessions[0].EndedAtUtc);
-        Assert.AreEqual(1200, storedSessions[0].DurationSeconds);
+        Assert.AreEqual(60, storedSessions[0].DurationSeconds);
     }
 
     [TestMethod]
@@ -169,20 +169,497 @@ public sealed class GameTrackingServiceTests
         Assert.IsEmpty(await games.GetAllAsync(CancellationToken.None));
     }
 
+    [TestMethod]
+    public async Task Alternative_executables_keep_one_session_open_until_all_processes_exit()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-30T12:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var game = await AddManualGameAsync(
+            games,
+            "Mehrprozess-Spiel",
+            clock.UtcNow,
+            @"C:\Games\Multi\game.exe",
+            @"C:\Games\Multi\renderer.exe");
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var processes = new FakeProcessSnapshotProvider
+        {
+            RunningProcesses =
+            [
+                CreateProcess(@"C:\Games\Multi\game.exe"),
+                CreateProcess(@"C:\Games\Multi\renderer.exe")
+            ]
+        };
+        var tracking = CreateTracking(games, sessions, processes, new FakeGameInstallationProvider(), clock);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+        clock.UtcNow = clock.UtcNow.AddSeconds(3);
+        processes.RunningProcesses = [CreateProcess(@"C:\Games\Multi\renderer.exe")];
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        Assert.HasCount(1, await sessions.GetOpenSessionsAsync(CancellationToken.None));
+
+        clock.UtcNow = clock.UtcNow.AddSeconds(3);
+        processes.RunningProcesses = [];
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        var storedSessions = await sessions.GetSessionsForGameAsync(game.Id, CancellationToken.None);
+        Assert.HasCount(1, storedSessions);
+        Assert.AreEqual(6, storedSessions[0].DurationSeconds);
+    }
+
+    [TestMethod]
+    public async Task Restarted_game_process_splits_the_session_at_the_last_observed_scan()
+    {
+        var startedAt = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var clock = new FakeClock(startedAt);
+        var games = new InMemoryGameRepository();
+        var path = @"C:\Games\Restart\game.exe";
+        var game = await AddManualGameAsync(games, "Neustart-Spiel", clock.UtcNow, path);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var processes = new FakeProcessSnapshotProvider
+        {
+            RunningProcesses = [CreateProcess(path, startedAt.AddMinutes(-1))]
+        };
+        var tracking = CreateTracking(games, sessions, processes, new FakeGameInstallationProvider(), clock);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+        clock.UtcNow = startedAt.AddSeconds(3);
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        clock.UtcNow = startedAt.AddSeconds(8);
+        processes.RunningProcesses = [CreateProcess(path, startedAt.AddSeconds(5))];
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        var storedSessions = (await sessions.GetSessionsForGameAsync(game.Id, CancellationToken.None))
+            .OrderBy(session => session.StartedAtUtc)
+            .ToArray();
+        Assert.HasCount(2, storedSessions);
+        Assert.AreEqual(startedAt.AddSeconds(3), storedSessions[0].EndedAtUtc);
+        Assert.AreEqual(startedAt.AddSeconds(5), storedSessions[1].StartedAtUtc);
+        Assert.IsNull(storedSessions[1].EndedAtUtc);
+    }
+
+    [TestMethod]
+    public async Task Long_scan_gap_splits_running_session_and_excludes_sleep_time()
+    {
+        var startedAt = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var clock = new FakeClock(startedAt);
+        var games = new InMemoryGameRepository();
+        var path = @"C:\Games\Sleep\game.exe";
+        var game = await AddManualGameAsync(games, "Standby-Spiel", clock.UtcNow, path);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var processes = new FakeProcessSnapshotProvider
+        {
+            RunningProcesses = [CreateProcess(path, startedAt.AddMinutes(-1))]
+        };
+        var tracking = CreateTracking(games, sessions, processes, new FakeGameInstallationProvider(), clock);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+        clock.UtcNow = startedAt.AddSeconds(30);
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        clock.UtcNow = startedAt.AddMinutes(10);
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        var storedSessions = (await sessions.GetSessionsForGameAsync(game.Id, CancellationToken.None))
+            .OrderBy(session => session.StartedAtUtc)
+            .ToArray();
+        Assert.HasCount(2, storedSessions);
+        Assert.AreEqual(30, storedSessions[0].DurationSeconds);
+        Assert.AreEqual(startedAt.AddMinutes(10), storedSessions[1].StartedAtUtc);
+        Assert.IsNull(storedSessions[1].EndedAtUtc);
+    }
+
+    [TestMethod]
+    public async Task Long_scan_gap_closes_ended_game_at_last_observed_scan()
+    {
+        var startedAt = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var clock = new FakeClock(startedAt);
+        var games = new InMemoryGameRepository();
+        var path = @"C:\Games\SleepExit\game.exe";
+        var game = await AddManualGameAsync(games, "Standby-Ende", clock.UtcNow, path);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var processes = CreateProcessSnapshot(path);
+        var tracking = CreateTracking(games, sessions, processes, new FakeGameInstallationProvider(), clock);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+        clock.UtcNow = startedAt.AddSeconds(30);
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        clock.UtcNow = startedAt.AddMinutes(10);
+        processes.RunningProcesses = [];
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        var session = (await sessions.GetSessionsForGameAsync(game.Id, CancellationToken.None)).Single();
+        Assert.AreEqual(startedAt.AddSeconds(30), session.EndedAtUtc);
+        Assert.AreEqual(30, session.DurationSeconds);
+    }
+
+    [TestMethod]
+    public async Task Recovery_continues_running_game_in_same_boot_without_duplicate_session()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:10:00Z");
+        var clock = new FakeClock(now);
+        var games = new InMemoryGameRepository();
+        var path = @"C:\Games\Recovery\game.exe";
+        var game = await AddManualGameAsync(games, "Recovery", now.AddMinutes(-10), path);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var original = await sessions.AddAsync(new GameSession
+        {
+            GameId = game.Id,
+            StartedAtUtc = now.AddMinutes(-10),
+            LastSeenAtUtc = now.AddSeconds(-10),
+            BootSessionId = "boot"
+        }, CancellationToken.None);
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(path),
+            new FakeGameInstallationProvider(),
+            clock);
+
+        await tracking.RecoverOpenSessionsAsync(CancellationToken.None);
+
+        var openSession = (await sessions.GetOpenSessionsAsync(CancellationToken.None)).Single();
+        Assert.AreEqual(original.Id, openSession.Id);
+        Assert.HasCount(1, await sessions.GetSessionsForGameAsync(game.Id, CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task Recovery_after_reboot_closes_old_session_and_starts_a_new_one()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:10:00Z");
+        var clock = new FakeClock(now);
+        var games = new InMemoryGameRepository();
+        var path = @"C:\Games\Reboot\game.exe";
+        var game = await AddManualGameAsync(games, "Reboot", now.AddMinutes(-10), path);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        await sessions.AddAsync(new GameSession
+        {
+            GameId = game.Id,
+            StartedAtUtc = now.AddMinutes(-10),
+            LastSeenAtUtc = now.AddMinutes(-2),
+            BootSessionId = "old-boot"
+        }, CancellationToken.None);
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(path),
+            new FakeGameInstallationProvider(),
+            clock,
+            new FakeBootSessionProvider("new-boot"));
+
+        await tracking.RecoverOpenSessionsAsync(CancellationToken.None);
+
+        var storedSessions = (await sessions.GetSessionsForGameAsync(game.Id, CancellationToken.None))
+            .OrderBy(session => session.StartedAtUtc)
+            .ToArray();
+        Assert.HasCount(2, storedSessions);
+        Assert.AreEqual(now.AddMinutes(-2), storedSessions[0].EndedAtUtc);
+        Assert.AreEqual(now, storedSessions[1].StartedAtUtc);
+        Assert.AreEqual("new-boot", storedSessions[1].BootSessionId);
+    }
+
+    [TestMethod]
+    public async Task Persisted_pause_closes_stale_session_on_start_and_does_not_reopen_it()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:10:00Z");
+        var clock = new FakeClock(now);
+        var games = new InMemoryGameRepository();
+        var path = @"C:\Games\Paused\game.exe";
+        var game = await AddManualGameAsync(games, "Pausiert", now.AddMinutes(-10), path);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        await sessions.AddAsync(new GameSession
+        {
+            GameId = game.Id,
+            StartedAtUtc = now.AddMinutes(-10),
+            LastSeenAtUtc = now.AddMinutes(-1),
+            BootSessionId = "boot"
+        }, CancellationToken.None);
+        var settings = new InMemorySettingsStore();
+        await settings.SetAsync(AppSettingKeys.TrackingEnabled, bool.FalseString, CancellationToken.None);
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(path),
+            new FakeGameInstallationProvider(),
+            clock,
+            settings: settings);
+
+        await tracking.StartAsync(CancellationToken.None);
+        try
+        {
+            Assert.IsTrue(tracking.State.IsPaused);
+            Assert.IsEmpty(await sessions.GetOpenSessionsAsync(CancellationToken.None));
+            var storedSession = (await sessions.GetSessionsForGameAsync(game.Id, CancellationToken.None)).Single();
+            Assert.AreEqual(now.AddMinutes(-1), storedSession.EndedAtUtc);
+        }
+        finally
+        {
+            await tracking.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [TestMethod]
+    public async Task Pause_and_resume_split_a_running_game_into_two_sessions()
+    {
+        var startedAt = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var clock = new FakeClock(startedAt);
+        var games = new InMemoryGameRepository();
+        var path = @"C:\Games\PauseResume\game.exe";
+        var game = await AddManualGameAsync(games, "Pause/Resume", clock.UtcNow, path);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(path),
+            new FakeGameInstallationProvider(),
+            clock);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+        clock.UtcNow = startedAt.AddSeconds(10);
+        await tracking.PauseAsync(CancellationToken.None);
+        clock.UtcNow = startedAt.AddSeconds(20);
+        await tracking.ResumeAsync(CancellationToken.None);
+
+        var storedSessions = (await sessions.GetSessionsForGameAsync(game.Id, CancellationToken.None))
+            .OrderBy(session => session.StartedAtUtc)
+            .ToArray();
+        Assert.HasCount(2, storedSessions);
+        Assert.AreEqual(10, storedSessions[0].DurationSeconds);
+        Assert.AreEqual(startedAt.AddSeconds(20), storedSessions[1].StartedAtUtc);
+        Assert.IsNull(storedSessions[1].EndedAtUtc);
+    }
+
+    [TestMethod]
+    public async Task Launcher_failure_does_not_interrupt_manually_registered_game()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-30T12:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var path = @"C:\Games\Manual\game.exe";
+        var game = await AddManualGameAsync(games, "Manuell", clock.UtcNow, path);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var installations = new FakeGameInstallationProvider { Exception = new IOException("Manifest defekt") };
+        var tracking = CreateTracking(games, sessions, CreateProcessSnapshot(path), installations, clock);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        Assert.AreEqual(1, installations.CallCount);
+        Assert.HasCount(1, await sessions.GetOpenSessionsAsync(CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task Legitimate_game_name_containing_crash_is_not_filtered()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-30T12:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var sessions = new InMemoryGameSessionRepository(_ => null);
+        var path = @"C:\Steam\CrashBandicoot\CrashBandicoot4.exe";
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(path),
+            CreateInstallationProvider(GameSource.Steam, "crash-4", "Crash Bandicoot 4", @"C:\Steam\CrashBandicoot", []),
+            clock);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+        clock.UtcNow = clock.UtcNow.AddSeconds(3);
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        Assert.HasCount(1, await games.GetAllAsync(CancellationToken.None));
+        Assert.HasCount(1, await sessions.GetOpenSessionsAsync(CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task Explicit_launcher_helper_is_never_imported_as_a_game()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-30T12:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var sessions = new InMemoryGameSessionRepository(_ => null);
+        var path = @"C:\Epic\NeonGame\GameLauncher.exe";
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(path),
+            CreateInstallationProvider(GameSource.Epic, "neon", "Neon Game", @"C:\Epic\NeonGame", [path]),
+            clock);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+        clock.UtcNow = clock.UtcNow.AddSeconds(3);
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        Assert.IsEmpty(await games.GetAllAsync(CancellationToken.None));
+        Assert.IsEmpty(await sessions.GetOpenSessionsAsync(CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task Longest_matching_installation_directory_wins()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-30T12:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var sessions = new InMemoryGameSessionRepository(_ => null);
+        var outerDirectory = @"C:\Steam\Common\SpaceGame";
+        var innerDirectory = @"C:\Steam\Common\SpaceGame\Definitive";
+        var path = innerDirectory + @"\SpaceGame.exe";
+        var sources = new Dictionary<GameSource, LauncherAvailability>
+        {
+            [GameSource.Steam] = LauncherAvailability.Available,
+            [GameSource.Epic] = LauncherAvailability.NotInstalled,
+            [GameSource.Gog] = LauncherAvailability.NotInstalled
+        };
+        var installations = new FakeGameInstallationProvider
+        {
+            Result = new LauncherDiscoveryResult(
+            [
+                new GameInstallationInfo(GameSource.Steam, "outer", "Space Game", outerDirectory, ExecutablePathNormalizer.CreateKey(outerDirectory), []),
+                new GameInstallationInfo(GameSource.Steam, "inner", "Space Game Definitive", innerDirectory, ExecutablePathNormalizer.CreateKey(innerDirectory), [])
+            ],
+            sources)
+        };
+        var tracking = CreateTracking(games, sessions, CreateProcessSnapshot(path), installations, clock);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+        clock.UtcNow = clock.UtcNow.AddSeconds(3);
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        var game = (await games.GetAllAsync(CancellationToken.None)).Single();
+        Assert.AreEqual("inner", game.ExternalGameId);
+        Assert.AreEqual("Space Game Definitive", game.Name);
+    }
+
+    [TestMethod]
+    public async Task Concurrent_scans_create_only_one_open_session()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-30T12:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var path = @"C:\Games\Concurrent\game.exe";
+        var game = await AddManualGameAsync(games, "Parallel", clock.UtcNow, path);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(path),
+            new FakeGameInstallationProvider(),
+            clock);
+
+        await Task.WhenAll(Enumerable.Range(0, 8)
+            .Select(_ => tracking.ScanOnceAsync(CancellationToken.None)));
+
+        Assert.HasCount(1, await sessions.GetOpenSessionsAsync(CancellationToken.None));
+        Assert.HasCount(1, await sessions.GetSessionsForGameAsync(game.Id, CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task Malformed_launcher_path_does_not_block_manual_tracking()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-30T12:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var manualPath = @"C:\Games\ManualSafe\game.exe";
+        var game = await AddManualGameAsync(games, "Manuell sicher", clock.UtcNow, manualPath);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var sources = new Dictionary<GameSource, LauncherAvailability>
+        {
+            [GameSource.Steam] = LauncherAvailability.Available,
+            [GameSource.Epic] = LauncherAvailability.NotInstalled,
+            [GameSource.Gog] = LauncherAvailability.NotInstalled
+        };
+        var installations = new FakeGameInstallationProvider
+        {
+            Result = new LauncherDiscoveryResult(
+            [
+                new GameInstallationInfo(
+                    GameSource.Steam,
+                    "broken",
+                    "Defekter Eintrag",
+                    @"C:\Broken",
+                    ExecutablePathNormalizer.CreateKey(@"C:\Broken"),
+                    ["\0"])
+            ],
+            sources)
+        };
+        var tracking = CreateTracking(games, sessions, CreateProcessSnapshot(manualPath), installations, clock);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        Assert.HasCount(1, await sessions.GetOpenSessionsAsync(CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task Faulty_state_listener_does_not_interrupt_tracking()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-30T12:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var path = @"C:\Games\Listener\game.exe";
+        var game = await AddManualGameAsync(games, "Listener", clock.UtcNow, path);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(path),
+            new FakeGameInstallationProvider(),
+            clock);
+        tracking.StateChanged += (_, _) => throw new InvalidOperationException("Defekter UI-Listener");
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        Assert.HasCount(1, await sessions.GetOpenSessionsAsync(CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task Duplicate_open_sessions_are_repaired_without_double_counting()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:10:00Z");
+        var clock = new FakeClock(now);
+        var games = new InMemoryGameRepository();
+        var path = @"C:\Games\Duplicate\game.exe";
+        var game = await AddManualGameAsync(games, "Doppelte Session", now.AddMinutes(-10), path);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var original = await sessions.AddAsync(new GameSession
+        {
+            GameId = game.Id,
+            StartedAtUtc = now.AddMinutes(-10),
+            LastSeenAtUtc = now.AddSeconds(-10),
+            BootSessionId = "boot"
+        }, CancellationToken.None);
+        var duplicate = await sessions.AddAsync(new GameSession
+        {
+            GameId = game.Id,
+            StartedAtUtc = now.AddMinutes(-5),
+            LastSeenAtUtc = now.AddSeconds(-10),
+            BootSessionId = "boot"
+        }, CancellationToken.None);
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(path),
+            new FakeGameInstallationProvider(),
+            clock);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        var openSession = (await sessions.GetOpenSessionsAsync(CancellationToken.None)).Single();
+        var storedDuplicate = await sessions.GetByIdAsync(duplicate.Id, CancellationToken.None);
+        Assert.AreEqual(original.Id, openSession.Id);
+        Assert.IsNotNull(storedDuplicate);
+        Assert.AreEqual(0, storedDuplicate.DurationSeconds);
+    }
+
     private static GameTrackingService CreateTracking(
         InMemoryGameRepository games,
         InMemoryGameSessionRepository sessions,
         FakeProcessSnapshotProvider processes,
         FakeGameInstallationProvider installations,
-        FakeClock clock)
+        FakeClock clock,
+        FakeBootSessionProvider? bootSession = null,
+        InMemorySettingsStore? settings = null)
     {
         return new GameTrackingService(
             games,
             sessions,
             processes,
             installations,
-            new FakeBootSessionProvider("boot"),
-            new InMemorySettingsStore(),
+            bootSession ?? new FakeBootSessionProvider("boot"),
+            settings ?? new InMemorySettingsStore(),
             clock,
             NullLogger<GameTrackingService>.Instance);
     }
@@ -192,9 +669,32 @@ public sealed class GameTrackingServiceTests
         RunningProcesses = [CreateProcess(executablePath)]
     };
 
-    private static RunningProcessInfo CreateProcess(string executablePath) => new(
+    private static RunningProcessInfo CreateProcess(string executablePath, DateTimeOffset? startedAtUtc = null) => new(
         executablePath,
-        ExecutablePathNormalizer.CreateKey(executablePath));
+        ExecutablePathNormalizer.CreateKey(executablePath),
+        startedAtUtc);
+
+    private static Task<Game> AddManualGameAsync(
+        InMemoryGameRepository games,
+        string name,
+        DateTimeOffset addedAtUtc,
+        params string[] executablePaths)
+    {
+        return games.AddAsync(new Game
+        {
+            Name = name,
+            Source = GameSource.Manual,
+            AddedAtUtc = addedAtUtc,
+            Executables = executablePaths.Select((path, index) => new GameExecutable
+            {
+                ExecutablePath = path,
+                ExecutablePathKey = ExecutablePathNormalizer.CreateKey(path),
+                ExecutableName = Path.GetFileName(path),
+                IsPrimary = index == 0,
+                AddedAtUtc = addedAtUtc
+            }).ToList()
+        }, CancellationToken.None);
+    }
 
     private static FakeGameInstallationProvider CreateInstallationProvider(
         GameSource source,

@@ -7,7 +7,8 @@ namespace YFTimeTracker.Core.Services;
 public sealed class GameSessionEditor(
     IGameRepository games,
     IGameSessionRepository sessions,
-    IBootSessionProvider bootSessionProvider) : IGameSessionEditor
+    IBootSessionProvider bootSessionProvider,
+    IClock clock) : IGameSessionEditor
 {
     public async Task<GameSession> AddManualSessionAsync(long gameId, DateTimeOffset startedAtUtc, DateTimeOffset endedAtUtc, CancellationToken cancellationToken)
     {
@@ -29,6 +30,11 @@ public sealed class GameSessionEditor(
         var session = await sessions.GetByIdAsync(sessionId, cancellationToken)
             ?? throw new YFTimeTrackerException("Die Session wurde nicht gefunden.");
 
+        if (session.IsOpen)
+        {
+            throw new YFTimeTrackerException("Eine laufende Session kann nicht bearbeitet werden. Pausiere zuerst das Tracking oder beende das Spiel.");
+        }
+
         await EnsureValidSessionAsync(session.GameId, startedAtUtc, endedAtUtc, sessionId, cancellationToken);
 
         session.StartedAtUtc = startedAtUtc;
@@ -39,9 +45,17 @@ public sealed class GameSessionEditor(
         await sessions.UpdateAsync(session, cancellationToken);
     }
 
-    public Task DeleteSessionAsync(long sessionId, CancellationToken cancellationToken)
+    public async Task DeleteSessionAsync(long sessionId, CancellationToken cancellationToken)
     {
-        return sessions.DeleteAsync(sessionId, cancellationToken);
+        var session = await sessions.GetByIdAsync(sessionId, cancellationToken)
+            ?? throw new YFTimeTrackerException("Die Session wurde nicht gefunden.");
+
+        if (session.IsOpen)
+        {
+            throw new YFTimeTrackerException("Eine laufende Session kann nicht gelöscht werden. Pausiere zuerst das Tracking oder beende das Spiel.");
+        }
+
+        await sessions.DeleteAsync(sessionId, cancellationToken);
     }
 
     private async Task EnsureValidSessionAsync(long gameId, DateTimeOffset startedAtUtc, DateTimeOffset endedAtUtc, long? excludedSessionId, CancellationToken cancellationToken)
@@ -54,6 +68,11 @@ public sealed class GameSessionEditor(
         if (endedAtUtc <= startedAtUtc)
         {
             throw new YFTimeTrackerException("Das Session-Ende muss nach dem Start liegen.");
+        }
+
+        if (endedAtUtc > clock.UtcNow)
+        {
+            throw new YFTimeTrackerException("Das Session-Ende darf nicht in der Zukunft liegen.");
         }
 
         if (await sessions.HasOverlapAsync(gameId, startedAtUtc, endedAtUtc, excludedSessionId, cancellationToken))

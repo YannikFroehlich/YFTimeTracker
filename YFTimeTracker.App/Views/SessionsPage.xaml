@@ -1,10 +1,14 @@
 <Page
     x:Class="YFTimeTracker.App.Views.SessionsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Loaded="Page_Loaded"
+    Unloaded="Page_Unloaded">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-        <Grid Padding="24,4,24,28">
+        <Grid x:Name="SessionsRoot" Padding="24,4,24,28" SizeChanged="SessionsRoot_SizeChanged">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -13,66 +17,292 @@
             <Grid Margin="0,0,0,14">
                 <StackPanel>
                     <TextBlock Style="{StaticResource YFPageTitleStyle}" Text="Sessions" />
-                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Eine zentrale Zeitleiste für alle Spielsessions" />
+                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Durchsuche, ergänze und korrigiere deine aufgezeichnete Spielzeit" />
                 </StackPanel>
-                <Border Padding="11,5" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#281B52" BorderBrush="#6545A8" BorderThickness="1" CornerRadius="9">
-                    <StackPanel Orientation="Horizontal" Spacing="7">
-                        <FontIcon FontSize="11" Foreground="#B18CFF" Glyph="&#xE7BA;" />
-                        <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="#C8AEFF" Text="VORSCHAU" />
+                <Button
+                    HorizontalAlignment="Right"
+                    Command="{Binding NewSessionCommand}"
+                    Style="{StaticResource YFAccentButtonStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="13" Glyph="&#xE710;" />
+                        <TextBlock Text="Session hinzufügen" />
                     </StackPanel>
-                </Border>
+                </Button>
             </Grid>
 
-            <Grid Grid.Row="1" ColumnSpacing="12">
+            <Grid x:Name="SummaryGrid" Grid.Row="1" ColumnSpacing="12" RowSpacing="12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Border Background="{StaticResource YFBlueCardGradientBrush}" BorderBrush="#214A91" BorderThickness="1" CornerRadius="14" Padding="20">
-                    <StackPanel Spacing="7">
-                        <TextBlock Style="{StaticResource YFCaptionStyle}" Text="SESSIONS HEUTE" />
-                        <TextBlock FontSize="28" FontWeight="SemiBold" Text="—" />
-                        <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Zentrale Auswertung folgt" />
-                    </StackPanel>
+
+                <Border x:Name="CountCard" Background="{StaticResource YFBlueCardGradientBrush}" BorderBrush="#214A91" BorderThickness="1" CornerRadius="14" Padding="20">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="7">
+                            <TextBlock Style="{StaticResource YFCaptionStyle}" Text="SESSIONS IM FILTER" />
+                            <TextBlock FontSize="28" FontWeight="SemiBold" Text="{Binding SessionCountText}" />
+                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Echte Einträge im gewählten Zeitraum" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Width="48" Height="48" Background="#173E80" CornerRadius="24">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE787;" />
+                        </Border>
+                    </Grid>
                 </Border>
-                <Border Grid.Column="1" Background="{StaticResource YFPurpleCardGradientBrush}" BorderBrush="#38266D" BorderThickness="1" CornerRadius="14" Padding="20">
-                    <StackPanel Spacing="7">
-                        <TextBlock Style="{StaticResource YFCaptionStyle}" Text="LÄNGSTE SESSION" />
-                        <TextBlock FontSize="28" FontWeight="SemiBold" Text="—" />
-                        <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Vorschau ohne Beispielwerte" />
-                    </StackPanel>
+
+                <Border x:Name="TotalCard" Grid.Column="1" Background="{StaticResource YFPurpleCardGradientBrush}" BorderBrush="#38266D" BorderThickness="1" CornerRadius="14" Padding="20">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="7">
+                            <TextBlock Style="{StaticResource YFCaptionStyle}" Text="GESAMTZEIT" />
+                            <TextBlock FontSize="28" FontWeight="SemiBold" Text="{Binding TotalDurationText}" />
+                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Summe der sichtbaren Sessions" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Width="48" Height="48" Background="#34216B" CornerRadius="24">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="#B18CFF" Glyph="&#xE916;" />
+                        </Border>
+                    </Grid>
                 </Border>
-                <Border Grid.Column="2" Background="{StaticResource YFCyanCardGradientBrush}" BorderBrush="#18566D" BorderThickness="1" CornerRadius="14" Padding="20">
-                    <StackPanel Spacing="7">
-                        <TextBlock Style="{StaticResource YFCaptionStyle}" Text="Ø SESSION" />
-                        <TextBlock FontSize="28" FontWeight="SemiBold" Text="—" />
-                        <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Wird später berechnet" />
+
+                <Border x:Name="AverageCard" Grid.Column="2" Background="{StaticResource YFCyanCardGradientBrush}" BorderBrush="#18566D" BorderThickness="1" CornerRadius="14" Padding="20">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="7">
+                            <TextBlock Style="{StaticResource YFCaptionStyle}" Text="Ø SESSION" />
+                            <TextBlock FontSize="28" FontWeight="SemiBold" Text="{Binding AverageDurationText}" />
+                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Durchschnitt im aktuellen Filter" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Width="48" Height="48" Background="#0A4354" CornerRadius="24">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE9D9;" />
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Border Grid.Row="2" Margin="0,14,0,0" Padding="14" Style="{StaticResource YFCardStyle}">
+                <Grid x:Name="FilterGrid" ColumnSpacing="10" RowSpacing="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="220" />
+                        <ColumnDefinition Width="200" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox
+                        x:Name="SearchBox"
+                        PlaceholderText="Spiel oder Startdatum durchsuchen …"
+                        Style="{StaticResource YFTextBoxStyle}"
+                        Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <ComboBox
+                        x:Name="GameFilterBox"
+                        Grid.Column="1"
+                        DisplayMemberPath="Name"
+                        ItemsSource="{Binding GameFilters}"
+                        PlaceholderText="Alle Spiele"
+                        SelectedItem="{Binding SelectedGameFilter, Mode=TwoWay}" />
+                    <ComboBox
+                        x:Name="PeriodFilterBox"
+                        Grid.Column="2"
+                        DisplayMemberPath="Label"
+                        ItemsSource="{Binding PeriodOptions}"
+                        SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}" />
+                    <StackPanel x:Name="FilterButtons" Grid.Column="3" Orientation="Horizontal" Spacing="6">
+                        <Button Command="{Binding ClearFiltersCommand}" Style="{StaticResource YFOutlineButtonStyle}" Content="Zurücksetzen" />
+                        <Button Width="42" Command="{Binding RefreshCommand}" Style="{StaticResource YFIconButtonStyle}" ToolTipService.ToolTip="Sessions aktualisieren">
+                            <FontIcon FontSize="13" Glyph="&#xE72C;" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Grid x:Name="SessionContent" Grid.Row="3" Margin="0,14,0,0" ColumnSpacing="14" RowSpacing="14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="390" />
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="TimelineCard" MinHeight="530" Style="{StaticResource YFCardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Grid Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SESSION-VERLAUF" />
+                                <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Laufende Sessions werden live aktualisiert und sind schreibgeschützt." />
+                            </StackPanel>
+                            <Border Padding="9,4" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#10243F" CornerRadius="8">
+                                <TextBlock FontSize="10" Foreground="{StaticResource YFBlueBrush}" Text="LOKALE DATEN" />
+                            </Border>
+                        </Grid>
+
+                        <Grid Grid.Row="1" Padding="12,9" Background="#0A1728" CornerRadius="9,9,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="52" />
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="1.25*" />
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="105" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="1" Style="{StaticResource YFCaptionStyle}" Text="SPIEL" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource YFCaptionStyle}" Text="ZEITRAUM" />
+                            <TextBlock Grid.Column="3" HorizontalAlignment="Right" Style="{StaticResource YFCaptionStyle}" Text="STATUS" />
+                            <TextBlock Grid.Column="4" HorizontalAlignment="Right" Style="{StaticResource YFCaptionStyle}" Text="DAUER" />
+                        </Grid>
+
+                        <Grid Grid.Row="2">
+                            <ListView
+                                x:Name="SessionsList"
+                                MinHeight="420"
+                                ItemContainerStyle="{StaticResource YFListViewItemStyle}"
+                                ItemsSource="{Binding Sessions}"
+                                SelectedItem="{Binding SelectedSession, Mode=TwoWay}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border MinHeight="66" Padding="12,9" BorderBrush="#142239" BorderThickness="0,1,0,0">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="52" />
+                                                    <ColumnDefinition Width="2*" />
+                                                    <ColumnDefinition Width="1.25*" />
+                                                    <ColumnDefinition Width="110" />
+                                                    <ColumnDefinition Width="105" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border Width="40" Height="40" HorizontalAlignment="Left" Background="{StaticResource YFLogoGradientBrush}" CornerRadius="9">
+                                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="Bold" Text="{Binding GameInitials}" />
+                                                </Border>
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                                    <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding GameName}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock FontSize="9" Foreground="{StaticResource YFCyanBrush}" Text="{Binding SourceLabel}" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="3">
+                                                    <TextBlock FontSize="12" Text="{Binding DateLabel}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock FontSize="11" Foreground="{StaticResource YFMutedBrush}" Text="{Binding TimeRange}" />
+                                                </StackPanel>
+                                                <Border Grid.Column="3" Padding="8,4" HorizontalAlignment="Right" VerticalAlignment="Center" Background="#10243F" CornerRadius="7">
+                                                    <TextBlock FontSize="9" FontWeight="SemiBold" Foreground="{StaticResource YFBlueBrush}" Text="{Binding StatusText}" />
+                                                </Border>
+                                                <TextBlock Grid.Column="4" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource YFBlueBrush}" Text="{Binding Duration}" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+
+                            <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                                <Border Width="68" Height="68" Background="#101E35" BorderBrush="#24446D" BorderThickness="1" CornerRadius="34">
+                                    <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="26" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE787;" />
+                                </Border>
+                                <TextBlock HorizontalAlignment="Center" FontSize="17" FontWeight="SemiBold" Text="Keine Sessions" />
+                                <TextBlock MaxWidth="430" TextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="{Binding EmptyStateText}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border x:Name="EditorCard" Grid.Column="1" Style="{StaticResource YFCardStyle}">
+                    <StackPanel Spacing="15">
+                        <StackPanel Spacing="5">
+                            <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="{Binding EditorTitle}" />
+                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding EditorDescription}" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <ComboBox
+                            Header="Spiel"
+                            DisplayMemberPath="Name"
+                            IsEnabled="{Binding EditorGameSelectionEnabled}"
+                            ItemsSource="{Binding EditorGames}"
+                            PlaceholderText="Spiel auswählen"
+                            SelectedItem="{Binding EditorGame, Mode=TwoWay}" />
+
+                        <StackPanel Spacing="8">
+                            <TextBlock Style="{StaticResource YFCaptionStyle}" Text="START (LOKAL)" />
+                            <Grid RowSpacing="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <DatePicker
+                                    HorizontalAlignment="Stretch"
+                                    Date="{Binding EditorStartDate, Mode=TwoWay}"
+                                    IsEnabled="{Binding EditorFieldsEnabled}" />
+                                <TimePicker
+                                    Grid.Row="1"
+                                    HorizontalAlignment="Stretch"
+                                    ClockIdentifier="24HourClock"
+                                    IsEnabled="{Binding EditorFieldsEnabled}"
+                                    MinuteIncrement="1"
+                                    SelectedTime="{Binding EditorStartTime, Mode=TwoWay}" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock Style="{StaticResource YFCaptionStyle}" Text="ENDE (LOKAL)" />
+                            <Grid RowSpacing="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <DatePicker
+                                    HorizontalAlignment="Stretch"
+                                    Date="{Binding EditorEndDate, Mode=TwoWay}"
+                                    IsEnabled="{Binding EditorFieldsEnabled}" />
+                                <TimePicker
+                                    Grid.Row="1"
+                                    HorizontalAlignment="Stretch"
+                                    ClockIdentifier="24HourClock"
+                                    IsEnabled="{Binding EditorFieldsEnabled}"
+                                    MinuteIncrement="1"
+                                    SelectedTime="{Binding EditorEndTime, Mode=TwoWay}" />
+                            </Grid>
+                        </StackPanel>
+
+                        <Border Padding="12" Background="#09182A" BorderBrush="#183558" BorderThickness="1" CornerRadius="9">
+                            <StackPanel Orientation="Horizontal" Spacing="9">
+                                <FontIcon FontSize="13" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE946;" />
+                                <TextBlock MaxWidth="310" Style="{StaticResource YFMutedTextStyle}" Text="Zeiten werden lokal eingegeben und intern sicher als UTC gespeichert." TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Button Command="{Binding SaveSessionCommand}" IsEnabled="{Binding EditorCanSave}" Style="{StaticResource YFAccentButtonStyle}" Content="{Binding SaveButtonText}" />
+                        <Button Command="{Binding NewSessionCommand}" Style="{StaticResource YFOutlineButtonStyle}" Content="Neue Eingabe" />
+                        <Button Click="DeleteSession_Click" IsEnabled="{Binding CanDeleteSelected}" Style="{StaticResource YFDangerButtonStyle}" Content="Ausgewählte Session löschen" />
                     </StackPanel>
                 </Border>
             </Grid>
 
-            <Border Grid.Row="2" Margin="0,14,0,0" MinHeight="410" Style="{StaticResource YFCardStyle}">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <Grid>
-                        <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SESSION-ZEITLEISTE" />
-                        <Border Padding="9,4" HorizontalAlignment="Right" Background="#182440" CornerRadius="7">
-                            <TextBlock FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="DEMÄCHST" />
-                        </Border>
-                    </Grid>
-                    <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14">
-                        <Border Width="82" Height="82" Background="#101E35" BorderBrush="#24446D" BorderThickness="1" CornerRadius="41">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="31" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE787;" />
-                        </Border>
-                        <TextBlock HorizontalAlignment="Center" FontSize="21" FontWeight="SemiBold" Text="Zentrale Session-Ansicht in Vorbereitung" />
-                        <TextBlock MaxWidth="570" TextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="Sessions lassen sich bereits pro Spiel in der Bibliothek ansehen, ergänzen und löschen. Diese Seite wird später alle Sessions zusammenführen und filtern." TextWrapping="Wrap" />
-                        <Button Click="OpenLibrary_Click" Style="{StaticResource YFAccentButtonStyle}" Content="Sessions in der Bibliothek verwalten" />
-                    </StackPanel>
-                </Grid>
+            <Border Grid.Row="4" Margin="0,12,0,0" Padding="12,9" Background="#0A1728" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
+                <StackPanel Orientation="Horizontal" Spacing="9">
+                    <FontIcon FontSize="13" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE946;" />
+                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+                </StackPanel>
             </Border>
         </Grid>
     </ScrollViewer>
