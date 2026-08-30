@@ -1,0 +1,86 @@
+<Page
+    x:Class="YFTimeTracker.App.Views.StatisticsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <Grid Padding="24,4,24,28">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource YFPageTitleStyle}" Text="Statistiken" />
+                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Langzeittrends, Vergleiche und persönliche Spielmuster" />
+                </StackPanel>
+                <Border Padding="11,5" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#281B52" BorderBrush="#6545A8" BorderThickness="1" CornerRadius="9">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <FontIcon FontSize="11" Foreground="#B18CFF" Glyph="&#xE7BA;" />
+                        <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="#C8AEFF" Text="VORSCHAU" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="1" ColumnSpacing="14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.25*" />
+                    <ColumnDefinition Width="0.75*" />
+                </Grid.ColumnDefinitions>
+                <Border MinHeight="340" Style="{StaticResource YFCardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SPIELZEIT-TREND" />
+                            <TextBlock HorizontalAlignment="Right" Style="{StaticResource YFCaptionStyle}" Text="BEISPIELDARSTELLUNG" />
+                        </Grid>
+                        <Grid Grid.Row="1" Margin="0,22,0,0">
+                            <Border Height="1" VerticalAlignment="Top" Background="#182840" />
+                            <Border Height="1" VerticalAlignment="Center" Background="#182840" />
+                            <Border Height="1" VerticalAlignment="Bottom" Background="#182840" />
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Bottom" Orientation="Horizontal" Spacing="18">
+                                <Border Width="42" Height="76" VerticalAlignment="Bottom" Background="#173764" CornerRadius="6,6,2,2" />
+                                <Border Width="42" Height="122" VerticalAlignment="Bottom" Background="#225BB4" CornerRadius="6,6,2,2" />
+                                <Border Width="42" Height="96" VerticalAlignment="Bottom" Background="#38228A" CornerRadius="6,6,2,2" />
+                                <Border Width="42" Height="164" VerticalAlignment="Bottom" Background="#347BFF" CornerRadius="6,6,2,2" />
+                                <Border Width="42" Height="130" VerticalAlignment="Bottom" Background="#6942DC" CornerRadius="6,6,2,2" />
+                                <Border Width="42" Height="184" VerticalAlignment="Bottom" Background="#2B9FC1" CornerRadius="6,6,2,2" />
+                            </StackPanel>
+                            <Border Padding="12,7" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#E608111F" BorderBrush="#475C7A" BorderThickness="1" CornerRadius="8">
+                                <TextBlock FontSize="11" Foreground="{StaticResource YFTextBrush}" Text="VORSCHAU · keine echten Werte" />
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="1" MinHeight="340" Style="{StaticResource YFCardStyle}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="LIEBLINGSSPIELE" />
+                        <StackPanel Margin="0,24,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14">
+                            <Grid Width="160" Height="160">
+                                <Ellipse Stroke="#192B45" StrokeThickness="20" />
+                                <Ellipse Stroke="{StaticResource YFPurpleBrush}" StrokeDashArray="3,3" StrokeThickness="20" />
+                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource YFMutedBrush}" Text="Demnächst" />
+                            </Grid>
+                            <TextBlock MaxWidth="250" TextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="Verteilung der Spielzeit nach Spielen" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Grid.Row="2" Margin="0,14,0,0" Padding="18" Background="#0A1728" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="12">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <FontIcon FontSize="18" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE9D2;" />
+                    <StackPanel>
+                        <TextBlock FontWeight="SemiBold" Text="Statistik-Modul in Vorbereitung" />
+                        <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Das Dashboard verwendet bereits echte Tages- und Wochenwerte. Erweiterte Filter und Langzeitvergleiche folgen später." TextWrapping="Wrap" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</Page>

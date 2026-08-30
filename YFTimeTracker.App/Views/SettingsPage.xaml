@@ -1,0 +1,213 @@
+<Page
+    x:Class="YFTimeTracker.App.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Loaded="Page_Loaded">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <Grid x:Name="SettingsRoot" Padding="24,4,24,28" SizeChanged="SettingsRoot_SizeChanged">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource YFPageTitleStyle}" Text="Einstellungen" />
+                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Passe Tracking, Windows-Integration und lokale Datensicherung an" />
+                </StackPanel>
+                <Button HorizontalAlignment="Right" Command="{Binding SaveCommand}" Style="{StaticResource YFAccentButtonStyle}" Content="Änderungen speichern" />
+            </Grid>
+
+            <Grid x:Name="SettingsGrid" Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="TrackingSettingsCard" Style="{StaticResource YFCardStyle}">
+                    <StackPanel Spacing="18">
+                        <Grid>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="TRACKING" />
+                                <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Automatische Erkennung und Aktualisierung" />
+                            </StackPanel>
+                            <Border Width="46" Height="46" HorizontalAlignment="Right" Background="#102B50" CornerRadius="12">
+                                <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE823;" />
+                            </Border>
+                        </Grid>
+
+                        <Border Style="{StaticResource YFSubtleCardStyle}">
+                            <ToggleSwitch
+                                Header="Tracking aktivieren"
+                                OffContent="Pausiert"
+                                OnContent="Aktiv"
+                                IsOn="{Binding TrackingEnabled, Mode=TwoWay}" />
+                        </Border>
+
+                        <Border Style="{StaticResource YFSubtleCardStyle}">
+                            <StackPanel Spacing="10">
+                                <ToggleSwitch
+                                    Header="Launcher automatisch erkennen"
+                                    OffContent="Nur Bibliothek"
+                                    OnContent="Steam, Epic und GOG"
+                                    IsOn="{Binding LauncherDiscoveryEnabled, Mode=TwoWay}" />
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Foreground="{StaticResource YFBlueBrush}" Text="Steam" />
+                                    <TextBlock Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource YFMutedTextStyle}" Text="{Binding SteamStatusText}" />
+                                </Grid>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Foreground="{StaticResource YFBlueBrush}" Text="Epic" />
+                                    <TextBlock Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource YFMutedTextStyle}" Text="{Binding EpicStatusText}" />
+                                </Grid>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Foreground="{StaticResource YFBlueBrush}" Text="GOG" />
+                                    <TextBlock Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource YFMutedTextStyle}" Text="{Binding GogStatusText}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <NumberBox
+                                Header="Scan-Intervall (Sek.)"
+                                Minimum="1"
+                                Maximum="60"
+                                SpinButtonPlacementMode="Compact"
+                                Value="{Binding TrackingIntervalSeconds, Mode=TwoWay}" />
+                            <NumberBox
+                                Grid.Column="1"
+                                Header="Heartbeat (Sek.)"
+                                Minimum="5"
+                                Maximum="300"
+                                SpinButtonPlacementMode="Compact"
+                                Value="{Binding HeartbeatIntervalSeconds, Mode=TwoWay}" />
+                        </Grid>
+
+                        <Border Padding="12,10" Background="#08182B" CornerRadius="9">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <FontIcon FontSize="14" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE946;" />
+                                <TextBlock MaxWidth="420" Style="{StaticResource YFMutedTextStyle}" Text="Kürzere Intervalle reagieren schneller, benötigen aber etwas mehr Systemleistung." TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="WindowsSettingsCard" Grid.Column="1" Margin="14,0,0,0" Style="{StaticResource YFCardStyle}">
+                    <StackPanel Spacing="18">
+                        <Grid>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="WINDOWS &amp; TRAY" />
+                                <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Verhalten im Hintergrund und beim Systemstart" />
+                            </StackPanel>
+                            <Border Width="46" Height="46" HorizontalAlignment="Right" Background="#291B52" CornerRadius="12">
+                                <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="#B18CFF" Glyph="&#xE7F4;" />
+                            </Border>
+                        </Grid>
+
+                        <Border Style="{StaticResource YFSubtleCardStyle}">
+                            <ToggleSwitch
+                                Header="Beim Schließen im Tray behalten"
+                                OffContent="App beenden"
+                                OnContent="Im Hintergrund"
+                                IsOn="{Binding MinimizeOnClose, Mode=TwoWay}" />
+                        </Border>
+
+                        <Border Style="{StaticResource YFSubtleCardStyle}">
+                            <Grid>
+                                <ToggleSwitch
+                                    Header="Mit Windows starten"
+                                    OffContent="Deaktiviert"
+                                    OnContent="Aktiviert"
+                                    IsOn="{Binding StartWithWindows, Mode=TwoWay}" />
+                                <Border Padding="9,4" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#182440" CornerRadius="7">
+                                    <TextBlock FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="{Binding StartupStateText}" />
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <Border Padding="12,10" Background="#11152B" CornerRadius="9">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Ellipse Width="8" Height="8" Fill="{StaticResource YFGreenBrush}" />
+                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Das Tray-Symbol zeigt den aktuellen Trackingstatus." TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="DataSettingsCard" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,14,0,0" Style="{StaticResource YFCardStyle}">
+                    <Grid ColumnSpacing="24">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.1*" />
+                            <ColumnDefinition Width="0.9*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="14">
+                            <Grid>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="DATEN &amp; SICHERUNG" />
+                                    <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Alle Daten bleiben lokal auf diesem Computer" />
+                                </StackPanel>
+                                <Border Width="46" Height="46" HorizontalAlignment="Right" Background="#0B3039" CornerRadius="12">
+                                    <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE8F1;" />
+                                </Border>
+                            </Grid>
+                            <NumberBox
+                                Header="Backup-Aufbewahrung (Tage)"
+                                Maximum="365"
+                                Minimum="1"
+                                SpinButtonPlacementMode="Compact"
+                                Value="{Binding BackupRetentionDays, Mode=TwoWay}" />
+                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Speicherort: %LocalAppData%\YFTimeTracker" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="10">
+                            <Button HorizontalAlignment="Stretch" Command="{Binding ExportCommand}" Style="{StaticResource YFAccentButtonStyle}">
+                                <StackPanel Orientation="Horizontal" Spacing="9">
+                                    <FontIcon FontSize="14" Glyph="&#xE74E;" />
+                                    <TextBlock Text="Daten exportieren" />
+                                </StackPanel>
+                            </Button>
+                            <Button HorizontalAlignment="Stretch" Command="{Binding ImportCommand}" Style="{StaticResource YFOutlineButtonStyle}">
+                                <StackPanel Orientation="Horizontal" Spacing="9">
+                                    <FontIcon FontSize="14" Glyph="&#xE8B5;" />
+                                    <TextBlock Text="Sicherung importieren" />
+                                </StackPanel>
+                            </Button>
+                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Exporte enthalten Spiele, Sessions und Einstellungen in einem ZIP-Archiv." TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Border Grid.Row="2" Margin="0,14,0,0" Padding="14,10" Background="#0A1728" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="9">
+                        <FontIcon FontSize="13" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE946;" />
+                        <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <TextBlock HorizontalAlignment="Right" FontSize="10" Foreground="{StaticResource YFGreenBrush}" Text="LOKALE SPEICHERUNG" />
+                </Grid>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</Page>

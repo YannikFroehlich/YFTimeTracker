@@ -1,0 +1,378 @@
+<Page
+    x:Class="YFTimeTracker.App.Views.DashboardPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Loaded="Page_Loaded"
+    Unloaded="Page_Unloaded">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <Grid
+            x:Name="DashboardRoot"
+            Padding="24,4,24,28"
+            SizeChanged="DashboardRoot_SizeChanged">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource YFPageTitleStyle}" Text="Dashboard" />
+                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Deine Spielzeit auf einen Blick" />
+                </StackPanel>
+                <Button
+                    HorizontalAlignment="Right"
+                    Command="{Binding RefreshCommand}"
+                    Style="{StaticResource YFOutlineButtonStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="13" Glyph="&#xE72C;" />
+                        <TextBlock Text="Aktualisieren" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <Grid x:Name="StatsGrid" Grid.Row="1" Margin="0,0,0,14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border
+                    x:Name="TodayCard"
+                    MinHeight="142"
+                    Padding="20"
+                    Background="{StaticResource YFBlueCardGradientBrush}"
+                    BorderBrush="#214A91"
+                    BorderThickness="1"
+                    CornerRadius="14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="82" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid Width="66" Height="66" HorizontalAlignment="Left" VerticalAlignment="Center">
+                            <Ellipse Stroke="#17458E" StrokeThickness="7" />
+                            <Ellipse Stroke="{StaticResource YFBlueBrush}" StrokeDashArray="4,2" StrokeThickness="7" />
+                            <FontIcon FontSize="25" Foreground="#72A8FF" Glyph="&#xE823;" />
+                        </Grid>
+                        <Grid Grid.Column="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Style="{StaticResource YFCaptionStyle}" Text="HEUTE" />
+                            <TextBlock Grid.Row="1" Margin="0,4,0,0" FontSize="28" FontWeight="SemiBold" Text="{Binding TodayText}" />
+                            <Grid Grid.Row="2" Margin="0,5,0,0">
+                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding TodaySessionText}" />
+                                <TextBlock HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" Foreground="{Binding TodayComparisonBrush}" Text="{Binding TodayComparisonText}" />
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border
+                    x:Name="WeekCard"
+                    Grid.Column="1"
+                    MinHeight="142"
+                    Margin="12,0"
+                    Padding="20"
+                    Background="{StaticResource YFPurpleCardGradientBrush}"
+                    BorderBrush="#38266D"
+                    BorderThickness="1"
+                    CornerRadius="14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="82" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid Width="66" Height="66" HorizontalAlignment="Left" VerticalAlignment="Center">
+                            <Ellipse Stroke="#372075" StrokeThickness="7" />
+                            <Ellipse Stroke="{StaticResource YFPurpleBrush}" StrokeDashArray="3,2" StrokeThickness="7" />
+                            <FontIcon FontSize="24" Foreground="#B58DFF" Glyph="&#xE787;" />
+                        </Grid>
+                        <Grid Grid.Column="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Style="{StaticResource YFCaptionStyle}" Text="DIESE WOCHE" />
+                            <TextBlock Grid.Row="1" Margin="0,4,0,0" FontSize="28" FontWeight="SemiBold" Text="{Binding WeekText}" />
+                            <Grid Grid.Row="2" Margin="0,5,0,0">
+                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding WeekSessionText}" />
+                                <TextBlock HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" Foreground="{Binding WeekComparisonBrush}" Text="{Binding WeekComparisonText}" />
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border
+                    x:Name="TotalCard"
+                    Grid.Column="2"
+                    MinHeight="142"
+                    Padding="20"
+                    Background="{StaticResource YFCyanCardGradientBrush}"
+                    BorderBrush="#18566D"
+                    BorderThickness="1"
+                    CornerRadius="14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="82" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid Width="66" Height="66" HorizontalAlignment="Left" VerticalAlignment="Center">
+                            <Ellipse Stroke="#075268" StrokeThickness="7" />
+                            <Ellipse Stroke="{StaticResource YFCyanBrush}" StrokeDashArray="5,2" StrokeThickness="7" />
+                            <FontIcon FontSize="25" Foreground="#72F5FF" Glyph="&#xE7AC;" />
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                            <TextBlock Style="{StaticResource YFCaptionStyle}" Text="GESAMTSPIELZEIT" />
+                            <TextBlock FontSize="28" FontWeight="SemiBold" Text="{Binding TotalText}" />
+                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding GamesPlayedText}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Grid x:Name="DetailsGrid" Grid.Row="2" Margin="0,0,0,14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0.92*" />
+                    <ColumnDefinition Width="1.08*" />
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="TrackingCard" MinHeight="330" Style="{StaticResource YFCardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="AKTUELLES TRACKING" />
+                            <Border
+                                Padding="9,4"
+                                HorizontalAlignment="Right"
+                                Background="#102B27"
+                                BorderBrush="#1E795D"
+                                BorderThickness="1"
+                                CornerRadius="10">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Ellipse Width="7" Height="7" Fill="{StaticResource YFGreenBrush}" />
+                                    <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource YFGreenBrush}" Text="LIVE" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Grid
+                            x:Name="ActiveGameContent"
+                            Grid.Row="1"
+                            Margin="0,18,0,0"
+                            Visibility="{Binding ActiveGameVisibility}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Margin="0,0,18,0" Background="{StaticResource YFLogoGradientBrush}" CornerRadius="12">
+                                <Grid>
+                                    <Ellipse Width="150" Height="150" Margin="0,0,-72,-74" HorizontalAlignment="Right" VerticalAlignment="Bottom" Fill="#10162E" Opacity="0.44" />
+                                    <Ellipse Width="96" Height="96" Margin="-52,-46,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Stroke="White" StrokeThickness="1" Opacity="0.18" />
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        FontFamily="Segoe UI Variable Display"
+                                        FontSize="38"
+                                        FontWeight="Bold"
+                                        Foreground="White"
+                                        Text="{Binding ActiveGameInitials}" />
+                                    <Border Margin="12" Padding="8,4" HorizontalAlignment="Left" VerticalAlignment="Bottom" Background="#B2050B16" CornerRadius="6">
+                                        <TextBlock FontSize="9" FontWeight="SemiBold" Text="AUTOMATISCH" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
+                                <TextBlock FontSize="24" FontWeight="SemiBold" Text="{Binding ActiveGameName}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding ActiveGameHint}" TextWrapping="Wrap" />
+                                <TextBlock FontSize="11" Foreground="{StaticResource YFBlueBrush}" Text="{Binding AdditionalRunningGamesText}" />
+                                <TextBlock Margin="0,7,0,0" Style="{StaticResource YFCaptionStyle}" Text="SESSION-LAUFZEIT" />
+                                <TextBlock
+                                    FontFamily="Consolas"
+                                    FontSize="31"
+                                    FontWeight="SemiBold"
+                                    Foreground="#8BB7FF"
+                                    Text="{Binding ActiveElapsedText}" />
+                                <StackPanel Margin="0,5,0,0" Orientation="Horizontal" Spacing="8">
+                                    <Button Click="OpenLibrary_Click" Style="{StaticResource YFOutlineButtonStyle}" Content="Bibliothek" />
+                                    <Button Command="{Binding ToggleTrackingCommand}" Style="{StaticResource YFDangerButtonStyle}" Content="{Binding PauseButtonText}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Grid.Row="1" Margin="0,18,0,0" Visibility="{Binding ActiveEmptyVisibility}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                                <Border Width="74" Height="74" Background="#101E35" BorderBrush="#24446D" BorderThickness="1" CornerRadius="37">
+                                    <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="28" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE7FC;" />
+                                </Border>
+                                <TextBlock HorizontalAlignment="Center" FontSize="20" FontWeight="SemiBold" Text="{Binding ActiveGameName}" />
+                                <TextBlock MaxWidth="420" HorizontalAlignment="Center" TextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="{Binding ActiveGameHint}" TextWrapping="Wrap" />
+                                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Spacing="8">
+                                    <Button Click="OpenLibrary_Click" Style="{StaticResource YFAccentButtonStyle}" Content="Spiel registrieren" />
+                                    <Button Command="{Binding ToggleTrackingCommand}" Style="{StaticResource YFOutlineButtonStyle}" Content="{Binding PauseButtonText}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border x:Name="ChartCard" Grid.Column="1" Margin="14,0,0,0" MinHeight="330" Style="{StaticResource YFCardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="WÖCHENTLICHE SPIELZEIT" />
+                            <Border Padding="9,4" HorizontalAlignment="Right" Background="#121E32" CornerRadius="7">
+                                <TextBlock FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="DIESE WOCHE" />
+                            </Border>
+                        </Grid>
+
+                        <Grid Grid.Row="1" Margin="0,18,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="38" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid>
+                                <TextBlock VerticalAlignment="Top" Style="{StaticResource YFMutedTextStyle}" Text="{Binding ChartMaximumText}" />
+                                <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="{Binding ChartMiddleText}" />
+                                <TextBlock VerticalAlignment="Bottom" Style="{StaticResource YFMutedTextStyle}" Text="0 h" />
+                            </Grid>
+                            <Grid Grid.Column="1">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="1" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="1" />
+                                </Grid.RowDefinitions>
+                                <Border Background="#1B2A40" />
+                                <Border Grid.Row="1" Height="1" VerticalAlignment="Center" Background="#17243A" />
+                                <Border Grid.Row="2" Background="#1B2A40" />
+                                <ItemsControl Grid.RowSpan="3" ItemsSource="{Binding WeekDays}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <ItemsStackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Width="64" Height="196">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="28" />
+                                                    <RowDefinition Height="140" />
+                                                    <RowDefinition Height="28" />
+                                                </Grid.RowDefinitions>
+                                                <TextBlock HorizontalAlignment="Center" FontSize="10" FontWeight="SemiBold" Text="{Binding DurationText}" />
+                                                <Border
+                                                    Grid.Row="1"
+                                                    Width="34"
+                                                    Height="{Binding BarHeight}"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Bottom"
+                                                    Background="{Binding BarBrush}"
+                                                    CornerRadius="5,5,2,2" />
+                                                <TextBlock Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Bottom" Style="{StaticResource YFMutedTextStyle}" Text="{Binding DayLabel}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                        </Grid>
+
+                        <Grid Grid.Row="2" Margin="0,14,0,0">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="14" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE823;" />
+                                <TextBlock FontWeight="SemiBold" Foreground="{StaticResource YFBlueBrush}" Text="{Binding WeekText}" />
+                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="insgesamt" />
+                            </StackPanel>
+                            <TextBlock HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" Foreground="{Binding WeekComparisonBrush}" Text="{Binding WeekComparisonText}" />
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Border Grid.Row="3" Style="{StaticResource YFCardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="ZULETZT GESPIELT" />
+                        <Button HorizontalAlignment="Right" Click="OpenLibrary_Click" Style="{StaticResource YFOutlineButtonStyle}" Content="Alle Spiele" />
+                    </Grid>
+                    <Grid Grid.Row="1" Margin="0,16,0,8" Visibility="{Binding RecentGamesVisibility}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="1*" />
+                            <ColumnDefinition Width="1.25*" />
+                            <ColumnDefinition Width="38" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Style="{StaticResource YFCaptionStyle}" Text="SPIEL" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource YFCaptionStyle}" Text="GESAMTSPIELZEIT" />
+                        <TextBlock Grid.Column="2" Style="{StaticResource YFCaptionStyle}" Text="LETZTE SESSION" />
+                    </Grid>
+                    <ListView
+                        Grid.Row="2"
+                        IsItemClickEnabled="False"
+                        IsTabStop="False"
+                        ItemContainerStyle="{StaticResource YFListViewItemStyle}"
+                        ItemsSource="{Binding RecentGames}"
+                        SelectionMode="None"
+                        Visibility="{Binding RecentGamesVisibility}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Border MinHeight="58" BorderBrush="#142239" BorderThickness="0,1,0,0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="1*" />
+                                            <ColumnDefinition Width="1.25*" />
+                                            <ColumnDefinition Width="38" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Orientation="Horizontal" Spacing="12">
+                                            <Border Width="48" Height="36" VerticalAlignment="Center" Background="{StaticResource YFLogoGradientBrush}" CornerRadius="6">
+                                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="Bold" Text="{Binding Initials}" />
+                                            </Border>
+                                            <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="#C7D2E6" Text="{Binding TotalPlaytime}" />
+                                        <TextBlock Grid.Column="2" VerticalAlignment="Center" Foreground="{Binding LastSessionBrush}" Text="{Binding LastSession}" />
+                                        <FontIcon Grid.Column="3" VerticalAlignment="Center" FontSize="14" Foreground="{StaticResource YFMutedBrush}" Glyph="&#xE712;" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <Border Grid.Row="2" MinHeight="150" Background="#07101E" CornerRadius="10" Visibility="{Binding RecentEmptyVisibility}">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+                            <FontIcon FontSize="26" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE8D4;" />
+                            <TextBlock FontSize="16" FontWeight="SemiBold" Text="Noch keine Spielhistorie" />
+                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Abgeschlossene Sessions erscheinen automatisch hier." />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</Page>

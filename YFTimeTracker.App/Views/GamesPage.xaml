@@ -1,0 +1,217 @@
+<Page
+    x:Class="YFTimeTracker.App.Views.GamesPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Loaded="Page_Loaded">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <Grid x:Name="LibraryRoot" Padding="24,4,24,28" SizeChanged="LibraryRoot_SizeChanged">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource YFPageTitleStyle}" Text="Bibliothek" />
+                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Verwalte Spiele und korrigiere aufgezeichnete Sessions" />
+                </StackPanel>
+                <Button
+                    HorizontalAlignment="Right"
+                    Command="{Binding NewGameCommand}"
+                    Style="{StaticResource YFAccentButtonStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="13" Glyph="&#xE710;" />
+                        <TextBlock Text="Neues Spiel" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <Grid x:Name="LibraryContent" Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="360" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="GamesListCard" Style="{StaticResource YFCardStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="DEINE SPIELE" />
+                            <Button
+                                Width="34"
+                                Height="34"
+                                HorizontalAlignment="Right"
+                                Command="{Binding RefreshCommand}"
+                                Style="{StaticResource YFIconButtonStyle}"
+                                ToolTipService.ToolTip="Bibliothek aktualisieren">
+                                <FontIcon FontSize="13" Glyph="&#xE72C;" />
+                            </Button>
+                        </Grid>
+                        <TextBlock Grid.Row="1" Margin="0,8,0,12" Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+                        <ListView
+                            Grid.Row="2"
+                            MinHeight="480"
+                            ItemContainerStyle="{StaticResource YFListViewItemStyle}"
+                            ItemsSource="{Binding Games}"
+                            SelectedItem="{Binding SelectedGame, Mode=TwoWay}">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,8" Padding="10" Background="#091628" BorderBrush="#172B46" BorderThickness="1" CornerRadius="10">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="56" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border Width="44" Height="44" Background="{StaticResource YFLogoGradientBrush}" CornerRadius="9">
+                                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Text="{Binding Initials}" />
+                                            </Border>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                                <TextBlock FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock FontSize="11" Foreground="{StaticResource YFMutedBrush}" Text="{Binding ExecutableSummary}" TextTrimming="CharacterEllipsis" />
+                                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                                    <TextBlock FontSize="10" Foreground="{StaticResource YFBlueBrush}" Text="{Binding PathStatus}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock FontSize="9" Foreground="{StaticResource YFCyanBrush}" Text="{Binding SourceLabel}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </Grid>
+                </Border>
+
+                <Border x:Name="EditorCard" Grid.Column="1" Margin="14,0,0,0" Style="{StaticResource YFCardStyle}">
+                    <StackPanel Spacing="18">
+                        <Grid>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SPIELINFORMATIONEN" />
+                                <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Ein Spiel wird anhand seines vollständigen EXE-Pfads erkannt." />
+                            </StackPanel>
+                            <Border Padding="9,4" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#10243F" CornerRadius="8">
+                                <TextBlock FontSize="10" Foreground="{StaticResource YFBlueBrush}" Text="LOKALES TRACKING" />
+                            </Border>
+                        </Grid>
+
+                        <TextBox
+                            Header="Anzeigename"
+                            PlaceholderText="Zum Beispiel: Minecraft"
+                            Style="{StaticResource YFTextBoxStyle}"
+                            Text="{Binding DisplayName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox
+                                Header="EXE-Pfad"
+                                PlaceholderText="C:\Spiele\MeinSpiel\game.exe"
+                                Style="{StaticResource YFTextBoxStyle}"
+                                Text="{Binding ExecutablePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button
+                                Grid.Column="1"
+                                VerticalAlignment="Bottom"
+                                Command="{Binding BrowseExecutableCommand}"
+                                Style="{StaticResource YFOutlineButtonStyle}"
+                                Content="Durchsuchen" />
+                        </Grid>
+
+                        <StackPanel Orientation="Horizontal" Spacing="9">
+                            <Button Command="{Binding AddOrUpdateGameCommand}" Style="{StaticResource YFAccentButtonStyle}" Content="Spiel speichern" />
+                            <Button Command="{Binding DeleteSelectedGameCommand}" Style="{StaticResource YFDangerButtonStyle}" Content="Spiel löschen" />
+                            <Button Command="{Binding NewGameCommand}" Style="{StaticResource YFOutlineButtonStyle}" Content="Eingaben leeren" />
+                        </StackPanel>
+
+                        <Border Height="1" Background="{StaticResource YFStrokeBrush}" />
+
+                        <StackPanel Spacing="5">
+                            <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SESSIONS" />
+                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Fehlende Spielzeit kann manuell ergänzt werden." />
+                        </StackPanel>
+
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Header="Start (lokal)" Style="{StaticResource YFTextBoxStyle}" Text="{Binding ManualStartText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBox Grid.Column="1" Header="Ende (lokal)" Style="{StaticResource YFTextBoxStyle}" Text="{Binding ManualEndText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button
+                                Grid.Column="2"
+                                VerticalAlignment="Bottom"
+                                Command="{Binding AddManualSessionCommand}"
+                                Style="{StaticResource YFOutlineButtonStyle}"
+                                Content="Hinzufügen" />
+                        </Grid>
+
+                        <Border Background="#07111F" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="10">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Grid Padding="14,10" Background="#0A1728">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="110" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Style="{StaticResource YFCaptionStyle}" Text="START" />
+                                    <TextBlock Grid.Column="1" Style="{StaticResource YFCaptionStyle}" Text="ENDE" />
+                                    <TextBlock Grid.Column="2" HorizontalAlignment="Right" Style="{StaticResource YFCaptionStyle}" Text="DAUER" />
+                                </Grid>
+                                <ListView
+                                    Grid.Row="1"
+                                    MinHeight="220"
+                                    ItemContainerStyle="{StaticResource YFListViewItemStyle}"
+                                    ItemsSource="{Binding Sessions}"
+                                    SelectedItem="{Binding SelectedSession, Mode=TwoWay}">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border MinHeight="48" Padding="14,8" BorderBrush="#142239" BorderThickness="0,1,0,0">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="110" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock VerticalAlignment="Center" FontSize="12" Text="{Binding StartedAt}" />
+                                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource YFMutedBrush}" Text="{Binding EndedAt}" />
+                                                    <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource YFBlueBrush}" Text="{Binding Duration}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Grid>
+                        </Border>
+
+                        <Button
+                            HorizontalAlignment="Left"
+                            Command="{Binding DeleteSelectedSessionCommand}"
+                            Style="{StaticResource YFDangerButtonStyle}"
+                            Content="Ausgewählte Session löschen" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Grid.Row="2" Margin="0,12,0,0" Padding="12,9" Background="#0A1728" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
+                <StackPanel Orientation="Horizontal" Spacing="9">
+                    <FontIcon FontSize="13" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE946;" />
+                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</Page>

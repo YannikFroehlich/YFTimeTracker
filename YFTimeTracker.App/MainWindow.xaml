@@ -1,0 +1,246 @@
+<Window
+    x:Class="YFTimeTracker.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="YFTimeTracker">
+    <Grid x:Name="RootGrid" Background="{StaticResource YFBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid
+            x:Name="TitleBarDragRegion"
+            Background="{StaticResource YFNavigationBrush}">
+            <TextBlock
+                Margin="16,0,0,0"
+                VerticalAlignment="Center"
+                FontSize="11"
+                Foreground="{StaticResource YFMutedBrush}"
+                Text="YFTimeTracker" />
+        </Grid>
+
+        <NavigationView
+            x:Name="Navigation"
+            Grid.Row="1"
+            AlwaysShowHeader="True"
+            Background="{StaticResource YFBackgroundBrush}"
+            CompactModeThresholdWidth="860"
+            ExpandedModeThresholdWidth="1180"
+            IsBackButtonVisible="Collapsed"
+            IsPaneOpen="True"
+            IsPaneToggleButtonVisible="False"
+            IsSettingsVisible="False"
+            OpenPaneLength="272"
+            PaneDisplayMode="Left"
+            SelectionChanged="Navigation_SelectionChanged">
+            <NavigationView.Resources>
+                <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#040912" />
+                <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#040912" />
+                <SolidColorBrush x:Key="NavigationViewItemForeground" Color="#A9B5C9" />
+                <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="#F4F7FF" />
+                <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#132D64" />
+                <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="#173875" />
+                <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="#0D1B30" />
+                <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="#3182FF" />
+            </NavigationView.Resources>
+
+            <NavigationView.PaneHeader>
+                <Grid Height="78" Margin="12,2,12,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="54" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border
+                        Width="42"
+                        Height="42"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Background="{StaticResource YFLogoGradientBrush}"
+                        CornerRadius="12">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontFamily="Segoe UI Variable Display"
+                            FontSize="18"
+                            FontStyle="Italic"
+                            FontWeight="Bold"
+                            Foreground="White"
+                            Text="YF" />
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                        <TextBlock
+                            FontFamily="Segoe UI Variable Display"
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            Foreground="{StaticResource YFTextBrush}"
+                            Text="YFTimeTracker" />
+                        <TextBlock
+                            FontSize="10"
+                            CharacterSpacing="80"
+                            Foreground="{StaticResource YFBlueBrush}"
+                            Text="LOCAL EDITION" />
+                    </StackPanel>
+                </Grid>
+            </NavigationView.PaneHeader>
+
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="Dashboard" Icon="Home" Tag="dashboard" />
+                <NavigationViewItem Content="Bibliothek" Tag="library">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE7FC;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Sessions" Tag="sessions">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE787;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Statistiken" Tag="statistics">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE9D2;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem Content="Einstellungen" Icon="Setting" Tag="settings" />
+            </NavigationView.FooterMenuItems>
+
+            <NavigationView.PaneFooter>
+                <Border
+                    Margin="14,8,14,14"
+                    Padding="16"
+                    BorderBrush="{StaticResource YFStrokeBrush}"
+                    BorderThickness="1"
+                    CornerRadius="14">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#0C2336" Offset="0" />
+                            <GradientStop Color="#15103B" Offset="0.64" />
+                            <GradientStop Color="#070D1A" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <Grid MinHeight="152">
+                        <Ellipse
+                            Width="120"
+                            Height="120"
+                            Margin="0,0,-58,-62"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Bottom"
+                            Fill="#253BFF"
+                            Opacity="0.14" />
+                        <Ellipse
+                            Width="72"
+                            Height="72"
+                            Margin="0,0,4,-36"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Bottom"
+                            Stroke="#9A4EFF"
+                            StrokeThickness="1"
+                            Opacity="0.65" />
+                        <StackPanel Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Ellipse Width="8" Height="8" Fill="{StaticResource YFGreenBrush}" />
+                                <TextBlock
+                                    FontWeight="SemiBold"
+                                    Foreground="{StaticResource YFGreenBrush}"
+                                    Text="{Binding StatusText}" />
+                            </StackPanel>
+                            <TextBlock
+                                MaxWidth="202"
+                                Style="{StaticResource YFMutedTextStyle}"
+                                Text="{Binding StatusDetailText}"
+                                TextWrapping="Wrap" />
+                            <Border
+                                Margin="0,8,0,0"
+                                Padding="10,6"
+                                HorizontalAlignment="Left"
+                                Background="#172340"
+                                CornerRadius="7">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <FontIcon FontSize="12" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE9CE;" />
+                                    <TextBlock FontSize="11" Foreground="{StaticResource YFTextBrush}" Text="LOKAL &amp; PRIVAT" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </NavigationView.PaneFooter>
+
+            <NavigationView.Header>
+                <Grid Height="78" Padding="24,12,20,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid MaxWidth="620" HorizontalAlignment="Left">
+                        <TextBox
+                            Height="46"
+                            Padding="42,0,92,0"
+                            HorizontalContentAlignment="Stretch"
+                            IsReadOnly="True"
+                            IsTabStop="False"
+                            PlaceholderText="Spiele, Sessions oder Statistiken suchen …"
+                            Style="{StaticResource YFTextBoxStyle}"
+                            ToolTipService.ToolTip="Suche folgt in einer späteren Version" />
+                        <FontIcon
+                            Margin="14,0,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            FontSize="17"
+                            Foreground="{StaticResource YFMutedBrush}"
+                            Glyph="&#xE721;"
+                            IsHitTestVisible="False" />
+                        <Border
+                            Margin="0,0,9,0"
+                            Padding="9,4"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Background="#162238"
+                            CornerRadius="6"
+                            IsHitTestVisible="False">
+                            <TextBlock FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="VORSCHAU" />
+                        </Border>
+                    </Grid>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16">
+                        <Grid Width="42" Height="42" ToolTipService.ToolTip="Benachrichtigungen · Vorschau">
+                            <Border Background="#0A1628" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="21" />
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Glyph="&#xE7ED;" />
+                            <Border
+                                Width="18"
+                                Height="18"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Background="{StaticResource YFPurpleBrush}"
+                                CornerRadius="9">
+                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="9" FontWeight="Bold" Text="·" />
+                            </Border>
+                        </Grid>
+                        <Border
+                            Padding="6,4,12,4"
+                            Background="#081426"
+                            BorderBrush="{StaticResource YFStrokeBrush}"
+                            BorderThickness="1"
+                            CornerRadius="22"
+                            ToolTipService.ToolTip="Lokales Profil · Vorschau">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Border Width="34" Height="34" Background="{StaticResource YFLogoGradientBrush}" CornerRadius="17">
+                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Text="YF" />
+                                </Border>
+                                <StackPanel VerticalAlignment="Center" Spacing="0">
+                                    <TextBlock FontSize="12" FontWeight="SemiBold" Text="Lokales Profil" />
+                                    <TextBlock FontSize="9" Foreground="{StaticResource YFMutedBrush}" Text="VORSCHAU" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </NavigationView.Header>
+
+            <Frame x:Name="ContentFrame" Background="{StaticResource YFBackgroundBrush}" />
+        </NavigationView>
+    </Grid>
+</Window>
