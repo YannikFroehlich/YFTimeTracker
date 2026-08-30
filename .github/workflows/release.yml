@@ -1,0 +1,132 @@
+name: Release YFTimeTracker
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_call:
+    inputs:
+      version:
+        description: "Zu veroeffentlichende Version ohne fuehrendes v"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    concurrency:
+      group: ${{ inputs.version != '' && format('yftimetracker-release-called-{0}', github.run_id) || 'yftimetracker-version-release' }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: .NET einrichten
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Version und Quellstand pruefen
+        id: release
+        shell: pwsh
+        run: |
+          $version = "${{ inputs.version }}"
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            $version = "${{ github.ref_name }}" -replace '^v', ''
+          }
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Ungueltige Release-Version: $version"
+          }
+
+          $sha = (git rev-parse HEAD).Trim().ToLowerInvariant()
+          $expectedSha = "${{ github.sha }}".Trim().ToLowerInvariant()
+          if ($sha -notmatch '^[0-9a-f]{40}$' -or $sha -ne $expectedSha) {
+            throw "Checkout $sha entspricht nicht $expectedSha"
+          }
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "sha=$sha" >> $env:GITHUB_OUTPUT
+
+      - name: App testen und portables Release bauen
+        shell: pwsh
+        run: >-
+          .\scripts\New-Release.ps1
+          -Version "${{ steps.release.outputs.version }}"
+
+      - name: Release-Manifest erstellen
+        shell: pwsh
+        run: |
+          $manifest = [ordered]@{
+            schemaVersion = 1
+            version = "${{ steps.release.outputs.version }}"
+            repository = "${{ github.repository }}"
+            sha = "${{ steps.release.outputs.sha }}"
+            runtime = "win-x64"
+          } | ConvertTo-Json
+
+          $utf8WithoutBom = [System.Text.UTF8Encoding]::new($false)
+          $manifestPath = Join-Path $PWD "artifacts/release/release-manifest.json"
+          [System.IO.File]::WriteAllText(
+            $manifestPath,
+            $manifest + [Environment]::NewLine,
+            $utf8WithoutBom)
+
+      - name: Velopack installieren
+        shell: pwsh
+        run: dotnet tool install --global vpk --version 1.2.0
+
+      - name: Vorherigen Release fuer Delta-Updates laden
+        continue-on-error: true
+        shell: pwsh
+        run: >-
+          vpk download github
+          --repoUrl https://github.com/${{ github.repository }}
+          --token "${{ secrets.GITHUB_TOKEN }}"
+          --outputDir artifacts/velopack
+
+      - name: Setup und MSI erstellen
+        shell: pwsh
+        run: >-
+          vpk pack
+          --packId YFTimeTracker
+          --packVersion "${{ steps.release.outputs.version }}"
+          --packDir "artifacts/release/YFTimeTracker-v${{ steps.release.outputs.version }}-win-x64"
+          --mainExe YFTimeTracker.App.exe
+          --packTitle YFTimeTracker
+          --packAuthors YannikFroehlich
+          --icon YFTimeTracker.App/Assets/YFTimeTracker.ico
+          --outputDir artifacts/velopack
+          --msi
+          --instLocation Either
+          --shortcuts StartMenuRoot
+
+      - name: GitHub Release veroeffentlichen
+        shell: pwsh
+        run: >-
+          vpk upload github
+          --outputDir artifacts/velopack
+          --repoUrl https://github.com/${{ github.repository }}
+          --token "${{ secrets.GITHUB_TOKEN }}"
+          --publish
+          --releaseName "YFTimeTracker v${{ steps.release.outputs.version }}"
+          --tag "v${{ steps.release.outputs.version }}"
+          --targetCommitish "${{ steps.release.outputs.sha }}"
+
+      - name: Portables ZIP und Manifest hochladen
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          gh release upload "v${{ steps.release.outputs.version }}"
+          "artifacts/release/YFTimeTracker-v${{ steps.release.outputs.version }}-win-x64.zip"
+          "artifacts/release/YFTimeTracker-v${{ steps.release.outputs.version }}-win-x64.zip.sha256"
+          "artifacts/release/release-manifest.json"
+          --repo "${{ github.repository }}"
+          --clobber

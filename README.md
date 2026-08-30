@@ -41,3 +41,14 @@ Eine abweichende Version kann uebergeben werden:
 ```
 
 Das ZIP ist nicht digital signiert. Ein signiertes MSIX benoetigt zusaetzlich ein vertrauenswuerdiges Code-Signing-Zertifikat; ohne ein solches Zertifikat ist die portable Ausgabe die direkt nutzbare Release-Variante.
+
+## Branches und automatische Releases
+
+Neue Funktionen werden auf `develop` entwickelt und anschliessend per Pull Request nach `main` gemergt. Jeder Merge nach `main` startet die automatische Semantic-Versioning- und Release-Pipeline. Die Commit- beziehungsweise Squash-Merge-Nachricht bestimmt die Versionsstufe:
+
+- `fix:` erzeugt einen Patch-Release.
+- `feat:` erzeugt einen Minor-Release.
+- `feat!:` oder `BREAKING CHANGE:` erzeugt einen Major-Release.
+- `[skip release]` ueberspringt die Veroeffentlichung.
+
+Das GitHub Release enthaelt einen Velopack-Installer, ein MSI, Updatepakete, das portable ZIP, dessen SHA-256-Pruefsumme und ein Release-Manifest. Die vollstaendigen Regeln stehen in [CONTRIBUTING.md](CONTRIBUTING.md).

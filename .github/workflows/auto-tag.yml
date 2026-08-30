@@ -1,0 +1,60 @@
+name: Auto Tag YFTimeTracker
+
+# Bestimmt bei jedem Push nach main die naechste semantische Version anhand von
+# Conventional Commits (fix: -> patch, feat: -> minor,
+# feat!:/BREAKING CHANGE: -> major) und startet direkt den Release-Workflow.
+# "[skip release]" in der Head-Commit-Nachricht ueberspringt den Release.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Versionsstufe manuell erzwingen"
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+concurrency:
+  group: yftimetracker-version-release
+  cancel-in-progress: false
+
+jobs:
+  determine-version:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      !contains(github.event.head_commit.message, '[skip release]')
+    outputs:
+      version: ${{ steps.next.outputs.new_version }}
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Naechste Version aus Commits ermitteln
+        id: next
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: ${{ github.event_name == 'workflow_dispatch' && inputs.bump || 'patch' }}
+          release_branches: main
+          tag_prefix: v
+          dry_run: true
+
+  release:
+    needs: determine-version
+    uses: ./.github/workflows/release.yml
+    with:
+      version: ${{ needs.determine-version.outputs.version }}
+    secrets: inherit
