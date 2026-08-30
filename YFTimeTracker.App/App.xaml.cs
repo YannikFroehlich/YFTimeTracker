@@ -72,6 +72,7 @@ public partial class App : Application
                 services.AddSingleton<ITrayService, TrayService>();
                 services.AddSingleton<IAppUpdateService, VelopackAppUpdateService>();
                 services.AddSingleton<IAppDiagnosticsService, AppDiagnosticsService>();
+                services.AddSingleton<IFirstRunSetupService, FirstRunSetupService>();
                 services.AddSingleton<MainWindow>();
                 services.AddTransient<DashboardPage>();
                 services.AddTransient<GamesPage>();
@@ -95,11 +96,12 @@ public partial class App : Application
         Services.GetRequiredService<ITrayService>().Initialize(MainWindow);
         MainWindow.Activate();
 
+        var setupWasShown = await MainWindow.ShowFirstRunSetupIfRequiredAsync();
         await Services.GetRequiredService<IGameTrackingService>().StartAsync(CancellationToken.None);
 
         var startMinimized = args.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .Contains("--minimized", StringComparer.OrdinalIgnoreCase);
-        if (startMinimized)
+        if (startMinimized && !setupWasShown)
         {
             MainWindow.HideToTray();
         }
@@ -108,7 +110,7 @@ public partial class App : Application
             MainWindow.ShowDashboard();
         }
 
-        _ = MainWindow.CheckForUpdatesOnStartupAsync(showPrompt: !startMinimized);
+        _ = MainWindow.CheckForUpdatesOnStartupAsync(showPrompt: !startMinimized || setupWasShown);
     }
 
     public static async Task ShutdownAsync()

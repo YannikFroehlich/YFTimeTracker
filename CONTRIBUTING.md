@@ -78,6 +78,7 @@ Je nach Änderung sind zusätzlich manuell zu prüfen:
 - Backup, Import und Export bei Datenänderungen
 - installierte Ausgabe und Update-Ablauf bei Release- oder Updateänderungen
 - Einzelinstanz, Autostart und minimierter Start bei Lifecycle-Änderungen
+- Erststart mit leerer sowie Upgrade mit vorhandener Datenbank bei Änderungen am Einrichtungs-Assistenten
 
 Der ausführliche Tracking-Ablauf steht in [docs/TRACKING_SMOKE_TEST.md](docs/TRACKING_SMOKE_TEST.md).
 

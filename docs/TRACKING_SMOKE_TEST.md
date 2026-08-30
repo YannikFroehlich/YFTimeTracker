@@ -10,6 +10,15 @@ Diese Prüfung deckt Windows-Abläufe ab, die nicht vollständig durch Unit-Test
 4. Tracking und Launcher-Erkennung aktivieren.
 5. Für Launcher-Tests mindestens ein installiertes Steam-, Epic- oder GOG-Spiel bereithalten.
 
+## Ersteinrichtung
+
+1. YFTimeTracker mit einem neuen, leeren Datenordner starten. Der Einrichtungs-Assistent muss vor dem ersten Tracking-Scan erscheinen.
+2. Alle vier Schritte vorwärts und rückwärts durchlaufen. Auswahl und Zusammenfassung müssen übereinstimmen.
+3. Tracking, Launcher-Erkennung und Tray-Verhalten ändern, die Einrichtung abschließen und die Werte anschließend in den Einstellungen kontrollieren.
+4. Die App neu starten. Der Assistent darf nicht erneut automatisch erscheinen.
+5. Unter **Einstellungen → Windows & Tray** den Assistenten erneut öffnen, eine Auswahl ändern und prüfen, ob Tracking- und Tray-Zustand sofort übernommen werden.
+6. Eine vorhandene Datenbank ohne Einrichtungs-Schlüssel mit dem neuen Build starten. Sie muss als bestehende Installation erkannt werden und darf den Assistenten nicht ungefragt anzeigen.
+
 ## Manuell registriertes Spiel
 
 1. In der Bibliothek ein Spiel mit seiner echten EXE-Datei anlegen.

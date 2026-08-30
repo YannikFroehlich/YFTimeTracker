@@ -8,6 +8,7 @@ public static class AppSettingKeys
     public const string HeartbeatIntervalSeconds = "tracking.heartbeatIntervalSeconds";
     public const string MinimizeOnClose = "ui.minimizeOnClose";
     public const string StartMinimized = "ui.startMinimized";
+    public const string FirstRunSetupCompleted = "ui.firstRunSetupCompleted";
     public const string BackupRetentionDays = "backup.retentionDays";
     public const string StartupEnabled = "windows.startupEnabled";
     public const string LastBackupDate = "backup.lastBackupDate";
