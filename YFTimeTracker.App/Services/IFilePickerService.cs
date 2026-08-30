@@ -6,5 +6,7 @@ public interface IFilePickerService
 
     Task<string?> PickExportArchiveAsync(CancellationToken cancellationToken);
 
+    Task<string?> PickDiagnosticsArchiveAsync(CancellationToken cancellationToken);
+
     Task<string?> PickImportArchiveAsync(CancellationToken cancellationToken);
 }

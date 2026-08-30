@@ -60,3 +60,7 @@ Das GitHub Release enthaelt einen Velopack-Installer, ein MSI, Updatepakete, das
 Die App verwendet den öffentlichen Release-Feed von `https://github.com/YannikFroehlich/YFTimeTracker`. Es wird kein GitHub-Token in den Quellcode, den Build oder die installierte Anwendung eingebettet. Vorabversionen werden nicht automatisch angeboten.
 
 Self-Updates stehen in der mit Velopack installierten Setup-/MSI-Ausgabe zur Verfügung. Entwicklungs- und nicht installierte portable Builds zeigen ihren Versionsstatus an, verändern sich aber nicht selbst. Vor dem Neustart beendet YFTimeTracker das Tracking kontrolliert, damit offene Sessions korrekt gespeichert werden.
+
+## Diagnose und Support
+
+Unter **Einstellungen → Diagnose & Support** zeigt die App ihre Version, Runtime sowie Installations-, Daten- und Logordner an. Der Logordner kann direkt geöffnet und ein Diagnose-ZIP exportiert werden. Dieses enthält Systeminformationen und höchstens drei aktuelle Logdateien, aber keine Datenbank, Backups oder Spielsessions. Bei einem kritischen Startfehler zeigt YFTimeTracker unabhängig von WinUI eine verständliche Windows-Meldung mit dem Speicherort der Fehlerprotokolle.

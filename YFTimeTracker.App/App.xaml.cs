@@ -24,6 +24,7 @@ public partial class App : Application
     private bool isPrimaryInstance = true;
     private bool activationRequested;
     private static int shutdownStarted;
+    private static int fatalErrorReported;
 
     public static IServiceProvider Services => ((App)Current).host?.Services
         ?? throw new InvalidOperationException("The application host has not been initialized.");
@@ -35,8 +36,8 @@ public partial class App : Application
     public App()
     {
         InitializeSingleInstance();
-        InitializeComponent();
         UnhandledException += OnUnhandledException;
+        InitializeComponent();
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
@@ -70,6 +71,7 @@ public partial class App : Application
                 services.AddSingleton<IStartupService, WinUiStartupService>();
                 services.AddSingleton<ITrayService, TrayService>();
                 services.AddSingleton<IAppUpdateService, VelopackAppUpdateService>();
+                services.AddSingleton<IAppDiagnosticsService, AppDiagnosticsService>();
                 services.AddSingleton<MainWindow>();
                 services.AddTransient<DashboardPage>();
                 services.AddTransient<GamesPage>();
@@ -140,6 +142,7 @@ public partial class App : Application
                 app.instanceMutex.Dispose();
             }
 
+            Log.CloseAndFlush();
             Current.Exit();
         }
     }
@@ -194,5 +197,14 @@ public partial class App : Application
     private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
         Log.Error(e.Exception, "Unhandled UI exception.");
+        if (Interlocked.Exchange(ref fatalErrorReported, 1) != 0)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        var logDirectory = new WindowsAppPathProvider().LogDirectory;
+        NativeErrorDialog.ShowFatalError(MainWindow is null, logDirectory);
+        _ = ShutdownAsync();
     }
 }

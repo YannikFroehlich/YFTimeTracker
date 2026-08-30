@@ -14,6 +14,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\YFTimeTracker.App\YFTimeTracker.App.csproj" />
     <ProjectReference Include="..\YFTimeTracker.Windows\YFTimeTracker.Windows.csproj" />
   </ItemGroup>
 </Project>

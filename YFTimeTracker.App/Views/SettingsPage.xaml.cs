@@ -56,10 +56,14 @@ public sealed partial class SettingsPage : Page
         Grid.SetColumn(UpdateSettingsCard, 0);
         Grid.SetColumnSpan(UpdateSettingsCard, compact ? 1 : 2);
         Grid.SetRow(UpdateSettingsCard, compact ? 3 : 2);
+        Grid.SetColumn(DiagnosticsSettingsCard, 0);
+        Grid.SetColumnSpan(DiagnosticsSettingsCard, compact ? 1 : 2);
+        Grid.SetRow(DiagnosticsSettingsCard, compact ? 4 : 3);
 
         TrackingSettingsCard.Margin = compact ? new Thickness(0, 0, 0, 12) : new Thickness(0);
         WindowsSettingsCard.Margin = compact ? new Thickness(0, 0, 0, 12) : new Thickness(14, 0, 0, 0);
         DataSettingsCard.Margin = compact ? new Thickness(0, 0, 0, 12) : new Thickness(0, 14, 0, 0);
-        UpdateSettingsCard.Margin = compact ? new Thickness(0) : new Thickness(0, 14, 0, 0);
+        UpdateSettingsCard.Margin = new Thickness(0, compact ? 0 : 14, 0, compact ? 12 : 0);
+        DiagnosticsSettingsCard.Margin = compact ? new Thickness(0) : new Thickness(0, 14, 0, 0);
     }
 }

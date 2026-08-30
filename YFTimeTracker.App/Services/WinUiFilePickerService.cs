@@ -49,6 +49,23 @@ public sealed class WinUiFilePickerService(IAppPathProvider paths) : IFilePicker
         return file?.Path;
     }
 
+    public async Task<string?> PickDiagnosticsArchiveAsync(CancellationToken cancellationToken)
+    {
+        Directory.CreateDirectory(paths.ExportDirectory);
+
+        var picker = new FileSavePicker
+        {
+            SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+            SuggestedFileName = $"YFTimeTracker-Diagnose-{DateTime.Now:yyyyMMdd-HHmm}"
+        };
+        InitializePicker(picker);
+        picker.FileTypeChoices.Add("YFTimeTracker Diagnosebericht", [".zip"]);
+
+        var file = await picker.PickSaveFileAsync();
+        cancellationToken.ThrowIfCancellationRequested();
+        return file?.Path;
+    }
+
     private static void InitializePicker(object picker)
     {
         var window = App.MainWindow ?? throw new InvalidOperationException("No main window is available.");

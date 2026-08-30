@@ -18,6 +18,7 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly IGameTrackingService trackingService;
     private readonly IGameInstallationProvider installationProvider;
     private readonly IAppUpdateService appUpdateService;
+    private readonly IAppDiagnosticsService diagnosticsService;
     private readonly DispatcherQueue dispatcherQueue;
     private bool trackingEnabled = true;
     private bool launcherDiscoveryEnabled = true;
@@ -38,6 +39,11 @@ public sealed class SettingsViewModel : ObservableObject
     private double updateProgress;
     private Visibility updateProgressVisibility = Visibility.Collapsed;
     private Visibility installUpdateVisibility = Visibility.Collapsed;
+    private string diagnosticsVersionText = "Version wird geladen …";
+    private string diagnosticsRuntimeText = "Runtime wird geladen …";
+    private string diagnosticsInstallDirectory = "Installationsordner wird geladen …";
+    private string diagnosticsDataDirectory = "Datenordner wird geladen …";
+    private string diagnosticsLogDirectory = "Logordner wird geladen …";
 
     public SettingsViewModel(
         ISettingsStore settings,
@@ -46,7 +52,8 @@ public sealed class SettingsViewModel : ObservableObject
         IFilePickerService filePicker,
         IGameTrackingService trackingService,
         IGameInstallationProvider installationProvider,
-        IAppUpdateService appUpdateService)
+        IAppUpdateService appUpdateService,
+        IAppDiagnosticsService diagnosticsService)
     {
         this.settings = settings;
         this.startupService = startupService;
@@ -55,12 +62,15 @@ public sealed class SettingsViewModel : ObservableObject
         this.trackingService = trackingService;
         this.installationProvider = installationProvider;
         this.appUpdateService = appUpdateService;
+        this.diagnosticsService = diagnosticsService;
         dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         LoadCommand = new AsyncRelayCommand(LoadAsync);
         SaveCommand = new AsyncRelayCommand(SaveAsync);
         ExportCommand = new AsyncRelayCommand(ExportAsync);
         ImportCommand = new AsyncRelayCommand(ImportAsync);
+        OpenLogDirectoryCommand = new RelayCommand(OpenLogDirectory);
+        ExportDiagnosticsCommand = new AsyncRelayCommand(ExportDiagnosticsAsync);
 
         ApplyUpdateState(appUpdateService.State);
         appUpdateService.StateChanged += AppUpdateService_StateChanged;
@@ -180,6 +190,36 @@ public sealed class SettingsViewModel : ObservableObject
         private set => SetProperty(ref installUpdateVisibility, value);
     }
 
+    public string DiagnosticsVersionText
+    {
+        get => diagnosticsVersionText;
+        private set => SetProperty(ref diagnosticsVersionText, value);
+    }
+
+    public string DiagnosticsRuntimeText
+    {
+        get => diagnosticsRuntimeText;
+        private set => SetProperty(ref diagnosticsRuntimeText, value);
+    }
+
+    public string DiagnosticsInstallDirectory
+    {
+        get => diagnosticsInstallDirectory;
+        private set => SetProperty(ref diagnosticsInstallDirectory, value);
+    }
+
+    public string DiagnosticsDataDirectory
+    {
+        get => diagnosticsDataDirectory;
+        private set => SetProperty(ref diagnosticsDataDirectory, value);
+    }
+
+    public string DiagnosticsLogDirectory
+    {
+        get => diagnosticsLogDirectory;
+        private set => SetProperty(ref diagnosticsLogDirectory, value);
+    }
+
     public IAsyncRelayCommand LoadCommand { get; }
 
     public IAsyncRelayCommand SaveCommand { get; }
@@ -188,9 +228,14 @@ public sealed class SettingsViewModel : ObservableObject
 
     public IAsyncRelayCommand ImportCommand { get; }
 
+    public IRelayCommand OpenLogDirectoryCommand { get; }
+
+    public IAsyncRelayCommand ExportDiagnosticsCommand { get; }
+
     public async Task LoadAsync()
     {
         ApplyUpdateState(appUpdateService.State);
+        ApplyDiagnosticsSnapshot(diagnosticsService.GetSnapshot());
         TrackingEnabled = await settings.GetBoolAsync(AppSettingKeys.TrackingEnabled, true, CancellationToken.None);
         LauncherDiscoveryEnabled = await settings.GetBoolAsync(AppSettingKeys.LauncherDiscoveryEnabled, true, CancellationToken.None);
         MinimizeOnClose = await settings.GetBoolAsync(AppSettingKeys.MinimizeOnClose, true, CancellationToken.None);
@@ -278,6 +323,39 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    private void OpenLogDirectory()
+    {
+        try
+        {
+            diagnosticsService.OpenLogDirectory();
+            StatusMessage = "Logordner wurde geöffnet";
+        }
+        catch
+        {
+            StatusMessage = "Logordner konnte nicht geöffnet werden";
+        }
+    }
+
+    private async Task ExportDiagnosticsAsync()
+    {
+        var path = await filePicker.PickDiagnosticsArchiveAsync(CancellationToken.None);
+        if (path is null)
+        {
+            return;
+        }
+
+        try
+        {
+            StatusMessage = "Diagnosebericht wird erstellt …";
+            var result = await diagnosticsService.ExportAsync(path, CancellationToken.None);
+            StatusMessage = $"Diagnosebericht gespeichert: {Path.GetFileName(result.ArchivePath)} · {result.IncludedLogCount} Logdatei(en)";
+        }
+        catch
+        {
+            StatusMessage = "Diagnosebericht konnte nicht erstellt werden";
+        }
+    }
+
     private static string FormatStartupState(StartupState state)
     {
         return state switch
@@ -326,6 +404,15 @@ public sealed class SettingsViewModel : ObservableObject
         InstallUpdateVisibility = state.HasAvailableUpdate
             ? Visibility.Visible
             : Visibility.Collapsed;
+    }
+
+    private void ApplyDiagnosticsSnapshot(AppDiagnosticsSnapshot snapshot)
+    {
+        DiagnosticsVersionText = $"v{snapshot.Version} · {snapshot.Distribution}";
+        DiagnosticsRuntimeText = $"{snapshot.RuntimeDescription} · {snapshot.ProcessArchitecture} · {snapshot.OperatingSystemDescription}";
+        DiagnosticsInstallDirectory = snapshot.InstallDirectory;
+        DiagnosticsDataDirectory = snapshot.DataDirectory;
+        DiagnosticsLogDirectory = snapshot.LogDirectory;
     }
 
     private static string FormatDownloadSize(long bytes)
