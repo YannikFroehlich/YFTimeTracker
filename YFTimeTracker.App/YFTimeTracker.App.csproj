@@ -51,4 +51,19 @@
     <Content Include="Assets\*.ico" CopyToOutputDirectory="PreserveNewest" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
+  <Target
+    Name="IncludeWinUiApplicationPriInPublish"
+    AfterTargets="Publish"
+    Condition="'$(WindowsPackageType)' == 'None'">
+    <PropertyGroup>
+      <YFApplicationPriPath>$(TargetDir)$(AssemblyName).pri</YFApplicationPriPath>
+    </PropertyGroup>
+    <Error
+      Condition="!Exists('$(YFApplicationPriPath)')"
+      Text="The WinUI application resource index was not generated: $(YFApplicationPriPath)" />
+    <Copy
+      SourceFiles="$(YFApplicationPriPath)"
+      DestinationFolder="$(PublishDir)"
+      SkipUnchangedFiles="true" />
+  </Target>
 </Project>

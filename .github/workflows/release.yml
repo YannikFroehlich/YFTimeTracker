@@ -107,6 +107,47 @@ jobs:
           --instLocation Either
           --shortcuts StartMenuRoot
 
+      - name: Velopack-Paket pruefen
+        shell: pwsh
+        run: |
+          $version = "${{ steps.release.outputs.version }}"
+          $outputDirectory = Join-Path $PWD "artifacts/velopack"
+          $packagePath = Join-Path $outputDirectory "YFTimeTracker-$version-full.nupkg"
+          $requiredArtifacts = @(
+            $packagePath,
+            (Join-Path $outputDirectory "YFTimeTracker-win-Setup.exe"),
+            (Join-Path $outputDirectory "YFTimeTracker-win.msi"),
+            (Join-Path $outputDirectory "releases.win.json")
+          )
+          $missingArtifacts = @(
+            $requiredArtifacts | Where-Object { -not (Test-Path -LiteralPath $_ -PathType Leaf) }
+          )
+          if ($missingArtifacts.Count -gt 0) {
+            throw "Velopack-Ausgabe ist unvollstaendig: $($missingArtifacts -join ', ')"
+          }
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($packagePath)
+          try {
+            $entryNames = @($archive.Entries.FullName)
+            $requiredEntries = @(
+              "lib/app/YFTimeTracker.App.exe",
+              "lib/app/YFTimeTracker.App.dll",
+              "lib/app/YFTimeTracker.App.pri",
+              "lib/app/Assets/YFTimeTrackerLogo.png",
+              "lib/app/Assets/YFTimeTracker.ico"
+            )
+            $missingEntries = @(
+              $requiredEntries | Where-Object { $entryNames -notcontains $_ }
+            )
+            if ($missingEntries.Count -gt 0) {
+              throw "Velopack-Paket ist unvollstaendig: $($missingEntries -join ', ')"
+            }
+          }
+          finally {
+            $archive.Dispose()
+          }
+
       - name: GitHub Release veroeffentlichen
         shell: pwsh
         run: >-

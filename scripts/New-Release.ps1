@@ -89,6 +89,23 @@ Invoke-DotNet -Arguments @(
     '--output',
     $releaseDirectory)
 
+$requiredReleaseFiles = @(
+    'YFTimeTracker.App.exe',
+    'YFTimeTracker.App.dll',
+    'YFTimeTracker.App.pri',
+    'YFTimeTracker.App.runtimeconfig.json',
+    'Assets\YFTimeTrackerLogo.png',
+    'Assets\YFTimeTracker.ico'
+)
+$missingReleaseFiles = @(
+    $requiredReleaseFiles | Where-Object {
+        -not (Test-Path -LiteralPath (Join-Path $releaseDirectory $_) -PathType Leaf)
+    }
+)
+if ($missingReleaseFiles.Count -gt 0) {
+    throw "Published release is incomplete. Missing: $($missingReleaseFiles -join ', ')"
+}
+
 Get-ChildItem -LiteralPath $releaseDirectory -Filter '*.pdb' -File -Recurse |
     Remove-Item -Force
 
