@@ -81,6 +81,7 @@ public partial class App : Application
                 services.AddTransient<StatisticsPage>();
                 services.AddTransient<SettingsPage>();
                 services.AddSingleton<DashboardViewModel>();
+                services.AddSingleton<GlobalSearchViewModel>();
                 services.AddSingleton<GamesViewModel>();
                 services.AddTransient<GameDetailsViewModel>();
                 services.AddSingleton<SessionsViewModel>();

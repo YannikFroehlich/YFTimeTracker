@@ -38,6 +38,7 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
             entity.Property(game => game.LegacyExecutableName).HasColumnName("ExecutableName").HasMaxLength(260).IsRequired();
             entity.Property(game => game.AddedAtUtc).HasConversion(DateTimeOffsetConverter).IsRequired();
             entity.Ignore(game => game.PrimaryExecutable);
+            entity.HasIndex(game => game.Name);
             entity.HasIndex(game => new { game.Source, game.ExternalGameId })
                 .IsUnique()
                 .HasFilter("ExternalGameId IS NOT NULL");
@@ -80,6 +81,8 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
                 .HasForeignKey(session => session.GameId)
                 .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(session => session.GameId);
+            entity.HasIndex(session => session.StartedAtUtc);
+            entity.HasIndex(session => session.EndedAtUtc);
             entity.HasIndex(session => session.GameId)
                 .IsUnique()
                 .HasDatabaseName("IX_GameSessions_GameId_Open")

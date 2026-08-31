@@ -5,13 +5,14 @@ namespace YFTimeTracker.Core.Services;
 
 public sealed class PlaytimeStatisticsService(
     IGameSessionRepository sessions,
+    IPlaytimeReadRepository readRepository,
     IClock clock) : IPlaytimeStatisticsService
 {
     public async Task<DashboardStats> GetDashboardStatsAsync(TimeZoneInfo localTimeZone, CancellationToken cancellationToken)
     {
-        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(clock.UtcNow, localTimeZone).Date);
+        var nowUtc = clock.UtcNow;
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(nowUtc, localTimeZone).Date);
         var weekStart = GetIsoWeekStart(today);
-        var allSessions = await sessions.GetSessionsAsync(null, null, cancellationToken);
 
         var todayStartUtc = LocalDateStartToUtc(today, localTimeZone);
         var tomorrowStartUtc = LocalDateStartToUtc(today.AddDays(1), localTimeZone);
@@ -20,34 +21,29 @@ public sealed class PlaytimeStatisticsService(
         var weekEndUtc = LocalDateStartToUtc(weekStart.AddDays(7), localTimeZone);
         var previousWeekStartUtc = LocalDateStartToUtc(weekStart.AddDays(-7), localTimeZone);
 
-        var todayDuration = GetDurationForUtcRange(allSessions, todayStartUtc, tomorrowStartUtc);
-        var previousDayDuration = GetDurationForUtcRange(allSessions, previousDayStartUtc, todayStartUtc);
-        var weekDuration = GetDurationForUtcRange(allSessions, weekStartUtc, weekEndUtc);
-        var previousWeekDuration = GetDurationForUtcRange(allSessions, previousWeekStartUtc, weekStartUtc);
-        var total = TimeSpan.FromSeconds(allSessions.Sum(GetStoredOrEffectiveSeconds));
+        var relevantSessionsTask = sessions.GetSessionsAsync(
+            previousWeekStartUtc,
+            weekEndUtc,
+            cancellationToken);
+        var overviewTask = readRepository.GetOverviewAsync(nowUtc, recentGameCount: 8, cancellationToken);
+        await Task.WhenAll(relevantSessionsTask, overviewTask);
 
-        var running = allSessions
+        var relevantSessions = await relevantSessionsTask;
+        var overview = await overviewTask;
+        var todayDuration = GetDurationForUtcRange(relevantSessions, todayStartUtc, tomorrowStartUtc);
+        var previousDayDuration = GetDurationForUtcRange(relevantSessions, previousDayStartUtc, todayStartUtc);
+        var weekDuration = GetDurationForUtcRange(relevantSessions, weekStartUtc, weekEndUtc);
+        var previousWeekDuration = GetDurationForUtcRange(relevantSessions, previousWeekStartUtc, weekStartUtc);
+
+        var running = relevantSessions
             .Where(session => session.IsOpen)
             .Where(session => session.Game is not null)
             .Select(session => new RunningGameInfo(
                 session.GameId,
                 session.Game!.Name,
                 session.StartedAtUtc,
-                session.GetEffectiveDuration(clock.UtcNow)))
+                session.GetEffectiveDuration(nowUtc)))
             .OrderBy(info => info.Name)
-            .ToArray();
-
-        var recent = allSessions
-            .Where(session => session.Game is not null)
-            .GroupBy(session => session.GameId)
-            .Select(group => new RecentGameInfo(
-                group.Key,
-                group.Select(session => session.Game!.Name).First(),
-                group.Max(session => session.EndedAtUtc ?? (session.IsOpen ? clock.UtcNow : session.LastSeenAtUtc)),
-                TimeSpan.FromSeconds(group.Sum(GetStoredOrEffectiveSeconds)),
-                group.Any(session => session.IsOpen)))
-            .OrderByDescending(info => info.LastPlayedAtUtc)
-            .Take(8)
             .ToArray();
 
         var currentWeekDays = Enumerable.Range(0, 7)
@@ -55,7 +51,7 @@ public sealed class PlaytimeStatisticsService(
             .Select(date => new DailyPlaytimeInfo(
                 date,
                 GetDurationForUtcRange(
-                    allSessions,
+                    relevantSessions,
                     LocalDateStartToUtc(date, localTimeZone),
                     LocalDateStartToUtc(date.AddDays(1), localTimeZone))))
             .ToArray();
@@ -65,13 +61,13 @@ public sealed class PlaytimeStatisticsService(
             previousDayDuration,
             weekDuration,
             previousWeekDuration,
-            total,
-            CountSessionsInUtcRange(allSessions, todayStartUtc, tomorrowStartUtc),
-            CountSessionsInUtcRange(allSessions, weekStartUtc, weekEndUtc),
-            allSessions.Select(session => session.GameId).Distinct().Count(),
+            TimeSpan.FromSeconds(overview.TotalDurationSeconds),
+            CountSessionsInUtcRange(relevantSessions, todayStartUtc, tomorrowStartUtc),
+            CountSessionsInUtcRange(relevantSessions, weekStartUtc, weekEndUtc),
+            overview.GamesPlayedCount,
             currentWeekDays,
             running,
-            recent);
+            overview.RecentGames);
     }
 
     public async Task<PlaytimeStatistics> GetStatisticsAsync(
@@ -81,13 +77,19 @@ public sealed class PlaytimeStatisticsService(
     {
         ArgumentNullException.ThrowIfNull(localTimeZone);
 
-        var allSessions = await sessions.GetSessionsAsync(null, null, cancellationToken);
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(clock.UtcNow, localTimeZone).Date);
-        var range = CreateStatisticsRange(period, today, allSessions, localTimeZone);
+        var earliestSessionStartUtc = period == StatisticsPeriodKind.AllTime
+            ? await readRepository.GetEarliestSessionStartAsync(cancellationToken)
+            : null;
+        var range = CreateStatisticsRange(period, today, earliestSessionStartUtc, localTimeZone);
         var rangeStartUtc = LocalDateStartToUtc(range.Start, localTimeZone);
         var rangeEndUtc = LocalDateStartToUtc(range.EndExclusive, localTimeZone);
+        var queryStartUtc = range.PreviousStart is { } queryPreviousStart
+            ? LocalDateStartToUtc(queryPreviousStart, localTimeZone)
+            : rangeStartUtc;
+        var relevantSessions = await sessions.GetSessionsAsync(queryStartUtc, rangeEndUtc, cancellationToken);
 
-        var contributions = allSessions
+        var contributions = relevantSessions
             .Select(session => new SessionContribution(
                 session,
                 GetOverlap(session, rangeStartUtc, rangeEndUtc)))
@@ -103,7 +105,7 @@ public sealed class PlaytimeStatisticsService(
             .OrderByDescending(contribution => contribution.Duration)
             .FirstOrDefault();
 
-        var timeline = CreateTimeline(range, allSessions, localTimeZone);
+        var timeline = CreateTimeline(range, relevantSessions, localTimeZone);
         var games = contributions
             .GroupBy(contribution => contribution.Session.GameId)
             .Select(group =>
@@ -122,11 +124,11 @@ public sealed class PlaytimeStatisticsService(
             .ToArray();
 
         TimeSpan? previousPeriodDuration = null;
-        if (range.PreviousStart is { } previousStart && range.PreviousEndExclusive is { } previousEnd)
+        if (range.PreviousStart is { } previousPeriodStart && range.PreviousEndExclusive is { } previousEnd)
         {
             previousPeriodDuration = GetDurationForUtcRange(
-                allSessions,
-                LocalDateStartToUtc(previousStart, localTimeZone),
+                relevantSessions,
+                LocalDateStartToUtc(previousPeriodStart, localTimeZone),
                 LocalDateStartToUtc(previousEnd, localTimeZone));
         }
 
@@ -148,8 +150,7 @@ public sealed class PlaytimeStatisticsService(
 
     public async Task<TimeSpan> GetTotalDurationAsync(CancellationToken cancellationToken)
     {
-        var allSessions = await sessions.GetSessionsAsync(null, null, cancellationToken);
-        var totalSeconds = allSessions.Sum(GetStoredOrEffectiveSeconds);
+        var totalSeconds = await readRepository.GetTotalDurationSecondsAsync(clock.UtcNow, cancellationToken);
         return TimeSpan.FromSeconds(totalSeconds);
     }
 
@@ -211,7 +212,7 @@ public sealed class PlaytimeStatisticsService(
     private StatisticsRange CreateStatisticsRange(
         StatisticsPeriodKind period,
         DateOnly today,
-        IReadOnlyList<GameSession> allSessions,
+        DateTimeOffset? earliestSessionStartUtc,
         TimeZoneInfo localTimeZone)
     {
         return period switch
@@ -219,7 +220,7 @@ public sealed class PlaytimeStatisticsService(
             StatisticsPeriodKind.Last7Days => CreateDayRange(period, today, 7),
             StatisticsPeriodKind.Last30Days => CreateDayRange(period, today, 30),
             StatisticsPeriodKind.Last12Months => CreateMonthRange(today),
-            StatisticsPeriodKind.AllTime => CreateAllTimeRange(today, allSessions, localTimeZone),
+            StatisticsPeriodKind.AllTime => CreateAllTimeRange(today, earliestSessionStartUtc, localTimeZone),
             _ => throw new ArgumentOutOfRangeException(nameof(period), period, null)
         };
     }
@@ -252,13 +253,13 @@ public sealed class PlaytimeStatisticsService(
 
     private StatisticsRange CreateAllTimeRange(
         DateOnly today,
-        IReadOnlyList<GameSession> allSessions,
+        DateTimeOffset? earliestSessionStartUtc,
         TimeZoneInfo localTimeZone)
     {
-        var earliestDate = allSessions.Count == 0
+        var earliestDate = earliestSessionStartUtc is null
             ? today
             : DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(
-                allSessions.Min(session => session.StartedAtUtc),
+                earliestSessionStartUtc.Value,
                 localTimeZone).Date);
         var dayCount = today.DayNumber - earliestDate.DayNumber + 1;
         var bucketKind = dayCount <= 31 ? StatisticsBucketKind.Day : StatisticsBucketKind.Month;
@@ -379,12 +380,6 @@ public sealed class PlaytimeStatisticsService(
             var sessionEnd = session.EndedAtUtc ?? clock.UtcNow;
             return session.StartedAtUtc < rangeEndUtc && sessionEnd > rangeStartUtc;
         });
-    }
-
-    private long GetStoredOrEffectiveSeconds(GameSession session)
-    {
-        return session.DurationSeconds
-            ?? Math.Max(0, Convert.ToInt64(Math.Floor(session.GetEffectiveDuration(clock.UtcNow).TotalSeconds)));
     }
 
     private sealed record StatisticsRange(

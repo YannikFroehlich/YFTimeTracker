@@ -206,6 +206,10 @@ internal sealed class InMemoryGameSessionRepository(Func<long, Game?> gameResolv
     private readonly List<GameSession> sessions = [];
     private long nextId = 1;
 
+    public DateTimeOffset? LastQueryFromUtc { get; private set; }
+
+    public DateTimeOffset? LastQueryToUtc { get; private set; }
+
     public Task<GameSession?> GetByIdAsync(long id, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -221,6 +225,8 @@ internal sealed class InMemoryGameSessionRepository(Func<long, Game?> gameResolv
     public Task<IReadOnlyList<GameSession>> GetSessionsAsync(DateTimeOffset? fromUtc, DateTimeOffset? toUtc, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        LastQueryFromUtc = fromUtc;
+        LastQueryToUtc = toUtc;
         var query = sessions.AsEnumerable();
         if (fromUtc.HasValue)
         {
@@ -303,5 +309,52 @@ internal sealed class InMemoryGameSessionRepository(Func<long, Game?> gameResolv
             DurationSeconds = session.DurationSeconds,
             BootSessionId = session.BootSessionId
         };
+    }
+}
+
+internal sealed class InMemoryPlaytimeReadRepository(IGameSessionRepository sessions) : IPlaytimeReadRepository
+{
+    public async Task<PlaytimeOverview> GetOverviewAsync(
+        DateTimeOffset nowUtc,
+        int recentGameCount,
+        CancellationToken cancellationToken)
+    {
+        var allSessions = await sessions.GetSessionsAsync(null, null, cancellationToken);
+        var recentGames = allSessions
+            .Where(session => session.Game is not null)
+            .GroupBy(session => session.GameId)
+            .Select(group => new RecentGameInfo(
+                group.Key,
+                group.First().Game!.Name,
+                group.Max(session => session.EndedAtUtc ?? nowUtc),
+                TimeSpan.FromSeconds(group.Sum(session => GetEffectiveSeconds(session, nowUtc))),
+                group.Any(session => session.IsOpen)))
+            .OrderByDescending(game => game.LastPlayedAtUtc)
+            .ThenBy(game => game.Name)
+            .Take(recentGameCount)
+            .ToArray();
+
+        return new PlaytimeOverview(
+            allSessions.Sum(session => GetEffectiveSeconds(session, nowUtc)),
+            allSessions.Select(session => session.GameId).Distinct().Count(),
+            recentGames);
+    }
+
+    public async Task<long> GetTotalDurationSecondsAsync(DateTimeOffset nowUtc, CancellationToken cancellationToken)
+    {
+        var allSessions = await sessions.GetSessionsAsync(null, null, cancellationToken);
+        return allSessions.Sum(session => GetEffectiveSeconds(session, nowUtc));
+    }
+
+    public async Task<DateTimeOffset?> GetEarliestSessionStartAsync(CancellationToken cancellationToken)
+    {
+        var allSessions = await sessions.GetSessionsAsync(null, null, cancellationToken);
+        return allSessions.Count == 0 ? null : allSessions.Min(session => session.StartedAtUtc);
+    }
+
+    private static long GetEffectiveSeconds(GameSession session, DateTimeOffset nowUtc)
+    {
+        return session.DurationSeconds
+            ?? Math.Max(0, Convert.ToInt64(Math.Floor(session.GetEffectiveDuration(nowUtc).TotalSeconds)));
     }
 }

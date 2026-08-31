@@ -1,3 +1,4 @@
+using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
 using YFTimeTracker.Core.Services;
 
@@ -11,7 +12,7 @@ public sealed class PlaytimeStatisticsServiceTests
     {
         var clock = new FakeClock(new DateTimeOffset(2026, 8, 27, 12, 0, 0, TimeSpan.Zero));
         var sessions = new InMemoryGameSessionRepository(_ => null);
-        var service = new PlaytimeStatisticsService(sessions, clock);
+        var service = CreateService(sessions, clock);
 
         var stats = await service.GetDashboardStatsAsync(TimeZoneInfo.Utc, CancellationToken.None);
 
@@ -51,7 +52,7 @@ public sealed class PlaytimeStatisticsServiceTests
             BootSessionId = "boot"
         }, CancellationToken.None);
 
-        var service = new PlaytimeStatisticsService(sessions, clock);
+        var service = CreateService(sessions, clock);
         var stats = await service.GetDashboardStatsAsync(TimeZoneInfo.Utc, CancellationToken.None);
 
         Assert.AreEqual(TimeSpan.FromHours(2.5), stats.Today);
@@ -102,7 +103,7 @@ public sealed class PlaytimeStatisticsServiceTests
             BootSessionId = "boot"
         }, CancellationToken.None);
 
-        var service = new PlaytimeStatisticsService(sessions, clock);
+        var service = CreateService(sessions, clock);
         var duration = await service.GetDurationForLocalRangeAsync(
             new DateOnly(2026, 3, 29),
             new DateOnly(2026, 3, 30),
@@ -132,7 +133,7 @@ public sealed class PlaytimeStatisticsServiceTests
             BootSessionId = "boot"
         }, CancellationToken.None);
 
-        var service = new PlaytimeStatisticsService(sessions, clock);
+        var service = CreateService(sessions, clock);
         var report = await service.GetStatisticsAsync(
             StatisticsPeriodKind.Last7Days,
             TimeZoneInfo.Utc,
@@ -159,6 +160,8 @@ public sealed class PlaytimeStatisticsServiceTests
         Assert.AreEqual(
             TimeSpan.FromHours(1),
             report.Weekdays.Single(day => day.DayOfWeek == DayOfWeek.Sunday).Duration);
+        Assert.AreEqual(Utc(2026, 8, 17, 0), sessions.LastQueryFromUtc);
+        Assert.AreEqual(Utc(2026, 8, 31, 0), sessions.LastQueryToUtc);
     }
 
     [TestMethod]
@@ -173,7 +176,7 @@ public sealed class PlaytimeStatisticsServiceTests
         await AddClosedSessionAsync(sessions, game.Id, Utc(2025, 9, 10, 8), Utc(2025, 9, 10, 10));
         await AddClosedSessionAsync(sessions, game.Id, Utc(2026, 8, 10, 8), Utc(2026, 8, 10, 13));
 
-        var service = new PlaytimeStatisticsService(sessions, clock);
+        var service = CreateService(sessions, clock);
         var report = await service.GetStatisticsAsync(
             StatisticsPeriodKind.Last12Months,
             TimeZoneInfo.Utc,
@@ -192,7 +195,8 @@ public sealed class PlaytimeStatisticsServiceTests
     public async Task GetStatisticsAsync_returns_stable_empty_all_time_report()
     {
         var clock = new FakeClock(Utc(2026, 8, 30, 12));
-        var service = new PlaytimeStatisticsService(new InMemoryGameSessionRepository(_ => null), clock);
+        var sessions = new InMemoryGameSessionRepository(_ => null);
+        var service = CreateService(sessions, clock);
 
         var report = await service.GetStatisticsAsync(
             StatisticsPeriodKind.AllTime,
@@ -225,7 +229,7 @@ public sealed class PlaytimeStatisticsServiceTests
         await AddClosedSessionAsync(sessions, game.Id, Utc(2026, 8, 20, 8), Utc(2026, 8, 20, 11));
         await AddClosedSessionAsync(sessions, game.Id, Utc(2026, 8, 30, 9), Utc(2026, 8, 30, 10, 30));
 
-        var service = new PlaytimeStatisticsService(sessions, clock);
+        var service = CreateService(sessions, clock);
         var days = await service.GetActivityHeatmapAsync(2, TimeZoneInfo.Utc, CancellationToken.None);
 
         Assert.HasCount(14, days);
@@ -241,6 +245,16 @@ public sealed class PlaytimeStatisticsServiceTests
     {
         var local = new DateTime(year, month, day, hour, minute, 0, DateTimeKind.Local);
         return new DateTimeOffset(local).ToUniversalTime();
+    }
+
+    private static PlaytimeStatisticsService CreateService(
+        IGameSessionRepository sessions,
+        IClock clock)
+    {
+        return new PlaytimeStatisticsService(
+            sessions,
+            new InMemoryPlaytimeReadRepository(sessions),
+            clock);
     }
 
     private static DateTimeOffset Utc(int year, int month, int day, int hour, int minute = 0)

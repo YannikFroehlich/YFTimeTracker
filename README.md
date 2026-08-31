@@ -15,6 +15,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Lokale Launcher-Erkennung für Steam, Epic Games, GOG und Xbox-/Microsoft-Store-Spiele
 - Xbox-Erkennung über die lokale Windows-Paketverwaltung und `MicrosoftGame.config`, ohne Xbox-Anmeldung oder Web-API
 - Dashboard mit Live-Tracking, Tages-, Wochen- und Gesamtwerten
+- Globale Suche nach Spielen, EXE-Dateien, Sessions und App-Bereichen
 - Bibliothek mit Suche, Sortierung, Spieldetails und EXE-Verwaltung
 - Anlegen, Bearbeiten und Löschen manueller Sessions
 - Statistiken für frei wählbare Zeiträume und einzelne Spiele

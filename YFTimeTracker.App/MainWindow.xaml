@@ -2,6 +2,7 @@
     x:Class="YFTimeTracker.App.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:viewModels="using:YFTimeTracker.App.ViewModels"
     Title="YFTimeTracker">
     <Grid x:Name="RootGrid" Background="{StaticResource YFBackgroundBrush}">
         <Grid.RowDefinitions>
@@ -180,44 +181,58 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <Grid MaxWidth="620" HorizontalAlignment="Left">
-                        <TextBox
-                            Height="46"
-                            Padding="42,0,92,0"
-                            AutomationProperties.Name="Suche · Vorschau"
-                            HorizontalContentAlignment="Stretch"
-                            VerticalContentAlignment="Center"
-                            IsReadOnly="True"
-                            IsTabStop="False"
-                            Style="{StaticResource YFTextBoxStyle}"
-                            ToolTipService.ToolTip="Suche folgt in einer späteren Version" />
-                        <FontIcon
-                            Margin="14,0,0,0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            FontSize="17"
-                            Foreground="{StaticResource YFMutedBrush}"
-                            Glyph="&#xE721;"
-                            IsHitTestVisible="False" />
-                        <TextBlock
-                            Margin="42,0,92,0"
-                            VerticalAlignment="Center"
-                            FontSize="13"
-                            Foreground="{StaticResource YFMutedBrush}"
-                            IsHitTestVisible="False"
-                            Text="Spiele, Sessions oder Statistiken suchen …"
-                            TextTrimming="CharacterEllipsis" />
-                        <Border
-                            Margin="0,0,9,0"
-                            Padding="9,4"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Center"
-                            Background="#162238"
-                            CornerRadius="6"
-                            IsHitTestVisible="False">
-                            <TextBlock FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="VORSCHAU" />
-                        </Border>
-                    </Grid>
+                    <AutoSuggestBox
+                        x:Name="GlobalSearchBox"
+                        MaxWidth="620"
+                        Height="46"
+                        AutomationProperties.Name="Globale Suche"
+                        Background="#091526"
+                        BorderBrush="{StaticResource YFStrokeBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Foreground="{StaticResource YFTextBrush}"
+                        HorizontalAlignment="Stretch"
+                        ItemsSource="{x:Bind GlobalSearchViewModel.Results, Mode=OneWay}"
+                        PlaceholderText="Spiele, Sessions oder Statistiken suchen …"
+                        QueryIcon="Find"
+                        QuerySubmitted="GlobalSearchBox_QuerySubmitted"
+                        SuggestionChosen="GlobalSearchBox_SuggestionChosen"
+                        TextChanged="GlobalSearchBox_TextChanged"
+                        UpdateTextOnSelect="False">
+                        <AutoSuggestBox.ItemTemplate>
+                            <DataTemplate x:DataType="viewModels:GlobalSearchResultViewModel">
+                                <Grid
+                                    MinWidth="520"
+                                    Padding="10,8"
+                                    ColumnSpacing="12"
+                                    Tag="{Binding}"
+                                    Tapped="GlobalSearchResult_Tapped">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="32" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        FontSize="16"
+                                        Foreground="{StaticResource YFBlueBrush}"
+                                        Glyph="{x:Bind Glyph}" />
+                                    <StackPanel Grid.Column="1" Spacing="2">
+                                        <TextBlock
+                                            FontSize="13"
+                                            FontWeight="SemiBold"
+                                            Text="{x:Bind Title}"
+                                            TextTrimming="CharacterEllipsis" />
+                                        <TextBlock
+                                            FontSize="11"
+                                            Foreground="{StaticResource YFMutedBrush}"
+                                            Text="{x:Bind Subtitle}"
+                                            TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </AutoSuggestBox.ItemTemplate>
+                    </AutoSuggestBox>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16">
                         <Grid Width="42" Height="42" ToolTipService.ToolTip="Benachrichtigungen · Vorschau">

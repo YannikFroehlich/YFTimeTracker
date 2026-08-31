@@ -3,6 +3,7 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Serilog;
 using WinRT.Interop;
 using Windows.Graphics;
 using Windows.UI;
@@ -24,11 +25,13 @@ public sealed partial class MainWindow : Window
     private readonly IGameTrackingService trackingService;
     private readonly AppWindow appWindow;
     private readonly SemaphoreSlim dialogLock = new(1, 1);
+    private CancellationTokenSource? globalSearchCancellation;
     private bool minimizeOnClose = true;
     private bool firstRunSetupActive;
 
     public MainWindow()
     {
+        GlobalSearchViewModel = App.Services.GetRequiredService<GlobalSearchViewModel>();
         InitializeComponent();
         dashboardViewModel = App.Services.GetRequiredService<DashboardViewModel>();
         settingsStore = App.Services.GetRequiredService<ISettingsStore>();
@@ -53,6 +56,8 @@ public sealed partial class MainWindow : Window
             await dashboardViewModel.RefreshAsync();
         };
     }
+
+    public GlobalSearchViewModel GlobalSearchViewModel { get; }
 
     public void ShowDashboard()
     {
@@ -86,6 +91,17 @@ public sealed partial class MainWindow : Window
         {
             Navigation.SelectedItem = Navigation.MenuItems[1];
             ContentFrame.Navigate(typeof(GameDetailsPage), gameId);
+            appWindow.Show();
+            Activate();
+        });
+    }
+
+    public void ShowSession(long sessionId)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            Navigation.SelectedItem = Navigation.MenuItems[2];
+            ContentFrame.Navigate(typeof(SessionsPage), sessionId);
             appWindow.Show();
             Activate();
         });
@@ -251,6 +267,107 @@ public sealed partial class MainWindow : Window
     private async void DashboardRefreshTimer_Tick(object? sender, object e)
     {
         await dashboardViewModel.RefreshAsync();
+    }
+
+    private async void GlobalSearchBox_TextChanged(
+        AutoSuggestBox sender,
+        AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
+        {
+            return;
+        }
+
+        globalSearchCancellation?.Cancel();
+        globalSearchCancellation?.Dispose();
+        globalSearchCancellation = new CancellationTokenSource();
+        var cancellationToken = globalSearchCancellation.Token;
+
+        if (sender.Text.Trim().Length < 2)
+        {
+            GlobalSearchViewModel.Clear();
+            sender.IsSuggestionListOpen = false;
+            return;
+        }
+
+        try
+        {
+            await Task.Delay(180, cancellationToken);
+            await GlobalSearchViewModel.SearchAsync(sender.Text, cancellationToken);
+            sender.IsSuggestionListOpen = GlobalSearchViewModel.Results.Count > 0;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            GlobalSearchViewModel.Clear();
+            sender.IsSuggestionListOpen = false;
+            Log.Warning(exception, "Global search failed.");
+        }
+    }
+
+    private void GlobalSearchBox_SuggestionChosen(
+        AutoSuggestBox sender,
+        AutoSuggestBoxSuggestionChosenEventArgs args)
+    {
+        if (args.SelectedItem is GlobalSearchResultViewModel result)
+        {
+            sender.Text = result.Title;
+        }
+    }
+
+    private void GlobalSearchBox_QuerySubmitted(
+        AutoSuggestBox sender,
+        AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        var result = args.ChosenSuggestion as GlobalSearchResultViewModel
+            ?? GlobalSearchViewModel.Results.FirstOrDefault();
+        if (result is not null)
+        {
+            OpenGlobalSearchResult(result);
+        }
+    }
+
+    private void GlobalSearchResult_Tapped(
+        object sender,
+        Microsoft.UI.Xaml.Input.TappedRoutedEventArgs args)
+    {
+        if (sender is FrameworkElement { Tag: GlobalSearchResultViewModel result })
+        {
+            OpenGlobalSearchResult(result);
+            args.Handled = true;
+        }
+    }
+
+    private void OpenGlobalSearchResult(GlobalSearchResultViewModel result)
+    {
+        globalSearchCancellation?.Cancel();
+        GlobalSearchBox.IsSuggestionListOpen = false;
+        GlobalSearchBox.Text = string.Empty;
+        GlobalSearchViewModel.Clear();
+
+        switch (result.Kind)
+        {
+            case GlobalSearchResultKind.Game when result.GameId is { } gameId:
+                ShowGameDetails(gameId);
+                break;
+            case GlobalSearchResultKind.Session when result.SessionId is { } sessionId:
+                ShowSession(sessionId);
+                break;
+            case GlobalSearchResultKind.Library:
+                Navigation.SelectedItem = Navigation.MenuItems[1];
+                Navigate(typeof(GamesPage));
+                break;
+            case GlobalSearchResultKind.Sessions:
+                Navigation.SelectedItem = Navigation.MenuItems[2];
+                Navigate(typeof(SessionsPage));
+                break;
+            case GlobalSearchResultKind.Statistics:
+                Navigation.SelectedItem = Navigation.MenuItems[3];
+                Navigate(typeof(StatisticsPage));
+                break;
+        }
     }
 
     private async Task<bool> DownloadUpdateWithProgressAsync()

@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Navigation;
 using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
@@ -13,6 +14,7 @@ public sealed partial class SessionsPage : Page
     private readonly DispatcherTimer liveTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly IGameTrackingService trackingService;
     private string runningGamesSignature = string.Empty;
+    private long? requestedSessionId;
 
     public SessionsPage()
     {
@@ -24,13 +26,31 @@ public sealed partial class SessionsPage : Page
 
     private SessionsViewModel ViewModel => (SessionsViewModel)DataContext;
 
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        requestedSessionId = e.Parameter is long sessionId ? sessionId : null;
+    }
+
     private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
         ViewModel.Sessions.CollectionChanged -= Sessions_CollectionChanged;
         ViewModel.Sessions.CollectionChanged += Sessions_CollectionChanged;
         trackingService.StateChanged -= TrackingService_StateChanged;
         trackingService.StateChanged += TrackingService_StateChanged;
-        await ViewModel.RefreshAsync();
+        if (requestedSessionId is { } sessionId)
+        {
+            requestedSessionId = null;
+            await ViewModel.ShowSessionAsync(sessionId);
+            if (ViewModel.SelectedSession is not null)
+            {
+                SessionsList.ScrollIntoView(ViewModel.SelectedSession);
+            }
+        }
+        else
+        {
+            await ViewModel.RefreshAsync();
+        }
         runningGamesSignature = CreateRunningGamesSignature(trackingService.State);
         UpdateEmptyState();
         UpdateResponsiveLayout(SessionsRoot.ActualWidth);

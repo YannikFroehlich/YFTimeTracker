@@ -85,6 +85,21 @@ public sealed class SessionsViewModelTests
         Assert.AreEqual("Session hinzugefügt", viewModel.StatusMessage);
     }
 
+    [TestMethod]
+    public async Task ShowSession_loads_all_time_and_selects_old_session()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var game = CreateGame(1, "Archivspiel");
+        var oldSession = CreateCompletedSession(9, game, now.AddDays(-90), now.AddDays(-90).AddHours(2));
+        var viewModel = CreateViewModel([game], new FakeSessionRepository([oldSession]), now);
+
+        await viewModel.ShowSessionAsync(oldSession.Id);
+
+        Assert.AreEqual(SessionPeriodKind.All, viewModel.SelectedPeriod.Kind);
+        Assert.AreEqual(oldSession.Id, viewModel.SelectedSession?.Id);
+        Assert.AreEqual("Archivspiel", viewModel.SelectedSession?.GameName);
+    }
+
     private static SessionsViewModel CreateViewModel(
         IReadOnlyList<Game> games,
         FakeSessionRepository repository,

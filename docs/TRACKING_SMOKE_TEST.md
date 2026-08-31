@@ -64,6 +64,14 @@ Für Xbox-/Microsoft-Store-Spiele zusätzlich prüfen:
 3. **Schließen im Tray:** Das Fenster schließen und über das Tray erneut öffnen. Dashboard, Trackingzustand und laufende Session müssen erhalten bleiben.
 4. **Update-Menü:** In einer installierten Ausgabe **Nach Updates suchen** im Tray auswählen. Der Status muss auch unter **Einstellungen → App-Updates** korrekt erscheinen.
 
+## Globale Suche
+
+1. Im Suchfeld der Kopfzeile mindestens zwei Zeichen eines Spielnamens oder einer zugeordneten EXE eingeben. Das Spiel und seine letzten Sessions müssen als getrennte Treffer erscheinen.
+2. Einen Spieltreffer öffnen. Die App muss direkt zu den korrekten Spieldetails navigieren.
+3. Einen Session-Treffer öffnen, der älter als 30 Tage ist. Die Ansicht **Sessions** muss auf **Gesamter Zeitraum** wechseln und die Session auswählen.
+4. Nach `Statistik` suchen und den Bereichstreffer öffnen. Die App muss zu **Statistiken** navigieren.
+5. Schnell nacheinander unterschiedliche Suchbegriffe eingeben. Veraltete Treffer dürfen die Ergebnisse der neueren Suche nicht überschreiben.
+
 ## Auswertung und Fehlerbericht
 
 Nach jedem Test die zuletzt erstellte Session in **Sessions** und die Summen in **Statistiken** kontrollieren. Bei Abweichungen unter **Einstellungen → Diagnose & Support** ein Diagnose-ZIP erstellen.

@@ -332,19 +332,33 @@ public sealed class SettingsViewModel : ObservableObject
 
         try
         {
-            var wasPaused = trackingService.State.IsPaused;
-            await trackingService.PauseAsync(CancellationToken.None);
-            var result = await backupService.ImportAsync(path, CancellationToken.None);
-            if (!wasPaused)
-            {
-                await trackingService.ResumeAsync(CancellationToken.None);
-            }
-
+            var result = await ImportBackupAsync(backupService, trackingService, path, CancellationToken.None);
             StatusMessage = $"Import abgeschlossen: {result.GameCount} Spiele, {result.SessionCount} Sessions";
         }
         catch (YFTimeTrackerException ex)
         {
             StatusMessage = ex.Message;
+        }
+    }
+
+    internal static async Task<ImportResult> ImportBackupAsync(
+        IBackupService backupService,
+        IGameTrackingService trackingService,
+        string path,
+        CancellationToken cancellationToken)
+    {
+        var wasPaused = trackingService.State.IsPaused;
+        try
+        {
+            await trackingService.PauseAsync(cancellationToken);
+            return await backupService.ImportAsync(path, cancellationToken);
+        }
+        finally
+        {
+            if (!wasPaused)
+            {
+                await trackingService.ResumeAsync(CancellationToken.None);
+            }
         }
     }
 

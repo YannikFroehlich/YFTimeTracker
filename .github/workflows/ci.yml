@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: yftimetracker-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build und Tests
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v6
+
+      - name: .NET einrichten
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Abhängigkeiten wiederherstellen
+        run: dotnet restore YFTimeTracker.slnx --configfile NuGet.config
+
+      - name: Release-Konfiguration bauen
+        run: dotnet build YFTimeTracker.slnx --configuration Release --no-restore
+
+      - name: Tests ausführen
+        run: dotnet test YFTimeTracker.slnx --configuration Release --no-build --no-restore

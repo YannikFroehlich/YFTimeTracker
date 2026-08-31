@@ -278,6 +278,23 @@ public sealed class SessionsViewModel : ObservableObject
         }
     }
 
+    public async Task ShowSessionAsync(long sessionId)
+    {
+        searchText = string.Empty;
+        OnPropertyChanged(nameof(SearchText));
+        selectedGameFilter = null;
+        OnPropertyChanged(nameof(SelectedGameFilter));
+        selectedPeriod = PeriodOptions.Single(option => option.Kind == SessionPeriodKind.All);
+        OnPropertyChanged(nameof(SelectedPeriod));
+        await RefreshAsync();
+
+        SelectedSession = Sessions.FirstOrDefault(session => session.Id == sessionId);
+        if (SelectedSession is null)
+        {
+            StatusMessage = "Die ausgewählte Session wurde nicht gefunden.";
+        }
+    }
+
     public void RefreshLiveDurations()
     {
         var now = clock.UtcNow;

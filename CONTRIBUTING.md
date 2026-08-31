@@ -69,6 +69,8 @@ dotnet build YFTimeTracker.slnx --no-restore
 dotnet test YFTimeTracker.slnx --no-build --no-restore
 ```
 
+GitHub Actions führt dieselben Schritte in Release-Konfiguration bei jedem Push nach `develop` sowie bei Pull Requests gegen `develop` oder `main` aus. Die CI-Prüfung muss erfolgreich sein, ersetzt aber nicht die erforderlichen manuellen Szenarien.
+
 Je nach Änderung sind zusätzlich manuell zu prüfen:
 
 - breite und schmale App-Fenster bei UI-Änderungen
