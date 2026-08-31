@@ -36,6 +36,12 @@ public sealed class StatisticsViewModelTests
         Assert.AreEqual("Alpha Game", viewModel.TopGameText);
         Assert.AreEqual("Montag", viewModel.FavoriteWeekdayText);
         Assert.AreEqual("3 h 00 min", viewModel.LongestSessionText);
+        Assert.HasCount(7, viewModel.TrendLinePoints);
+        Assert.HasCount(2, viewModel.GameShares);
+        Assert.AreEqual("Alpha Game", viewModel.GameShares[0].Name);
+        Assert.AreEqual("75 %", viewModel.GameShares[0].ShareText);
+        Assert.HasCount(26, viewModel.HeatmapWeeks);
+        Assert.HasCount(7, viewModel.HeatmapWeeks[0].Days);
     }
 
     [TestMethod]
@@ -52,6 +58,8 @@ public sealed class StatisticsViewModelTests
         Assert.AreEqual("0 min", viewModel.TotalDurationText);
         Assert.IsEmpty(viewModel.TopGames);
         Assert.AreEqual("Noch keine Daten", viewModel.TopGameText);
+        Assert.IsEmpty(viewModel.GameShares);
+        Assert.HasCount(26, viewModel.HeatmapWeeks);
     }
 
     private static PlaytimeStatistics CreateReport(
@@ -110,5 +118,15 @@ public sealed class StatisticsViewModelTests
             DateOnly localEndExclusive,
             TimeZoneInfo localTimeZone,
             CancellationToken cancellationToken) => Task.FromResult(report.TotalDuration);
+
+        public Task<IReadOnlyList<DailyPlaytimeInfo>> GetActivityHeatmapAsync(
+            int weekCount,
+            TimeZoneInfo localTimeZone,
+            CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<DailyPlaytimeInfo>>(
+                Enumerable.Range(0, weekCount * 7)
+                    .Select(offset => new DailyPlaytimeInfo(
+                        new DateOnly(2026, 8, 30).AddDays(offset - (weekCount * 7 - 1)),
+                        offset == weekCount * 7 - 1 ? TimeSpan.FromMinutes(45) : TimeSpan.Zero))
+                    .ToArray());
     }
 }
