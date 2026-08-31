@@ -6,5 +6,7 @@ public enum GameSource
     Steam = 1,
     Epic = 2,
     Gog = 3,
-    Xbox = 4
+    Xbox = 4,
+    BattleNet = 5,
+    Ubisoft = 6
 }

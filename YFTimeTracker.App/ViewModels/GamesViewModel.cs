@@ -57,6 +57,8 @@ public sealed class GamesViewModel : ObservableObject
             new LibrarySourceFilterOption(GameSource.Epic, "Epic"),
             new LibrarySourceFilterOption(GameSource.Gog, "GOG"),
             new LibrarySourceFilterOption(GameSource.Xbox, "Xbox"),
+            new LibrarySourceFilterOption(GameSource.BattleNet, "Battle.net"),
+            new LibrarySourceFilterOption(GameSource.Ubisoft, "Ubisoft Connect"),
             new LibrarySourceFilterOption(GameSource.Manual, "Manuell")
         ];
         selectedSourceFilter = SourceFilters[0];

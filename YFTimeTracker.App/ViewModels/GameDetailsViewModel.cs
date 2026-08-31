@@ -519,6 +519,8 @@ public sealed class GameDetailsViewModel : ObservableObject
         GameSource.Epic => "EPIC",
         GameSource.Gog => "GOG",
         GameSource.Xbox => "XBOX",
+        GameSource.BattleNet => "BATTLE.NET",
+        GameSource.Ubisoft => "UBISOFT",
         _ => "MANUELL"
     };
 
