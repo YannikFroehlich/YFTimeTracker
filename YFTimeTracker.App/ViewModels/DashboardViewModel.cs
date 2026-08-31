@@ -20,6 +20,7 @@ public sealed class DashboardViewModel : ObservableObject
     private readonly IPlaytimeStatisticsService statistics;
     private readonly IGameTrackingService trackingService;
     private readonly IClock clock;
+    private readonly IGameIconService? gameIcons;
     private DateTimeOffset? activeStartedAtUtc;
     private bool isRefreshing;
     private string todayText = "0 min";
@@ -37,6 +38,7 @@ public sealed class DashboardViewModel : ObservableObject
     private string statusDetailText = "Spielzeit wird automatisch erfasst";
     private string activeGameName = "Kein aktives Spiel";
     private string activeGameInitials = "YF";
+    private string? activeGameIconPath;
     private string activeElapsedText = "00:00:00";
     private string activeGameHint = "Starte ein registriertes Spiel, um die Live-Ansicht zu aktivieren.";
     private string additionalRunningGamesText = string.Empty;
@@ -50,11 +52,13 @@ public sealed class DashboardViewModel : ObservableObject
     public DashboardViewModel(
         IPlaytimeStatisticsService statistics,
         IGameTrackingService trackingService,
-        IClock clock)
+        IClock clock,
+        IGameIconService? gameIcons = null)
     {
         this.statistics = statistics;
         this.trackingService = trackingService;
         this.clock = clock;
+        this.gameIcons = gameIcons;
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         ToggleTrackingCommand = new AsyncRelayCommand(ToggleTrackingAsync);
     }
@@ -88,6 +92,8 @@ public sealed class DashboardViewModel : ObservableObject
     public string ActiveGameName { get => activeGameName; private set => SetProperty(ref activeGameName, value); }
 
     public string ActiveGameInitials { get => activeGameInitials; private set => SetProperty(ref activeGameInitials, value); }
+
+    public string? ActiveGameIconPath { get => activeGameIconPath; private set => SetProperty(ref activeGameIconPath, value); }
 
     public string ActiveElapsedText { get => activeElapsedText; private set => SetProperty(ref activeElapsedText, value); }
 
@@ -146,9 +152,10 @@ public sealed class DashboardViewModel : ObservableObject
                 ? "Während der Pause wird keine Spielzeit erfasst"
                 : "Spielzeit wird automatisch erfasst";
 
-            UpdateActiveGame(stats.RunningGames);
+            var iconPaths = await ResolveIconPathsAsync(stats.RunningGames, stats.RecentGames);
+            UpdateActiveGame(stats.RunningGames, iconPaths);
             UpdateWeekChart(stats.CurrentWeekDays);
-            UpdateRecentGames(stats.RecentGames);
+            UpdateRecentGames(stats.RecentGames, iconPaths);
         }
         finally
         {
@@ -180,7 +187,9 @@ public sealed class DashboardViewModel : ObservableObject
         await RefreshAsync();
     }
 
-    private void UpdateActiveGame(IReadOnlyList<RunningGameInfo> runningGames)
+    private void UpdateActiveGame(
+        IReadOnlyList<RunningGameInfo> runningGames,
+        IReadOnlyDictionary<long, string?> iconPaths)
     {
         var activeGame = runningGames.FirstOrDefault();
         if (activeGame is null)
@@ -188,6 +197,7 @@ public sealed class DashboardViewModel : ObservableObject
             activeStartedAtUtc = null;
             ActiveGameName = "Kein aktives Spiel";
             ActiveGameInitials = "YF";
+            ActiveGameIconPath = null;
             ActiveElapsedText = "00:00:00";
             ActiveGameHint = trackingService.State.IsPaused
                 ? "Setze das Tracking fort, damit laufende Spiele erkannt werden."
@@ -201,6 +211,7 @@ public sealed class DashboardViewModel : ObservableObject
         activeStartedAtUtc = activeGame.StartedAtUtc;
         ActiveGameName = activeGame.Name;
         ActiveGameInitials = GetInitials(activeGame.Name);
+        ActiveGameIconPath = iconPaths.GetValueOrDefault(activeGame.GameId);
         ActiveElapsedText = TimeFormatter.FormatClock(activeGame.Duration);
         ActiveGameHint = "Automatisch über den laufenden Prozess erkannt";
         AdditionalRunningGamesText = runningGames.Count > 1
@@ -242,7 +253,9 @@ public sealed class DashboardViewModel : ObservableObject
         }
     }
 
-    private void UpdateRecentGames(IReadOnlyList<RecentGameInfo> games)
+    private void UpdateRecentGames(
+        IReadOnlyList<RecentGameInfo> games,
+        IReadOnlyDictionary<long, string?> iconPaths)
     {
         var visibleGames = games.Take(6).ToArray();
         for (var index = 0; index < visibleGames.Length; index++)
@@ -261,6 +274,7 @@ public sealed class DashboardViewModel : ObservableObject
             RecentGames[index].Update(
                 game.Name,
                 GetInitials(game.Name),
+                iconPaths.GetValueOrDefault(game.GameId),
                 TimeFormatter.Format(game.TotalDuration),
                 game.IsRunning ? "Jetzt aktiv" : game.LastPlayedAtUtc.LocalDateTime.ToString("dd.MM.yyyy · HH:mm", GermanCulture),
                 game.IsRunning ? GreenColor : RecentMutedColor);
@@ -273,6 +287,32 @@ public sealed class DashboardViewModel : ObservableObject
 
         RecentGamesVisibility = RecentGames.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         RecentEmptyVisibility = RecentGames.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async Task<IReadOnlyDictionary<long, string?>> ResolveIconPathsAsync(
+        IReadOnlyList<RunningGameInfo> runningGames,
+        IReadOnlyList<RecentGameInfo> recentGames)
+    {
+        if (gameIcons is null)
+        {
+            return new Dictionary<long, string?>();
+        }
+
+        var games = runningGames
+            .Select(game => (game.GameId, game.ExecutablePath))
+            .Concat(recentGames.Select(game => (game.GameId, game.ExecutablePath)))
+            .GroupBy(game => game.GameId)
+            .Select(group => group
+                .OrderByDescending(game => !string.IsNullOrWhiteSpace(game.ExecutablePath))
+                .First())
+            .ToArray();
+        var tasks = games.Select(async game => new
+        {
+            game.GameId,
+            IconPath = await gameIcons.GetIconPathAsync(game.ExecutablePath, CancellationToken.None)
+        });
+        var resolved = await Task.WhenAll(tasks);
+        return resolved.ToDictionary(item => item.GameId, item => item.IconPath);
     }
 
     private int FindRecentGameIndex(long gameId, int startIndex)
@@ -376,6 +416,7 @@ public sealed class RecentGameItemViewModel(long gameId) : ObservableObject
 {
     private string name = string.Empty;
     private string initials = string.Empty;
+    private string? iconPath;
     private string totalPlaytime = string.Empty;
     private string lastSession = string.Empty;
     private string lastSessionBrush = "#A7B2C7";
@@ -386,6 +427,8 @@ public sealed class RecentGameItemViewModel(long gameId) : ObservableObject
 
     public string Initials { get => initials; private set => SetProperty(ref initials, value); }
 
+    public string? IconPath { get => iconPath; private set => SetProperty(ref iconPath, value); }
+
     public string TotalPlaytime { get => totalPlaytime; private set => SetProperty(ref totalPlaytime, value); }
 
     public string LastSession { get => lastSession; private set => SetProperty(ref lastSession, value); }
@@ -395,12 +438,14 @@ public sealed class RecentGameItemViewModel(long gameId) : ObservableObject
     public void Update(
         string newName,
         string newInitials,
+        string? newIconPath,
         string newTotalPlaytime,
         string newLastSession,
         string newLastSessionBrush)
     {
         Name = newName;
         Initials = newInitials;
+        IconPath = newIconPath;
         TotalPlaytime = newTotalPlaytime;
         LastSession = newLastSession;
         LastSessionBrush = newLastSessionBrush;

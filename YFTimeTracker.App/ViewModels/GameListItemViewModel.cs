@@ -2,7 +2,7 @@ using YFTimeTracker.Core.Models;
 
 namespace YFTimeTracker.App.ViewModels;
 
-public sealed class GameListItemViewModel(Game game)
+public sealed class GameListItemViewModel(Game game, string? iconPath = null)
 {
     private readonly IReadOnlyList<GameSession> gameSessions = [];
     private readonly DateTimeOffset nowUtc = DateTimeOffset.UtcNow;
@@ -11,8 +11,9 @@ public sealed class GameListItemViewModel(Game game)
         Game game,
         IReadOnlyList<GameSession>? sessions,
         bool isRunning,
-        DateTimeOffset nowUtc)
-        : this(game)
+        DateTimeOffset nowUtc,
+        string? iconPath = null)
+        : this(game, iconPath)
     {
         gameSessions = sessions ?? [];
         this.nowUtc = nowUtc;
@@ -22,6 +23,8 @@ public sealed class GameListItemViewModel(Game game)
     public long Id => game.Id;
 
     public string Name => game.Name;
+
+    public string? IconPath { get; } = iconPath;
 
     public string ExecutablePath => game.PrimaryExecutable?.ExecutablePath ?? string.Empty;
 

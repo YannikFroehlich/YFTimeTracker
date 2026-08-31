@@ -37,6 +37,20 @@ public sealed class PlaytimeReadRepository(IDbContextFactory<YFTimeTrackerDbCont
             .ToListAsync(cancellationToken);
 
         var recentGameIds = recentRows.Select(row => row.GameId).ToArray();
+        var executablePaths = recentGameIds.Length == 0
+            ? new Dictionary<long, string?>()
+            : await context.Games
+                .Where(game => recentGameIds.Contains(game.Id))
+                .Select(game => new
+                {
+                    game.Id,
+                    ExecutablePath = game.Executables
+                        .OrderByDescending(executable => executable.IsPrimary)
+                        .ThenBy(executable => executable.Id)
+                        .Select(executable => executable.ExecutablePath)
+                        .FirstOrDefault()
+                })
+                .ToDictionaryAsync(row => row.Id, row => row.ExecutablePath, cancellationToken);
         var unresolvedDurations = recentGameIds.Length == 0
             ? []
             : await context.GameSessions
@@ -59,7 +73,8 @@ public sealed class PlaytimeReadRepository(IDbContextFactory<YFTimeTrackerDbCont
                 row.Name,
                 row.LastPlayedAtUtc,
                 TimeSpan.FromSeconds(row.StoredDurationSeconds + unresolvedByGame.GetValueOrDefault(row.GameId)),
-                row.IsRunning))
+                row.IsRunning,
+                executablePaths.GetValueOrDefault(row.GameId)))
             .ToArray();
 
         return new PlaytimeOverview(totalDurationSeconds, gamesPlayedCount, recentGames);

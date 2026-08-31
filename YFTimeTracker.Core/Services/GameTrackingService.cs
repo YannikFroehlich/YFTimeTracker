@@ -713,7 +713,8 @@ public sealed class GameTrackingService(
                 session.GameId,
                 session.Game!.Name,
                 session.StartedAtUtc,
-                session.GetEffectiveDuration(clock.UtcNow)))
+                session.GetEffectiveDuration(clock.UtcNow),
+                session.Game.PrimaryExecutable?.ExecutablePath))
             .OrderBy(info => info.Name)
             .ToArray();
 

@@ -56,6 +56,11 @@ public sealed class GlobalSearchViewModelTests
 
         Assert.HasCount(1, viewModel.Results);
         Assert.AreEqual(GlobalSearchResultKind.Statistics, viewModel.Results[0].Kind);
+
+        await viewModel.SearchAsync("Rückblick", CancellationToken.None);
+
+        Assert.HasCount(1, viewModel.Results);
+        Assert.AreEqual(GlobalSearchResultKind.YearReview, viewModel.Results[0].Kind);
     }
 
     [TestMethod]
@@ -68,6 +73,50 @@ public sealed class GlobalSearchViewModelTests
 
         Assert.AreEqual(0, repository.CallCount);
         Assert.IsEmpty(viewModel.Results);
+    }
+
+    [TestMethod]
+    public async Task Search_attaches_local_icon_path_to_game_and_session_results()
+    {
+        var now = DateTimeOffset.Parse("2026-08-31T12:00:00Z");
+        var game = new Game
+        {
+            Id = 7,
+            Name = "Alpha",
+            Executables =
+            [
+                new GameExecutable
+                {
+                    GameId = 7,
+                    ExecutableName = "alpha.exe",
+                    ExecutablePath = @"C:\Games\Alpha\alpha.exe",
+                    IsPrimary = true
+                }
+            ]
+        };
+        var session = new GameSession
+        {
+            Id = 42,
+            GameId = game.Id,
+            Game = game,
+            StartedAtUtc = now.AddHours(-1),
+            LastSeenAtUtc = now,
+            EndedAtUtc = now,
+            DurationSeconds = 3600,
+            BootSessionId = "boot"
+        };
+        var iconService = new FakeGameIconService(@"C:\Cache\alpha.png");
+        var viewModel = new GlobalSearchViewModel(
+            new FakeSearchRepository(new GlobalSearchResults([game], [session])),
+            new FixedClock(now),
+            iconService);
+
+        await viewModel.SearchAsync("Alpha", CancellationToken.None);
+
+        Assert.AreEqual(@"C:\Cache\alpha.png", viewModel.Results[0].IconPath);
+        Assert.AreEqual(@"C:\Cache\alpha.png", viewModel.Results[1].IconPath);
+        Assert.AreEqual("A", viewModel.Results[0].IconText);
+        Assert.AreEqual(2, iconService.CallCount);
     }
 
     private sealed class FakeSearchRepository(GlobalSearchResults results) : IGlobalSearchRepository
@@ -90,5 +139,16 @@ public sealed class GlobalSearchViewModelTests
     private sealed class FixedClock(DateTimeOffset now) : IClock
     {
         public DateTimeOffset UtcNow { get; } = now;
+    }
+
+    private sealed class FakeGameIconService(string iconPath) : IGameIconService
+    {
+        public int CallCount { get; private set; }
+
+        public Task<string?> GetIconPathAsync(string? executablePath, CancellationToken cancellationToken)
+        {
+            CallCount++;
+            return Task.FromResult<string?>(iconPath);
+        }
     }
 }

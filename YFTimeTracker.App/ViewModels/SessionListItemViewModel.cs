@@ -8,10 +8,14 @@ public sealed class SessionListItemViewModel : ObservableObject
     private readonly GameSession session;
     private DateTimeOffset nowUtc;
 
-    public SessionListItemViewModel(GameSession session, DateTimeOffset? nowUtc = null)
+    public SessionListItemViewModel(
+        GameSession session,
+        DateTimeOffset? nowUtc = null,
+        string? iconPath = null)
     {
         this.session = session;
         this.nowUtc = nowUtc ?? DateTimeOffset.UtcNow;
+        IconPath = iconPath;
     }
 
     public long Id => session.Id;
@@ -19,6 +23,8 @@ public sealed class SessionListItemViewModel : ObservableObject
     public long GameId => session.GameId;
 
     public string GameName => session.Game?.Name ?? "Unbekanntes Spiel";
+
+    public string? IconPath { get; }
 
     public string GameInitials
     {

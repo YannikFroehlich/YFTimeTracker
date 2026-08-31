@@ -2,6 +2,7 @@
     x:Class="YFTimeTracker.App.Views.GamesPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:YFTimeTracker.App.Controls"
     Loaded="Page_Loaded"
     Unloaded="Page_Unloaded">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
@@ -144,9 +145,14 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="42" />
                                         </Grid.ColumnDefinitions>
-                                        <Border Width="44" Height="44" Background="{StaticResource YFLogoGradientBrush}" CornerRadius="9">
-                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Text="{Binding Initials}" />
-                                        </Border>
+                                        <controls:GameIcon
+                                            Width="44"
+                                            Height="44"
+                                            Background="{StaticResource YFLogoGradientBrush}"
+                                            FontSize="12"
+                                            IconCornerRadius="9"
+                                            IconPath="{Binding IconPath}"
+                                            Initials="{Binding Initials}" />
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                             <TextBlock FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock FontSize="11" Foreground="{Binding ExecutableColor}" Text="{Binding ExecutableDisplay}" TextTrimming="CharacterEllipsis" />

@@ -11,6 +11,7 @@ public static class CoreServiceCollectionExtensions
         services.AddSingleton<IGameCatalogService, GameCatalogService>();
         services.AddSingleton<IGameSessionEditor, GameSessionEditor>();
         services.AddSingleton<IPlaytimeStatisticsService, PlaytimeStatisticsService>();
+        services.AddSingleton<IYearReviewService, YearReviewService>();
         services.AddSingleton<IGameTrackingService, GameTrackingService>();
         return services;
     }

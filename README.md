@@ -17,8 +17,10 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Dashboard mit Live-Tracking, Tages-, Wochen- und Gesamtwerten
 - Globale Suche nach Spielen, EXE-Dateien, Sessions und App-Bereichen
 - Bibliothek mit Suche, Sortierung, Spieldetails und EXE-Verwaltung
+- Lokale Spiel-Icons aus den registrierten EXE-Dateien mit datensparsamem Cache
 - Anlegen, Bearbeiten und Löschen manueller Sessions
 - Statistiken für frei wählbare Zeiträume und einzelne Spiele
+- Jahresrückblick mit Monatsverlauf, Vorjahresvergleich, Rekorden und Top-Spielen
 - Ersteinrichtungs-Assistent für Tracking, Launcher, Tray und Autostart
 - Tray-Betrieb, Tracking-Pause, optionaler Autostart und Einzelinstanz-Schutz
 - Lokale Backups sowie Import und Export
@@ -48,6 +50,7 @@ Alle dauerhaften Daten liegen unter `%LocalAppData%\YFTimeTracker`:
 | `yftimetracker.db` | Spiele, EXE-Zuordnungen, Sessions und Einstellungen |
 | `Backups` | automatische und manuelle Sicherungen |
 | `Exports` | vom Benutzer erstellte Exporte |
+| `GameIcons` | lokal aus Spiel-EXE-Dateien extrahierte Icon-Kopien |
 | `Logs` | lokale Diagnoseprotokolle |
 
 Das Diagnose-ZIP enthält Systeminformationen und höchstens drei aktuelle Logdateien, aber keine Datenbank, Backups oder Spielsessions.

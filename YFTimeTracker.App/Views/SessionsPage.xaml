@@ -2,6 +2,7 @@
     x:Class="YFTimeTracker.App.Views.SessionsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:YFTimeTracker.App.Controls"
     Loaded="Page_Loaded"
     Unloaded="Page_Unloaded">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
@@ -195,9 +196,15 @@
                                                     <ColumnDefinition Width="110" />
                                                     <ColumnDefinition Width="105" />
                                                 </Grid.ColumnDefinitions>
-                                                <Border Width="40" Height="40" HorizontalAlignment="Left" Background="{StaticResource YFLogoGradientBrush}" CornerRadius="9">
-                                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="Bold" Text="{Binding GameInitials}" />
-                                                </Border>
+                                                <controls:GameIcon
+                                                    Width="40"
+                                                    Height="40"
+                                                    HorizontalAlignment="Left"
+                                                    Background="{StaticResource YFLogoGradientBrush}"
+                                                    FontSize="11"
+                                                    IconCornerRadius="9"
+                                                    IconPath="{Binding IconPath}"
+                                                    Initials="{Binding GameInitials}" />
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                                                     <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding GameName}" TextTrimming="CharacterEllipsis" />
                                                     <TextBlock FontSize="9" Foreground="{StaticResource YFCyanBrush}" Text="{Binding SourceLabel}" />

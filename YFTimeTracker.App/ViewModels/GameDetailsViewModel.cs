@@ -17,6 +17,7 @@ public sealed class GameDetailsViewModel : ObservableObject
     private readonly IGameSessionRepository sessionRepository;
     private readonly IGameSessionEditor sessionEditor;
     private readonly IClock clock;
+    private readonly IGameIconService? gameIcons;
     private readonly AsyncRelayCommand saveGameCommand;
     private readonly AsyncRelayCommand saveSessionCommand;
     private Game? loadedGame;
@@ -25,6 +26,7 @@ public sealed class GameDetailsViewModel : ObservableObject
     private long? editingSessionId;
     private string gameName = "Spiel";
     private string initials = "YF";
+    private string? iconPath;
     private string sourceLabel = "MANUELL";
     private string sourceDetail = "Lokal hinzugefügt";
     private string installDirectory = "Kein Installationsordner hinterlegt";
@@ -54,13 +56,15 @@ public sealed class GameDetailsViewModel : ObservableObject
         IGameCatalogService catalog,
         IGameSessionRepository sessionRepository,
         IGameSessionEditor sessionEditor,
-        IClock clock)
+        IClock clock,
+        IGameIconService? gameIcons = null)
     {
         this.games = games;
         this.catalog = catalog;
         this.sessionRepository = sessionRepository;
         this.sessionEditor = sessionEditor;
         this.clock = clock;
+        this.gameIcons = gameIcons;
 
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         saveGameCommand = new AsyncRelayCommand(SaveGameAsync, () => loadedGame is not null);
@@ -84,6 +88,8 @@ public sealed class GameDetailsViewModel : ObservableObject
     }
 
     public string Initials { get => initials; private set => SetProperty(ref initials, value); }
+
+    public string? IconPath { get => iconPath; private set => SetProperty(ref iconPath, value); }
 
     public string SourceLabel { get => sourceLabel; private set => SetProperty(ref sourceLabel, value); }
 
@@ -213,8 +219,13 @@ public sealed class GameDetailsViewModel : ObservableObject
             }
 
             var storedSessions = await sessionRepository.GetSessionsForGameAsync(gameId, CancellationToken.None);
+            var resolvedIconPath = gameIcons is null
+                ? null
+                : await gameIcons.GetIconPathAsync(
+                    game.PrimaryExecutable?.ExecutablePath,
+                    CancellationToken.None);
             loadedGame = game;
-            ApplyGame(game);
+            ApplyGame(game, resolvedIconPath);
             ApplySessions(storedSessions);
             ContentVisibility = Visibility.Visible;
             ErrorVisibility = Visibility.Collapsed;
@@ -264,10 +275,11 @@ public sealed class GameDetailsViewModel : ObservableObject
         }
     }
 
-    private void ApplyGame(Game game)
+    private void ApplyGame(Game game, string? resolvedIconPath)
     {
         GameName = game.Name;
         Initials = GetInitials(game.Name);
+        IconPath = resolvedIconPath;
         SourceLabel = FormatSource(game.Source);
         SourceDetail = game.ExternalGameId is { Length: > 0 }
             ? $"Launcher-ID {game.ExternalGameId}"
@@ -297,7 +309,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         Sessions.Clear();
         foreach (var session in storedSessions.OrderByDescending(session => session.StartedAtUtc))
         {
-            Sessions.Add(new SessionListItemViewModel(session, clock.UtcNow));
+            Sessions.Add(new SessionListItemViewModel(session, clock.UtcNow, IconPath));
         }
 
         selectedSession = selectedId is null

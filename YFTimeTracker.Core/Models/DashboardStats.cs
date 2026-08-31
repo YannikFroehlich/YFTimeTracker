@@ -15,11 +15,17 @@ public sealed record DashboardStats(
 
 public sealed record DailyPlaytimeInfo(DateOnly Date, TimeSpan Duration);
 
-public sealed record RunningGameInfo(long GameId, string Name, DateTimeOffset StartedAtUtc, TimeSpan Duration);
+public sealed record RunningGameInfo(
+    long GameId,
+    string Name,
+    DateTimeOffset StartedAtUtc,
+    TimeSpan Duration,
+    string? ExecutablePath = null);
 
 public sealed record RecentGameInfo(
     long GameId,
     string Name,
     DateTimeOffset LastPlayedAtUtc,
     TimeSpan TotalDuration,
-    bool IsRunning);
+    bool IsRunning,
+    string? ExecutablePath = null);

@@ -72,6 +72,22 @@ Für Xbox-/Microsoft-Store-Spiele zusätzlich prüfen:
 4. Nach `Statistik` suchen und den Bereichstreffer öffnen. Die App muss zu **Statistiken** navigieren.
 5. Schnell nacheinander unterschiedliche Suchbegriffe eingeben. Veraltete Treffer dürfen die Ergebnisse der neueren Suche nicht überschreiben.
 
+## Lokale Spiel-Icons
+
+1. Ein Spiel mit einer erreichbaren EXE-Datei öffnen. Das Windows-Datei-Icon muss im Dashboard, in der Bibliothek, in der globalen Suche, in Sessions und in den Spieldetails erscheinen.
+2. Ein Spiel mit fehlender oder verschobener EXE öffnen. Statt eines defekten Bildes müssen weiterhin die Initialen des Spiels angezeigt werden.
+3. Die App neu starten. Bereits extrahierte Icons müssen ohne sichtbare Verzögerung aus dem lokalen Cache geladen werden.
+4. Die primäre EXE eines Spiels in der Bibliothek ändern. Nach dem Speichern muss das Icon der neuen Datei angezeigt werden.
+
+## Jahresrückblick
+
+1. **Jahresrückblick** in der Navigation öffnen. Das aktuelle Jahr muss vorausgewählt sein und Gesamtspielzeit, Spieltage, Spiele und Sessions mit den Statistiken übereinstimmen.
+2. Ein Jahr mit Daten auswählen. Der Monatsverlauf muss zwölf Monate enthalten; aktivster Monat, längste Session und Top-Spiele müssen aus echten Sessions stammen.
+3. Zu einem anderen verfügbaren Jahr wechseln. Werte, Vorjahresvergleich und Rangliste müssen vollständig auf das gewählte Jahr wechseln.
+4. Ein Jahr ohne Sessions auswählen, sofern vorhanden. Es dürfen keine Demo-Werte erscheinen; stattdessen muss der leere Zustand sichtbar sein.
+5. Ein Top-Spiel anklicken. Die App muss die richtigen Spieldetails öffnen.
+6. In der globalen Suche nach `Rückblick` suchen und den Bereichstreffer öffnen. Die App muss zum **Jahresrückblick** navigieren.
+
 ## Auswertung und Fehlerbericht
 
 Nach jedem Test die zuletzt erstellte Session in **Sessions** und die Summen in **Statistiken** kontrollieren. Bei Abweichungen unter **Einstellungen → Diagnose & Support** ein Diagnose-ZIP erstellen.

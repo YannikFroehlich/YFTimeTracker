@@ -13,7 +13,9 @@ public sealed class SessionsViewModel : ObservableObject
     private readonly IGameSessionRepository sessionRepository;
     private readonly IGameSessionEditor sessionEditor;
     private readonly IClock clock;
+    private readonly IGameIconService? gameIcons;
     private readonly List<GameSession> loadedSessions = [];
+    private readonly Dictionary<long, string?> iconPathsByGame = [];
     private readonly AsyncRelayCommand saveSessionCommand;
     private int refreshVersion;
     private SessionListItemViewModel? selectedSession;
@@ -37,12 +39,14 @@ public sealed class SessionsViewModel : ObservableObject
         IGameCatalogService catalog,
         IGameSessionRepository sessionRepository,
         IGameSessionEditor sessionEditor,
-        IClock clock)
+        IClock clock,
+        IGameIconService? gameIcons = null)
     {
         this.catalog = catalog;
         this.sessionRepository = sessionRepository;
         this.sessionEditor = sessionEditor;
         this.clock = clock;
+        this.gameIcons = gameIcons;
 
         PeriodOptions =
         [
@@ -239,6 +243,7 @@ public sealed class SessionsViewModel : ObservableObject
             var (fromUtc, toUtc) = GetPeriodRangeUtc(selectedPeriodSnapshot.Kind);
             var games = await catalog.GetGamesAsync(CancellationToken.None);
             var storedSessions = await sessionRepository.GetSessionsAsync(fromUtc, toUtc, CancellationToken.None);
+            var resolvedIconPaths = await ResolveIconPathsAsync(games);
             if (currentRefresh != Volatile.Read(ref refreshVersion))
             {
                 return;
@@ -256,9 +261,12 @@ public sealed class SessionsViewModel : ObservableObject
             OnPropertyChanged(nameof(SelectedGameFilter));
 
             EditorGames.Clear();
+            iconPathsByGame.Clear();
             foreach (var game in games)
             {
-                EditorGames.Add(new GameListItemViewModel(game));
+                var iconPath = resolvedIconPaths.GetValueOrDefault(game.Id);
+                iconPathsByGame[game.Id] = iconPath;
+                EditorGames.Add(new GameListItemViewModel(game, iconPath));
             }
 
             editorGame = EditorGames.FirstOrDefault(game => game.Id == selectedEditorGameId)
@@ -451,7 +459,10 @@ public sealed class SessionsViewModel : ObservableObject
                 || (session.Game?.Name?.Contains(search, StringComparison.CurrentCultureIgnoreCase) ?? false)
                 || session.StartedAtUtc.LocalDateTime.ToString("g").Contains(search, StringComparison.CurrentCultureIgnoreCase))
             .OrderByDescending(session => session.StartedAtUtc)
-            .Select(session => new SessionListItemViewModel(session, clock.UtcNow))
+            .Select(session => new SessionListItemViewModel(
+                session,
+                clock.UtcNow,
+                iconPathsByGame.GetValueOrDefault(session.GameId)))
             .ToArray();
 
         Sessions.Clear();
@@ -493,6 +504,24 @@ public sealed class SessionsViewModel : ObservableObject
         SessionCountText = Sessions.Count.ToString("N0");
         TotalDurationText = TimeFormatter.Format(total);
         AverageDurationText = TimeFormatter.Format(average);
+    }
+
+    private async Task<IReadOnlyDictionary<long, string?>> ResolveIconPathsAsync(IReadOnlyList<Game> games)
+    {
+        if (gameIcons is null || games.Count == 0)
+        {
+            return new Dictionary<long, string?>();
+        }
+
+        var tasks = games.Select(async game => new
+        {
+            game.Id,
+            IconPath = await gameIcons.GetIconPathAsync(
+                game.PrimaryExecutable?.ExecutablePath,
+                CancellationToken.None)
+        });
+        var resolved = await Task.WhenAll(tasks);
+        return resolved.ToDictionary(item => item.Id, item => item.IconPath);
     }
 
     private (DateTimeOffset? FromUtc, DateTimeOffset? ToUtc) GetPeriodRangeUtc(SessionPeriodKind period)

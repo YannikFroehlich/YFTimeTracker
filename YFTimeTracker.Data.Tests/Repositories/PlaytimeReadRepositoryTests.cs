@@ -36,6 +36,7 @@ public sealed class PlaytimeReadRepositoryTests
         Assert.AreEqual("Alpha", overview.RecentGames[0].Name);
         Assert.AreEqual(TimeSpan.FromMinutes(90), overview.RecentGames[0].TotalDuration);
         Assert.IsTrue(overview.RecentGames[0].IsRunning);
+        Assert.AreEqual(@"C:\Games\Alpha.exe", overview.RecentGames[0].ExecutablePath);
         Assert.AreEqual(now.AddDays(-2), await repository.GetEarliestSessionStartAsync(CancellationToken.None));
         Assert.AreEqual(12_600L, await repository.GetTotalDurationSecondsAsync(now, CancellationToken.None));
     }

@@ -79,6 +79,7 @@ public partial class App : Application
                 services.AddTransient<GameDetailsPage>();
                 services.AddTransient<SessionsPage>();
                 services.AddTransient<StatisticsPage>();
+                services.AddTransient<YearReviewPage>();
                 services.AddTransient<SettingsPage>();
                 services.AddSingleton<DashboardViewModel>();
                 services.AddSingleton<GlobalSearchViewModel>();
@@ -86,6 +87,7 @@ public partial class App : Application
                 services.AddTransient<GameDetailsViewModel>();
                 services.AddSingleton<SessionsViewModel>();
                 services.AddSingleton<StatisticsViewModel>();
+                services.AddSingleton<YearReviewViewModel>();
                 services.AddSingleton<SettingsViewModel>();
             })
             .Build();

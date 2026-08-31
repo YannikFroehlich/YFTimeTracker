@@ -1,0 +1,26 @@
+<UserControl
+    x:Class="YFTimeTracker.App.Controls.GameIcon"
+    x:Name="Root"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border
+        Background="{Binding Background, ElementName=Root}"
+        CornerRadius="{Binding IconCornerRadius, ElementName=Root}">
+        <Grid>
+            <TextBlock
+                x:Name="FallbackText"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                FontFamily="{Binding FontFamily, ElementName=Root}"
+                FontSize="{Binding FontSize, ElementName=Root}"
+                FontWeight="Bold"
+                Foreground="{Binding Foreground, ElementName=Root}"
+                Text="{Binding Initials, ElementName=Root}" />
+            <Image
+                x:Name="IconImage"
+                Margin="{Binding IconPadding, ElementName=Root}"
+                Stretch="Uniform"
+                Visibility="Collapsed" />
+        </Grid>
+    </Border>
+</UserControl>

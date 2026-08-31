@@ -42,7 +42,8 @@ public sealed class PlaytimeStatisticsService(
                 session.GameId,
                 session.Game!.Name,
                 session.StartedAtUtc,
-                session.GetEffectiveDuration(nowUtc)))
+                session.GetEffectiveDuration(nowUtc),
+                session.Game.PrimaryExecutable?.ExecutablePath))
             .OrderBy(info => info.Name)
             .ToArray();
 

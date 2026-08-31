@@ -367,6 +367,10 @@ public sealed partial class MainWindow : Window
                 Navigation.SelectedItem = Navigation.MenuItems[3];
                 Navigate(typeof(StatisticsPage));
                 break;
+            case GlobalSearchResultKind.YearReview:
+                Navigation.SelectedItem = Navigation.MenuItems[4];
+                Navigate(typeof(YearReviewPage));
+                break;
         }
     }
 
@@ -505,6 +509,7 @@ public sealed partial class MainWindow : Window
             "library" => typeof(GamesPage),
             "sessions" => typeof(SessionsPage),
             "statistics" => typeof(StatisticsPage),
+            "year-review" => typeof(YearReviewPage),
             "settings" => typeof(SettingsPage),
             _ => typeof(DashboardPage)
         };

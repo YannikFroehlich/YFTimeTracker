@@ -6,7 +6,8 @@ namespace YFTimeTracker.App.ViewModels;
 
 public sealed class GlobalSearchViewModel(
     IGlobalSearchRepository searchRepository,
-    IClock clock)
+    IClock clock,
+    IGameIconService? gameIcons = null)
 {
     public ObservableCollection<GlobalSearchResultViewModel> Results { get; } = [];
 
@@ -26,21 +27,35 @@ public sealed class GlobalSearchViewModel(
             cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
 
+        var gameIconPaths = gameIcons is null
+            ? new string?[searchResults.Games.Count]
+            : await Task.WhenAll(searchResults.Games.Select(game => gameIcons.GetIconPathAsync(
+                game.PrimaryExecutable?.ExecutablePath,
+                cancellationToken)));
+        var sessionIconPaths = gameIcons is null
+            ? new string?[searchResults.Sessions.Count]
+            : await Task.WhenAll(searchResults.Sessions.Select(session => gameIcons.GetIconPathAsync(
+                session.Game?.PrimaryExecutable?.ExecutablePath,
+                cancellationToken)));
+        cancellationToken.ThrowIfCancellationRequested();
+
         var items = new List<GlobalSearchResultViewModel>();
-        items.AddRange(searchResults.Games.Select(game => new GlobalSearchResultViewModel(
+        items.AddRange(searchResults.Games.Select((game, index) => new GlobalSearchResultViewModel(
             GlobalSearchResultKind.Game,
             game.Name,
             $"{FormatSource(game.Source)} · {game.PrimaryExecutable?.ExecutableName ?? "Keine EXE"}",
             "\uE7FC",
             game.Id,
-            null)));
-        items.AddRange(searchResults.Sessions.Select(session => new GlobalSearchResultViewModel(
+            null,
+            gameIconPaths[index])));
+        items.AddRange(searchResults.Sessions.Select((session, index) => new GlobalSearchResultViewModel(
             GlobalSearchResultKind.Session,
             session.Game?.Name ?? "Unbekanntes Spiel",
             $"Session · {TimeZoneInfo.ConvertTime(session.StartedAtUtc, TimeZoneInfo.Local):dd.MM.yyyy, HH:mm} · {TimeFormatter.Format(session.GetEffectiveDuration(clock.UtcNow))}",
             "\uE787",
             session.GameId,
-            session.Id)));
+            session.Id,
+            sessionIconPaths[index])));
 
         AddNavigationResults(items, query);
         ReplaceResults(items);
@@ -85,6 +100,17 @@ public sealed class GlobalSearchViewModel(
                 null,
                 null));
         }
+
+        if (Matches(query, "Jahresrückblick", "Rückblick", "Jahresreview", "Jahr"))
+        {
+            items.Add(new GlobalSearchResultViewModel(
+                GlobalSearchResultKind.YearReview,
+                "Jahresrückblick öffnen",
+                "Monate, Rekorde und meistgespielte Spiele eines Jahres",
+                "\uE787",
+                null,
+                null));
+        }
     }
 
     private static bool Matches(string query, params string[] candidates)
@@ -124,7 +150,8 @@ public enum GlobalSearchResultKind
     Session,
     Library,
     Sessions,
-    Statistics
+    Statistics,
+    YearReview
 }
 
 public sealed record GlobalSearchResultViewModel(
@@ -133,7 +160,20 @@ public sealed record GlobalSearchResultViewModel(
     string Subtitle,
     string Glyph,
     long? GameId,
-    long? SessionId)
+    long? SessionId,
+    string? IconPath = null)
 {
+    public string IconText => GameId is null ? Glyph : GetInitials(Title);
+
+    public string IconFontFamily => GameId is null ? "Segoe Fluent Icons" : "Segoe UI Variable Display";
+
     public override string ToString() => Title;
+
+    private static string GetInitials(string name)
+    {
+        var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return words.Length == 0
+            ? "?"
+            : string.Concat(words.Take(2).Select(word => char.ToUpperInvariant(word[0])));
+    }
 }

@@ -2,6 +2,7 @@
     x:Class="YFTimeTracker.App.Views.DashboardPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:YFTimeTracker.App.Controls"
     Loaded="Page_Loaded"
     Unloaded="Page_Unloaded">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
@@ -187,14 +188,15 @@
                                 <Grid>
                                     <Ellipse Width="150" Height="150" Margin="0,0,-72,-74" HorizontalAlignment="Right" VerticalAlignment="Bottom" Fill="#10162E" Opacity="0.44" />
                                     <Ellipse Width="96" Height="96" Margin="-52,-46,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Stroke="White" StrokeThickness="1" Opacity="0.18" />
-                                    <TextBlock
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
+                                    <controls:GameIcon
+                                        Background="Transparent"
                                         FontFamily="Segoe UI Variable Display"
                                         FontSize="38"
-                                        FontWeight="Bold"
                                         Foreground="White"
-                                        Text="{Binding ActiveGameInitials}" />
+                                        IconCornerRadius="12"
+                                        IconPadding="22"
+                                        IconPath="{Binding ActiveGameIconPath}"
+                                        Initials="{Binding ActiveGameInitials}" />
                                     <Border Margin="12" Padding="8,4" HorizontalAlignment="Left" VerticalAlignment="Bottom" Background="#B2050B16" CornerRadius="6">
                                         <TextBlock FontSize="9" FontWeight="SemiBold" Text="AUTOMATISCH" />
                                     </Border>
@@ -351,9 +353,15 @@
                                             <ColumnDefinition Width="38" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Orientation="Horizontal" Spacing="12">
-                                            <Border Width="48" Height="36" VerticalAlignment="Center" Background="{StaticResource YFLogoGradientBrush}" CornerRadius="6">
-                                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="Bold" Text="{Binding Initials}" />
-                                            </Border>
+                                            <controls:GameIcon
+                                                Width="48"
+                                                Height="36"
+                                                VerticalAlignment="Center"
+                                                Background="{StaticResource YFLogoGradientBrush}"
+                                                FontSize="11"
+                                                IconCornerRadius="6"
+                                                IconPath="{Binding IconPath}"
+                                                Initials="{Binding Initials}" />
                                             <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
                                         <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="#C7D2E6" Text="{Binding TotalPlaytime}" />

@@ -18,6 +18,7 @@ public sealed class GamesViewModel : ObservableObject
     private readonly IFilePickerService filePicker;
     private readonly IGameTrackingService trackingService;
     private readonly IClock clock;
+    private readonly IGameIconService? gameIcons;
     private readonly List<GameListItemViewModel> allGames = [];
     private GameListItemViewModel? selectedGame;
     private SessionListItemViewModel? selectedSession;
@@ -41,7 +42,8 @@ public sealed class GamesViewModel : ObservableObject
         IGameSessionEditor sessionEditor,
         IFilePickerService filePicker,
         IGameTrackingService trackingService,
-        IClock clock)
+        IClock clock,
+        IGameIconService? gameIcons = null)
     {
         this.catalog = catalog;
         this.sessions = sessions;
@@ -49,6 +51,7 @@ public sealed class GamesViewModel : ObservableObject
         this.filePicker = filePicker;
         this.trackingService = trackingService;
         this.clock = clock;
+        this.gameIcons = gameIcons;
 
         SourceFilters =
         [
@@ -258,6 +261,7 @@ public sealed class GamesViewModel : ObservableObject
             var runningGameIds = trackingService.State.RunningGames
                 .Select(game => game.GameId)
                 .ToHashSet();
+            var iconPaths = await ResolveIconPathsAsync(storedGames);
 
             allGames.Clear();
             foreach (var game in storedGames)
@@ -267,7 +271,8 @@ public sealed class GamesViewModel : ObservableObject
                     game,
                     gameSessions,
                     runningGameIds.Contains(game.Id),
-                    clock.UtcNow));
+                    clock.UtcNow,
+                    iconPaths.GetValueOrDefault(game.Id)));
             }
 
             ApplyFilters();
@@ -494,8 +499,26 @@ public sealed class GamesViewModel : ObservableObject
         Sessions.Clear();
         foreach (var session in storedSessions)
         {
-            Sessions.Add(new SessionListItemViewModel(session));
+            Sessions.Add(new SessionListItemViewModel(session, iconPath: game.IconPath));
         }
+    }
+
+    private async Task<IReadOnlyDictionary<long, string?>> ResolveIconPathsAsync(IReadOnlyList<Game> games)
+    {
+        if (gameIcons is null || games.Count == 0)
+        {
+            return new Dictionary<long, string?>();
+        }
+
+        var tasks = games.Select(async game => new
+        {
+            game.Id,
+            IconPath = await gameIcons.GetIconPathAsync(
+                game.PrimaryExecutable?.ExecutablePath,
+                CancellationToken.None)
+        });
+        var resolved = await Task.WhenAll(tasks);
+        return resolved.ToDictionary(item => item.Id, item => item.IconPath);
     }
 
     private static bool TryParseLocalDateTime(string text, out DateTimeOffset utc)
