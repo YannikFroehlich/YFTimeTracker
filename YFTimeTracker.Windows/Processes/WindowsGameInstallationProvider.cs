@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using YFTimeTracker.Core.Abstractions;
@@ -9,6 +10,16 @@ namespace YFTimeTracker.Windows.Processes;
 
 public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
 {
+    private static readonly Regex BattleNetUidRegex = new(
+        @"Battle\.net.*--uid=(?<uid>\S+)",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    private static readonly string[] UninstallRegistrySubKeys =
+    [
+        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+        @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
+    ];
+
     private readonly ILogger<WindowsGameInstallationProvider> logger;
     private readonly IXboxPackageCatalog xboxPackages;
 
@@ -34,6 +45,8 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
         DiscoverSafely(GameSource.Epic, () => DiscoverEpic(games, cancellationToken), sources);
         DiscoverSafely(GameSource.Gog, () => DiscoverGog(games, cancellationToken), sources);
         DiscoverSafely(GameSource.Xbox, () => DiscoverXbox(games, cancellationToken), sources);
+        DiscoverSafely(GameSource.BattleNet, () => DiscoverBattleNet(games, cancellationToken), sources);
+        DiscoverSafely(GameSource.Ubisoft, () => DiscoverUbisoft(games, cancellationToken), sources);
 
         var distinctGames = games
             .GroupBy(game => (game.Source, game.ExternalGameId), new SourceIdComparer())
@@ -177,6 +190,98 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
         }
 
         return foundRoot;
+    }
+
+    private static bool DiscoverBattleNet(ICollection<GameInstallationInfo> games, CancellationToken cancellationToken)
+    {
+        var found = false;
+
+        foreach (var hive in new[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser })
+        {
+            foreach (var subKey in UninstallRegistrySubKeys)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                using var baseKey = RegistryKey.OpenBaseKey(hive, RegistryView.Default);
+                using var uninstallKey = baseKey.OpenSubKey(subKey);
+                if (uninstallKey is null)
+                {
+                    continue;
+                }
+
+                foreach (var entryName in uninstallKey.GetSubKeyNames())
+                {
+                    using var entryKey = uninstallKey.OpenSubKey(entryName);
+                    var uninstallString = entryKey?.GetValue("UninstallString") as string;
+                    if (string.IsNullOrWhiteSpace(uninstallString))
+                    {
+                        continue;
+                    }
+
+                    var match = BattleNetUidRegex.Match(uninstallString);
+                    if (!match.Success)
+                    {
+                        continue;
+                    }
+
+                    found = true;
+                    var uid = match.Groups["uid"].Value.Trim();
+                    if (string.Equals(uid, "battle.net", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    var displayName = entryKey?.GetValue("DisplayName") as string;
+                    var installLocation = entryKey?.GetValue("InstallLocation") as string;
+                    if (string.IsNullOrWhiteSpace(displayName)
+                        || string.IsNullOrWhiteSpace(installLocation)
+                        || displayName.EndsWith("Test", StringComparison.OrdinalIgnoreCase)
+                        || displayName.EndsWith("Beta", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    AddInstallation(games, GameSource.BattleNet, uid, displayName, installLocation, []);
+                }
+            }
+        }
+
+        return found;
+    }
+
+    private static bool DiscoverUbisoft(ICollection<GameInstallationInfo> games, CancellationToken cancellationToken)
+    {
+        using var installsKey = OpenUbisoftInstallsKey(RegistryView.Registry32) ?? OpenUbisoftInstallsKey(RegistryView.Registry64);
+        if (installsKey is null)
+        {
+            return false;
+        }
+
+        foreach (var externalId in installsKey.GetSubKeyNames())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            using var gameKey = installsKey.OpenSubKey(externalId);
+            var installDirectory = (gameKey?.GetValue("InstallDir") as string)?.Replace('/', Path.DirectorySeparatorChar);
+            if (string.IsNullOrWhiteSpace(installDirectory))
+            {
+                continue;
+            }
+
+            var name = Path.GetFileName(installDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            AddInstallation(games, GameSource.Ubisoft, externalId, name, installDirectory, []);
+        }
+
+        return true;
+    }
+
+    private static RegistryKey? OpenUbisoftInstallsKey(RegistryView view)
+    {
+        using var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view);
+        return baseKey.OpenSubKey(@"SOFTWARE\Ubisoft\Launcher\Installs");
     }
 
     private bool DiscoverXbox(ICollection<GameInstallationInfo> games, CancellationToken cancellationToken)

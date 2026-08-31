@@ -33,6 +33,8 @@ public sealed class GameListItemViewModel(Game game)
         GameSource.Epic => "EPIC",
         GameSource.Gog => "GOG",
         GameSource.Xbox => "XBOX",
+        GameSource.BattleNet => "BATTLE.NET",
+        GameSource.Ubisoft => "UBISOFT",
         _ => "MANUELL"
     };
 

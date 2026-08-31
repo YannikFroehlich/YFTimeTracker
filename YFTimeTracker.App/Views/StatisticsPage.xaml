@@ -7,6 +7,8 @@
     Unloaded="Page_Unloaded">
     <Page.Resources>
         <converters:HexColorBrushConverter x:Key="HexColorBrushConverter" />
+        <converters:PointsCollectionConverter x:Key="PointsCollectionConverter" />
+        <converters:ArcGeometryConverter x:Key="ArcGeometryConverter" />
     </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <Grid
@@ -14,6 +16,7 @@
             Padding="24,4,24,28"
             SizeChanged="StatisticsRoot_SizeChanged">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -179,24 +182,30 @@
                                 <Border Height="1" VerticalAlignment="Center" Background="#1A2B43" />
                                 <Border Height="1" Margin="0,0,0,24" VerticalAlignment="Bottom" Background="#1A2B43" />
                                 <ScrollViewer HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled" VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
-                                    <ItemsControl MinWidth="{Binding ChartMinimumWidth}" ItemsSource="{Binding Timeline}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <StackPanel Orientation="Horizontal" Spacing="8" />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Width="{Binding ItemWidth}" Height="226" ToolTipService.ToolTip="{Binding TooltipText}">
-                                                    <TextBlock Height="24" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="{Binding DurationText}" TextTrimming="CharacterEllipsis" />
-                                                    <Grid Height="160">
-                                                        <Border Width="{Binding BarWidth}" Height="{Binding BarHeight}" VerticalAlignment="Bottom" Background="{Binding BarColor, Converter={StaticResource HexColorBrushConverter}}" CornerRadius="6,6,2,2" />
-                                                    </Grid>
-                                                    <TextBlock Margin="0,8,0,0" HorizontalAlignment="Center" FontSize="11" Foreground="{StaticResource YFMutedBrush}" Text="{Binding Label}" />
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    <Grid MinWidth="{Binding ChartMinimumWidth}" VerticalAlignment="Top">
+                                        <ItemsControl VerticalAlignment="Top" VerticalContentAlignment="Top" ItemsSource="{Binding Timeline}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" Spacing="8" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Width="{Binding ItemWidth}" Height="226" ToolTipService.ToolTip="{Binding TooltipText}">
+                                                        <TextBlock Height="24" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="{Binding DurationText}" TextTrimming="CharacterEllipsis" />
+                                                        <Grid Height="160">
+                                                            <Border Width="{Binding BarWidth}" Height="{Binding BarHeight}" VerticalAlignment="Bottom" Background="{Binding BarColor, Converter={StaticResource HexColorBrushConverter}}" CornerRadius="6,6,2,2" />
+                                                        </Grid>
+                                                        <TextBlock Margin="0,8,0,0" HorizontalAlignment="Center" FontSize="11" Foreground="{StaticResource YFMutedBrush}" Text="{Binding Label}" />
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <Canvas Height="160" Margin="0,24,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" IsHitTestVisible="False">
+                                            <Polygon Points="{Binding TrendAreaPoints, Converter={StaticResource PointsCollectionConverter}}" Fill="#292CE5F3" />
+                                            <Polyline Points="{Binding TrendLinePoints, Converter={StaticResource PointsCollectionConverter}}" Stroke="{StaticResource YFCyanBrush}" StrokeLineJoin="Round" StrokeThickness="2" />
+                                        </Canvas>
+                                    </Grid>
                                 </ScrollViewer>
                             </Grid>
                         </Grid>
@@ -215,6 +224,7 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
                         <Grid>
@@ -222,8 +232,27 @@
                             <TextBlock HorizontalAlignment="Right" Style="{StaticResource YFCaptionStyle}" Text="NACH SPIELZEIT" />
                         </Grid>
 
+                        <Grid Grid.Row="1" Height="140" Margin="0,10,0,0" Visibility="{Binding DataVisibility}">
+                            <ItemsControl ItemsSource="{Binding GameShares}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <Grid Width="140" Height="140" HorizontalAlignment="Center" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Path Data="{Binding Converter={StaticResource ArcGeometryConverter}}" Stroke="{Binding StrokeColor, Converter={StaticResource HexColorBrushConverter}}" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeThickness="20" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock HorizontalAlignment="Center" FontFamily="Segoe UI Variable Display" FontSize="18" FontWeight="SemiBold" Text="{Binding TopGameShareText}" />
+                                <TextBlock HorizontalAlignment="Center" Style="{StaticResource YFCaptionStyle}" Text="TOP-SPIEL" />
+                            </StackPanel>
+                        </Grid>
+
                         <ListView
-                            Grid.Row="1"
+                            Grid.Row="2"
                             Margin="0,14,0,0"
                             IsItemClickEnabled="False"
                             ItemContainerStyle="{StaticResource YFListViewItemStyle}"
@@ -264,7 +293,7 @@
                             </ListView.ItemTemplate>
                         </ListView>
 
-                        <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" Visibility="{Binding EmptyVisibility}">
+                        <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" Visibility="{Binding EmptyVisibility}">
                             <FontIcon FontSize="28" Foreground="{StaticResource YFMutedBrush}" Glyph="&#xE7FC;" />
                             <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Noch keine Spiele im Zeitraum" />
                         </StackPanel>
@@ -361,7 +390,60 @@
                 </Border>
             </Grid>
 
-            <Border Grid.Row="4" Margin="0,14,0,0" Padding="12,9" Background="#0A1728" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
+            <Border x:Name="HeatmapCard" Grid.Row="4" Margin="0,14,0,0" Style="{StaticResource YFCardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="AKTIVITÄT" />
+                        <TextBlock Margin="0,4,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Tägliche Spielzeit der letzten 26 Wochen" />
+                    </StackPanel>
+                    <ScrollViewer Grid.Row="1" Margin="0,14,0,0" HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled" VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
+                        <ItemsControl ItemsSource="{Binding HeatmapWeeks}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="3" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ItemsControl ItemsSource="{Binding Days}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Vertical" Spacing="3" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border
+                                                    Width="14"
+                                                    Height="14"
+                                                    Background="{Binding ColorHex, Converter={StaticResource HexColorBrushConverter}}"
+                                                    CornerRadius="3"
+                                                    ToolTipService.ToolTip="{Binding TooltipText}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    <StackPanel Grid.Row="2" Margin="0,12,0,0" HorizontalAlignment="Right" Orientation="Horizontal" Spacing="6">
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="Weniger" />
+                        <Border Width="12" Height="12" Background="#10233E" CornerRadius="3" />
+                        <Border Width="12" Height="12" Background="#33387BFF" CornerRadius="3" />
+                        <Border Width="12" Height="12" Background="#66387BFF" CornerRadius="3" />
+                        <Border Width="12" Height="12" Background="#99387BFF" CornerRadius="3" />
+                        <Border Width="12" Height="12" Background="#387BFF" CornerRadius="3" />
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="Mehr" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="5" Margin="0,14,0,0" Padding="12,9" Background="#0A1728" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
                 <StackPanel Orientation="Horizontal" Spacing="9">
                     <FontIcon FontSize="13" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE946;" />
                     <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />

@@ -57,7 +57,7 @@
                                 <ToggleSwitch
                                     Header="Launcher automatisch erkennen"
                                     OffContent="Nur Bibliothek"
-                                    OnContent="Steam, Epic, GOG und Xbox"
+                                    OnContent="Steam, Epic, GOG, Xbox, Battle.net, Ubisoft Connect"
                                     IsOn="{Binding LauncherDiscoveryEnabled, Mode=TwoWay}" />
                                 <Grid ColumnSpacing="8">
                                     <Grid.ColumnDefinitions>
@@ -90,6 +90,22 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Foreground="{StaticResource YFBlueBrush}" Text="Xbox / Microsoft Store" />
                                     <TextBlock Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource YFMutedTextStyle}" Text="{Binding XboxStatusText}" />
+                                </Grid>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Foreground="{StaticResource YFBlueBrush}" Text="Battle.net" />
+                                    <TextBlock Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource YFMutedTextStyle}" Text="{Binding BattleNetStatusText}" />
+                                </Grid>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Foreground="{StaticResource YFBlueBrush}" Text="Ubisoft Connect" />
+                                    <TextBlock Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource YFMutedTextStyle}" Text="{Binding UbisoftStatusText}" />
                                 </Grid>
                             </StackPanel>
                         </Border>

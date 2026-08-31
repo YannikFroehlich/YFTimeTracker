@@ -214,6 +214,29 @@ public sealed class PlaytimeStatisticsServiceTests
         Assert.AreEqual(new DateOnly(2026, 8, 24), PlaytimeStatisticsService.GetIsoWeekStart(new DateOnly(2026, 8, 30)));
     }
 
+    [TestMethod]
+    public async Task GetActivityHeatmapAsync_returns_daily_totals_for_full_iso_weeks_up_to_today()
+    {
+        var clock = new FakeClock(Utc(2026, 8, 30, 12));
+        var games = new InMemoryGameRepository();
+        var game = await AddGameAsync(games, "Alpha", clock.UtcNow);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+
+        await AddClosedSessionAsync(sessions, game.Id, Utc(2026, 8, 20, 8), Utc(2026, 8, 20, 11));
+        await AddClosedSessionAsync(sessions, game.Id, Utc(2026, 8, 30, 9), Utc(2026, 8, 30, 10, 30));
+
+        var service = new PlaytimeStatisticsService(sessions, clock);
+        var days = await service.GetActivityHeatmapAsync(2, TimeZoneInfo.Utc, CancellationToken.None);
+
+        Assert.HasCount(14, days);
+        Assert.AreEqual(new DateOnly(2026, 8, 17), days[0].Date);
+        Assert.AreEqual(new DateOnly(2026, 8, 30), days[^1].Date);
+        Assert.AreEqual(TimeSpan.FromHours(3), days.Single(day => day.Date == new DateOnly(2026, 8, 20)).Duration);
+        Assert.AreEqual(TimeSpan.FromMinutes(90), days.Single(day => day.Date == new DateOnly(2026, 8, 30)).Duration);
+        Assert.IsTrue(days.Where(day => day.Date != new DateOnly(2026, 8, 20) && day.Date != new DateOnly(2026, 8, 30))
+            .All(day => day.Duration == TimeSpan.Zero));
+    }
+
     private static DateTimeOffset ToUtc(int year, int month, int day, int hour, int minute)
     {
         var local = new DateTime(year, month, day, hour, minute, 0, DateTimeKind.Local);

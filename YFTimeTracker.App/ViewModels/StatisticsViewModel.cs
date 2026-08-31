@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml;
+using Windows.Foundation;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
 
@@ -17,6 +18,13 @@ public sealed class StatisticsViewModel : ObservableObject
     private const string GreenColor = "#29E7A4";
     private const string MutedColor = "#8391A8";
     private const string RedColor = "#FF6B7A";
+    private const double TimelineChartHeight = 160;
+    private const double TimelineItemSpacing = 8;
+    private const double DonutCenter = 70;
+    private const double DonutRadius = 50;
+    private const double DonutGapDegrees = 3;
+    private const int DonutTopGameCount = 5;
+    private const int HeatmapWeekCount = 26;
 
     private readonly IPlaytimeStatisticsService statistics;
     private readonly IClock clock;
@@ -41,6 +49,9 @@ public sealed class StatisticsViewModel : ObservableObject
     private string statusMessage = "Statistiken werden aus deinen lokalen Sessions berechnet.";
     private Visibility dataVisibility = Visibility.Collapsed;
     private Visibility emptyVisibility = Visibility.Visible;
+    private IReadOnlyList<Point> trendLinePoints = [];
+    private IReadOnlyList<Point> trendAreaPoints = [];
+    private string topGameShareText = "–";
 
     public StatisticsViewModel(IPlaytimeStatisticsService statistics, IClock clock)
     {
@@ -109,11 +120,21 @@ public sealed class StatisticsViewModel : ObservableObject
 
     public Visibility EmptyVisibility { get => emptyVisibility; private set => SetProperty(ref emptyVisibility, value); }
 
+    public IReadOnlyList<Point> TrendLinePoints { get => trendLinePoints; private set => SetProperty(ref trendLinePoints, value); }
+
+    public IReadOnlyList<Point> TrendAreaPoints { get => trendAreaPoints; private set => SetProperty(ref trendAreaPoints, value); }
+
+    public string TopGameShareText { get => topGameShareText; private set => SetProperty(ref topGameShareText, value); }
+
     public ObservableCollection<StatisticsTrendPointViewModel> Timeline { get; } = [];
 
     public ObservableCollection<TopGameStatisticsViewModel> TopGames { get; } = [];
 
+    public ObservableCollection<GameShareSliceViewModel> GameShares { get; } = [];
+
     public ObservableCollection<WeekdayStatisticsViewModel> Weekdays { get; } = [];
+
+    public ObservableCollection<HeatmapWeekViewModel> HeatmapWeeks { get; } = [];
 
     public IAsyncRelayCommand RefreshCommand { get; }
 
@@ -128,12 +149,17 @@ public sealed class StatisticsViewModel : ObservableObject
                 SelectedPeriod.Kind,
                 TimeZoneInfo.Local,
                 CancellationToken.None);
+            var heatmapDays = await statistics.GetActivityHeatmapAsync(
+                HeatmapWeekCount,
+                TimeZoneInfo.Local,
+                CancellationToken.None);
             if (requestedVersion != Volatile.Read(ref refreshVersion))
             {
                 return;
             }
 
             ApplyReport(report);
+            UpdateHeatmap(heatmapDays);
             StatusMessage = report.SessionCount == 0
                 ? "Noch keine Sessions im ausgewählten Zeitraum."
                 : $"Zuletzt aktualisiert um {TimeZoneInfo.ConvertTime(clock.UtcNow, TimeZoneInfo.Local):HH:mm}.";
@@ -158,6 +184,7 @@ public sealed class StatisticsViewModel : ObservableObject
 
         UpdateTimeline(report);
         UpdateGames(report);
+        UpdateGameShares(report);
         UpdateWeekdays(report);
         UpdateInsights(report);
 
@@ -182,6 +209,7 @@ public sealed class StatisticsViewModel : ObservableObject
         ChartMinimumWidth = Math.Max(560, report.Timeline.Count * (itemWidth + 8));
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(clock.UtcNow, TimeZoneInfo.Local).Date);
 
+        var linePoints = new List<Point>(report.Timeline.Count);
         for (var index = 0; index < report.Timeline.Count; index++)
         {
             var point = report.Timeline[index];
@@ -198,7 +226,30 @@ public sealed class StatisticsViewModel : ObservableObject
                 itemWidth,
                 Math.Max(14, itemWidth - 14),
                 color));
+
+            linePoints.Add(new Point(
+                index * (itemWidth + TimelineItemSpacing) + itemWidth / 2,
+                TimelineChartHeight - height));
         }
+
+        TrendLinePoints = linePoints;
+        TrendAreaPoints = BuildTrendAreaPoints(linePoints);
+    }
+
+    private static List<Point> BuildTrendAreaPoints(List<Point> linePoints)
+    {
+        var areaPoints = new List<Point>(linePoints.Count + 2);
+        if (linePoints.Count == 0)
+        {
+            return areaPoints;
+        }
+
+        var firstX = linePoints[0].X;
+        var lastX = linePoints[^1].X;
+        areaPoints.Add(new Point(firstX, TimelineChartHeight));
+        areaPoints.AddRange(linePoints);
+        areaPoints.Add(new Point(lastX, TimelineChartHeight));
+        return areaPoints;
     }
 
     private void UpdateGames(PlaytimeStatistics report)
@@ -225,6 +276,103 @@ public sealed class StatisticsViewModel : ObservableObject
                 GetAccentColor(index)));
         }
     }
+
+    private void UpdateGameShares(PlaytimeStatistics report)
+    {
+        GameShares.Clear();
+        if (report.TotalDuration <= TimeSpan.Zero || report.Games.Count == 0)
+        {
+            TopGameShareText = "–";
+            return;
+        }
+
+        TopGameShareText = $"{report.Games[0].Duration.TotalSeconds / report.TotalDuration.TotalSeconds * 100:0.#} %";
+
+        var topGames = report.Games.Take(DonutTopGameCount).ToArray();
+        var otherDuration = report.Games.Skip(DonutTopGameCount)
+            .Aggregate(TimeSpan.Zero, (sum, game) => sum + game.Duration);
+
+        var slices = topGames
+            .Select((game, index) => (game.Name, game.Duration, Color: GetAccentColor(index)))
+            .ToList();
+        if (otherDuration > TimeSpan.Zero)
+        {
+            slices.Add(("Sonstige", otherDuration, MutedColor));
+        }
+
+        var cumulativeDegrees = 0d;
+        var halfGapDegrees = slices.Count > 1 ? DonutGapDegrees / 2 : 0;
+        foreach (var slice in slices)
+        {
+            var shareFraction = slice.Duration.TotalSeconds / report.TotalDuration.TotalSeconds;
+            var sliceDegrees = shareFraction * 360;
+            var startDegrees = cumulativeDegrees + halfGapDegrees;
+            var endDegrees = cumulativeDegrees + sliceDegrees - halfGapDegrees;
+            cumulativeDegrees += sliceDegrees;
+
+            if (endDegrees <= startDegrees)
+            {
+                continue;
+            }
+
+            var span = Math.Min(endDegrees - startDegrees, 359.99);
+            GameShares.Add(new GameShareSliceViewModel(
+                PointOnDonut(startDegrees),
+                PointOnDonut(startDegrees + span),
+                DonutRadius,
+                span > 180,
+                slice.Color,
+                slice.Name,
+                $"{shareFraction * 100:0.#} %"));
+        }
+    }
+
+    private static Point PointOnDonut(double angleDegrees)
+    {
+        var angleRadians = (angleDegrees - 90) * Math.PI / 180;
+        return new Point(
+            DonutCenter + DonutRadius * Math.Cos(angleRadians),
+            DonutCenter + DonutRadius * Math.Sin(angleRadians));
+    }
+
+    private void UpdateHeatmap(IReadOnlyList<DailyPlaytimeInfo> days)
+    {
+        HeatmapWeeks.Clear();
+        if (days.Count == 0)
+        {
+            return;
+        }
+
+        var maximumSeconds = days.Max(day => day.Duration.TotalSeconds);
+        HeatmapWeekViewModel currentWeek = new();
+        HeatmapWeeks.Add(currentWeek);
+
+        for (var index = 0; index < days.Count; index++)
+        {
+            if (index > 0 && index % 7 == 0)
+            {
+                currentWeek = new HeatmapWeekViewModel();
+                HeatmapWeeks.Add(currentWeek);
+            }
+
+            var day = days[index];
+            var level = maximumSeconds <= 0 || day.Duration <= TimeSpan.Zero
+                ? 0
+                : Math.Clamp((int)Math.Ceiling(day.Duration.TotalSeconds / maximumSeconds * 4), 1, 4);
+            currentWeek.Days.Add(new HeatmapDayViewModel(
+                GetHeatmapColor(level),
+                $"{day.Date:dd.MM.yyyy}: {TimeFormatter.Format(day.Duration)}"));
+        }
+    }
+
+    private static string GetHeatmapColor(int level) => level switch
+    {
+        4 => BlueColor,
+        3 => "#99387BFF",
+        2 => "#66387BFF",
+        1 => "#33387BFF",
+        _ => "#10233E"
+    };
 
     private void UpdateWeekdays(PlaytimeStatistics report)
     {
@@ -327,6 +475,8 @@ public sealed class StatisticsViewModel : ObservableObject
         GameSource.Epic => "EPIC",
         GameSource.Gog => "GOG",
         GameSource.Xbox => "XBOX",
+        GameSource.BattleNet => "BATTLE.NET",
+        GameSource.Ubisoft => "UBISOFT",
         _ => "MANUELL"
     };
 
@@ -372,3 +522,19 @@ public sealed record WeekdayStatisticsViewModel(
     string DurationText,
     double Progress,
     string AccentColor);
+
+public sealed record GameShareSliceViewModel(
+    Point ArcStart,
+    Point ArcEnd,
+    double Radius,
+    bool IsLargeArc,
+    string StrokeColor,
+    string Name,
+    string ShareText);
+
+public sealed class HeatmapWeekViewModel
+{
+    public ObservableCollection<HeatmapDayViewModel> Days { get; } = [];
+}
+
+public sealed record HeatmapDayViewModel(string ColorHex, string TooltipText);

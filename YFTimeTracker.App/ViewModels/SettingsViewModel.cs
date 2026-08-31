@@ -33,6 +33,8 @@ public sealed class SettingsViewModel : ObservableObject
     private string epicStatusText = "Nicht geprüft";
     private string gogStatusText = "Nicht geprüft";
     private string xboxStatusText = "Nicht geprüft";
+    private string battleNetStatusText = "Nicht geprüft";
+    private string ubisoftStatusText = "Nicht geprüft";
     private string currentAppVersionText = "Installiert: unbekannt";
     private string updateStatusText = "Update-Status wird geladen …";
     private string availableUpdateText = string.Empty;
@@ -155,6 +157,18 @@ public sealed class SettingsViewModel : ObservableObject
         private set => SetProperty(ref xboxStatusText, value);
     }
 
+    public string BattleNetStatusText
+    {
+        get => battleNetStatusText;
+        private set => SetProperty(ref battleNetStatusText, value);
+    }
+
+    public string UbisoftStatusText
+    {
+        get => ubisoftStatusText;
+        private set => SetProperty(ref ubisoftStatusText, value);
+    }
+
     public string CurrentAppVersionText
     {
         get => currentAppVersionText;
@@ -261,10 +275,13 @@ public sealed class SettingsViewModel : ObservableObject
             EpicStatusText = FormatLauncherState(GameSource.Epic, launchers);
             GogStatusText = FormatLauncherState(GameSource.Gog, launchers);
             XboxStatusText = FormatLauncherState(GameSource.Xbox, launchers);
+            BattleNetStatusText = FormatLauncherState(GameSource.BattleNet, launchers);
+            UbisoftStatusText = FormatLauncherState(GameSource.Ubisoft, launchers);
         }
         catch
         {
-            SteamStatusText = EpicStatusText = GogStatusText = XboxStatusText = "Prüfung fehlgeschlagen";
+            SteamStatusText = EpicStatusText = GogStatusText = XboxStatusText =
+                BattleNetStatusText = UbisoftStatusText = "Prüfung fehlgeschlagen";
         }
     }
 

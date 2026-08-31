@@ -167,6 +167,34 @@ public sealed class PlaytimeStatisticsService(
         return GetDurationForUtcRange(relevantSessions, rangeStartUtc, rangeEndUtc);
     }
 
+    public async Task<IReadOnlyList<DailyPlaytimeInfo>> GetActivityHeatmapAsync(int weekCount, TimeZoneInfo localTimeZone, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(localTimeZone);
+        ArgumentOutOfRangeException.ThrowIfLessThan(weekCount, 1);
+
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(clock.UtcNow, localTimeZone).Date);
+        var currentWeekStart = GetIsoWeekStart(today);
+        var start = currentWeekStart.AddDays(-(weekCount - 1) * 7);
+        var endExclusive = currentWeekStart.AddDays(7);
+
+        var rangeStartUtc = LocalDateStartToUtc(start, localTimeZone);
+        var rangeEndUtc = LocalDateStartToUtc(endExclusive, localTimeZone);
+        var relevantSessions = await sessions.GetSessionsAsync(rangeStartUtc, rangeEndUtc, cancellationToken);
+
+        var days = new List<DailyPlaytimeInfo>(weekCount * 7);
+        for (var date = start; date < endExclusive; date = date.AddDays(1))
+        {
+            days.Add(new DailyPlaytimeInfo(
+                date,
+                GetDurationForUtcRange(
+                    relevantSessions,
+                    LocalDateStartToUtc(date, localTimeZone),
+                    LocalDateStartToUtc(date.AddDays(1), localTimeZone))));
+        }
+
+        return days;
+    }
+
     public static DateOnly GetIsoWeekStart(DateOnly date)
     {
         var dayOfWeek = date.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)date.DayOfWeek;

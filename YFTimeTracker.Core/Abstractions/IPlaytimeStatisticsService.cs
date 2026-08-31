@@ -14,4 +14,6 @@ public interface IPlaytimeStatisticsService
     Task<TimeSpan> GetTotalDurationAsync(CancellationToken cancellationToken);
 
     Task<TimeSpan> GetDurationForLocalRangeAsync(DateOnly localStart, DateOnly localEndExclusive, TimeZoneInfo localTimeZone, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<DailyPlaytimeInfo>> GetActivityHeatmapAsync(int weekCount, TimeZoneInfo localTimeZone, CancellationToken cancellationToken);
 }
