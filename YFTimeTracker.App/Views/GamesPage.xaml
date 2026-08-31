@@ -49,6 +49,7 @@
 
                     <TextBox
                         x:Name="LibrarySearchBox"
+                        Padding="10,10,6,1"
                         PlaceholderText="Spielname, EXE oder Installationsordner suchen …"
                         Style="{StaticResource YFTextBoxStyle}"
                         Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />

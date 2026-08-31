@@ -204,7 +204,8 @@
                         QuerySubmitted="GlobalSearchBox_QuerySubmitted"
                         SuggestionChosen="GlobalSearchBox_SuggestionChosen"
                         TextChanged="GlobalSearchBox_TextChanged"
-                        UpdateTextOnSelect="False">
+                        UpdateTextOnSelect="False"
+                        VerticalContentAlignment="Center">
                         <AutoSuggestBox.ItemTemplate>
                             <DataTemplate x:DataType="viewModels:GlobalSearchResultViewModel">
                                 <Grid

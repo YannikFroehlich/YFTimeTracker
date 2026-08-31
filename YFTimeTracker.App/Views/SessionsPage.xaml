@@ -111,6 +111,7 @@
 
                     <TextBox
                         x:Name="SearchBox"
+                        Padding="10,10,6,1"
                         PlaceholderText="Spiel oder Startdatum durchsuchen …"
                         Style="{StaticResource YFTextBoxStyle}"
                         Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
