@@ -1,5 +1,7 @@
 # YFTimeTracker
 
+[![CI](https://github.com/YannikFroehlich/YFTimeTracker/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/YannikFroehlich/YFTimeTracker/actions/workflows/ci.yml)
+
 <p align="center">
   <img src="YFTimeTracker.App/Assets/YFTimeTrackerLogo.png" alt="YFTimeTracker-Logo" width="180">
 </p>
