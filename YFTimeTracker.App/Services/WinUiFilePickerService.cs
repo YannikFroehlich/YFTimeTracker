@@ -96,6 +96,21 @@ public sealed class WinUiFilePickerService(IAppPathProvider paths) : IFilePicker
         return file?.Path;
     }
 
+    public async Task<string?> PickSessionsExportAsync(string periodLabel, CancellationToken cancellationToken)
+    {
+        var picker = new FileSavePicker
+        {
+            SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+            SuggestedFileName = $"YFTimeTracker-Sessions-{periodLabel}-{DateTime.Now:yyyyMMdd-HHmm}"
+        };
+        InitializePicker(picker);
+        picker.FileTypeChoices.Add("CSV-Datei", [".csv"]);
+
+        var file = await picker.PickSaveFileAsync();
+        cancellationToken.ThrowIfCancellationRequested();
+        return file?.Path;
+    }
+
     private static void InitializePicker(object picker)
     {
         var window = App.MainWindow ?? throw new InvalidOperationException("No main window is available.");

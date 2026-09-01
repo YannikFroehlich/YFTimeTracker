@@ -21,7 +21,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Globale Suche nach Spielen, EXE-Dateien, Sessions und App-Bereichen
 - Bibliothek mit Suche, Sortierung, Spieldetails und EXE-Verwaltung
 - Lokale Spiel-Icons aus den registrierten EXE-Dateien mit datensparsamem Cache
-- Anlegen, Bearbeiten und Löschen manueller Sessions
+- Anlegen, Bearbeiten und Löschen manueller Sessions, inklusive CSV-Export der Sessions-Liste
 - Statistiken für frei wählbare Zeiträume und einzelne Spiele mit CSV-Export
 - Jahresrückblick mit Monatsverlauf, Vorjahresvergleich, Rekorden, Top-Spielen und PNG-Export
 - Direkter Link zum Explorer-Ordner nach einem Export

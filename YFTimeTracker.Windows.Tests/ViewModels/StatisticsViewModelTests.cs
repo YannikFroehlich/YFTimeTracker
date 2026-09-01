@@ -204,6 +204,8 @@ public sealed class StatisticsViewModelTests
         public Task<string?> PickYearReviewImageAsync(int year, CancellationToken cancellationToken) => Task.FromResult<string?>(null);
 
         public Task<string?> PickStatisticsExportAsync(string periodLabel, CancellationToken cancellationToken) => Task.FromResult(exportPath);
+
+        public Task<string?> PickSessionsExportAsync(string periodLabel, CancellationToken cancellationToken) => Task.FromResult<string?>(null);
     }
 
     private sealed class FakeExplorerService : IExplorerService

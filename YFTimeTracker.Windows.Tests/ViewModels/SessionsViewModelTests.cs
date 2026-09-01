@@ -1,3 +1,4 @@
+using YFTimeTracker.App.Services;
 using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
@@ -74,7 +75,9 @@ public sealed class SessionsViewModelTests
             new FakeCatalog([game]),
             repository,
             editor,
-            new FixedClock(now));
+            new FixedClock(now),
+            new FakeFilePicker(),
+            new FakeExplorerService());
 
         await viewModel.RefreshAsync();
         await viewModel.SaveSessionCommand.ExecuteAsync(null);
@@ -100,16 +103,74 @@ public sealed class SessionsViewModelTests
         Assert.AreEqual("Archivspiel", viewModel.SelectedSession?.GameName);
     }
 
+    [TestMethod]
+    public async Task ExportCsv_writes_visible_sessions_to_picked_path()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var game = CreateGame(1, "Alpha");
+        var session = CreateCompletedSession(1, game, now.AddHours(-2), now.AddHours(-1));
+        var repository = new FakeSessionRepository([session]);
+        var exportPath = Path.Combine(Path.GetTempPath(), $"yftimetracker-sessions-test-{Guid.NewGuid():N}.csv");
+        var filePicker = new FakeFilePicker(exportPath);
+        var explorerService = new FakeExplorerService();
+        var viewModel = CreateViewModel([game], repository, now, filePicker, explorerService);
+
+        await viewModel.RefreshAsync();
+
+        try
+        {
+            Assert.IsTrue(viewModel.IsExportEnabled);
+
+            await viewModel.ExportCsvCommand.ExecuteAsync(null);
+
+            var lines = await File.ReadAllLinesAsync(exportPath);
+            Assert.AreEqual("Spiel;Quelle;Start;Ende;Dauer;Status", lines[0]);
+            StringAssert.Contains(lines[1], "Alpha;MANUELL;");
+            StringAssert.Contains(lines[1], "1 h 00 min;ABGESCHLOSSEN");
+            StringAssert.Contains(viewModel.StatusMessage, Path.GetFileName(exportPath));
+            Assert.IsTrue(viewModel.IsExportFolderAvailable);
+
+            viewModel.OpenExportFolderCommand.Execute(null);
+            Assert.AreEqual(exportPath, explorerService.RevealedPath);
+        }
+        finally
+        {
+            File.Delete(exportPath);
+        }
+    }
+
+    [TestMethod]
+    public async Task ExportCsv_is_disabled_without_sessions()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var game = CreateGame(1, "Alpha");
+        var repository = new FakeSessionRepository([]);
+        var exportPath = Path.Combine(Path.GetTempPath(), "should-not-be-created.csv");
+        var filePicker = new FakeFilePicker(exportPath);
+        var viewModel = CreateViewModel([game], repository, now, filePicker);
+
+        await viewModel.RefreshAsync();
+        await viewModel.ExportCsvCommand.ExecuteAsync(null);
+
+        Assert.IsFalse(viewModel.IsExportEnabled);
+        Assert.IsFalse(viewModel.IsExportFolderAvailable);
+        Assert.IsFalse(File.Exists(exportPath));
+    }
+
     private static SessionsViewModel CreateViewModel(
         IReadOnlyList<Game> games,
         FakeSessionRepository repository,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        IFilePickerService? filePicker = null,
+        IExplorerService? explorerService = null)
     {
         return new SessionsViewModel(
             new FakeCatalog(games),
             repository,
             new FakeSessionEditor(repository, id => games.FirstOrDefault(game => game.Id == id)),
-            new FixedClock(now));
+            new FixedClock(now),
+            filePicker ?? new FakeFilePicker(),
+            explorerService ?? new FakeExplorerService());
     }
 
     private static Game CreateGame(long id, string name)
@@ -271,5 +332,29 @@ public sealed class SessionsViewModelTests
             DateTimeOffset endedAtUtc,
             long? excludedSessionId,
             CancellationToken cancellationToken) => Task.FromResult(false);
+    }
+
+    private sealed class FakeFilePicker(string? exportPath = null) : IFilePickerService
+    {
+        public Task<string?> PickExecutableAsync(CancellationToken cancellationToken) => Task.FromResult<string?>(null);
+
+        public Task<string?> PickExportArchiveAsync(CancellationToken cancellationToken) => Task.FromResult<string?>(null);
+
+        public Task<string?> PickDiagnosticsArchiveAsync(CancellationToken cancellationToken) => Task.FromResult<string?>(null);
+
+        public Task<string?> PickImportArchiveAsync(CancellationToken cancellationToken) => Task.FromResult<string?>(null);
+
+        public Task<string?> PickYearReviewImageAsync(int year, CancellationToken cancellationToken) => Task.FromResult<string?>(null);
+
+        public Task<string?> PickStatisticsExportAsync(string periodLabel, CancellationToken cancellationToken) => Task.FromResult<string?>(null);
+
+        public Task<string?> PickSessionsExportAsync(string periodLabel, CancellationToken cancellationToken) => Task.FromResult(exportPath);
+    }
+
+    private sealed class FakeExplorerService : IExplorerService
+    {
+        public string? RevealedPath { get; private set; }
+
+        public void RevealFile(string path) => RevealedPath = path;
     }
 }
