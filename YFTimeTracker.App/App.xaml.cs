@@ -69,6 +69,7 @@ public partial class App : Application
 
                 services.AddSingleton<IFilePickerService, WinUiFilePickerService>();
                 services.AddSingleton<IExplorerService, WindowsExplorerService>();
+                services.AddSingleton<IThemeService, ThemeService>();
                 services.AddSingleton<IStartupService, WinUiStartupService>();
                 services.AddSingleton<ITrayService, TrayService>();
                 services.AddSingleton<IAppUpdateService, VelopackAppUpdateService>();
@@ -95,6 +96,7 @@ public partial class App : Application
 
         await host.StartAsync();
         await Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync(CancellationToken.None);
+        await Services.GetRequiredService<IThemeService>().InitializeAsync(CancellationToken.None);
 
         MainWindow = Services.GetRequiredService<MainWindow>();
         Services.GetRequiredService<ITrayService>().Initialize(MainWindow);

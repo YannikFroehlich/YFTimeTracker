@@ -2,11 +2,10 @@
     x:Class="YFTimeTracker.App.Views.FirstRunSetupDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Background="{StaticResource YFSurfaceRaisedBrush}"
-    BorderBrush="{StaticResource YFStrokeBrightBrush}"
+    Background="{ThemeResource YFSurfaceRaisedBrush}"
+    BorderBrush="{ThemeResource YFStrokeBrightBrush}"
     BorderThickness="1"
-    CornerRadius="18"
-    RequestedTheme="Dark">
+    CornerRadius="18">
     <Grid Width="500" MinHeight="500">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -27,15 +26,15 @@
             </StackPanel>
             <StackPanel Grid.Column="2" VerticalAlignment="Center" Orientation="Horizontal" Spacing="6">
                 <Border x:Name="StepIndicator0" Width="28" Height="4" Background="{StaticResource YFBlueBrush}" CornerRadius="2" />
-                <Border x:Name="StepIndicator1" Width="18" Height="4" Background="{StaticResource YFStrokeBrush}" CornerRadius="2" />
-                <Border x:Name="StepIndicator2" Width="18" Height="4" Background="{StaticResource YFStrokeBrush}" CornerRadius="2" />
-                <Border x:Name="StepIndicator3" Width="18" Height="4" Background="{StaticResource YFStrokeBrush}" CornerRadius="2" />
+                <Border x:Name="StepIndicator1" Width="18" Height="4" Background="{ThemeResource YFStrokeBrush}" CornerRadius="2" />
+                <Border x:Name="StepIndicator2" Width="18" Height="4" Background="{ThemeResource YFStrokeBrush}" CornerRadius="2" />
+                <Border x:Name="StepIndicator3" Width="18" Height="4" Background="{ThemeResource YFStrokeBrush}" CornerRadius="2" />
             </StackPanel>
         </Grid>
 
         <Grid Grid.Row="1">
             <StackPanel x:Name="WelcomeStep" Spacing="18">
-                <Border Padding="24" BorderBrush="{StaticResource YFStrokeBrightBrush}" BorderThickness="1" CornerRadius="16">
+                <Border Padding="24" BorderBrush="{ThemeResource YFStrokeBrightBrush}" BorderThickness="1" CornerRadius="16">
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                             <GradientStop Color="#123C78" Offset="0" />
@@ -53,7 +52,7 @@
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
                             <TextBlock FontFamily="Segoe UI Variable Display" FontSize="27" FontWeight="SemiBold" Text="Willkommen bei YFTimeTracker" TextWrapping="Wrap" />
-                            <TextBlock Foreground="{StaticResource YFMutedBrush}" Text="Deine Spielzeit wird automatisch erfasst und übersichtlich ausgewertet – ohne Konto und ohne Cloud-Zwang." TextWrapping="Wrap" />
+                            <TextBlock Foreground="{ThemeResource YFMutedBrush}" Text="Deine Spielzeit wird automatisch erfasst und übersichtlich ausgewertet – ohne Konto und ohne Cloud-Zwang." TextWrapping="Wrap" />
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -120,7 +119,7 @@
                     </Grid>
                 </Border>
 
-                <Border Padding="14,12" Background="#08182B" CornerRadius="10">
+                <Border Padding="14,12" Background="{ThemeResource YFStatusBarBrush}" CornerRadius="10">
                     <Grid ColumnSpacing="10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -175,7 +174,7 @@
                     </Grid>
                 </Border>
 
-                <Border Padding="14,12" Background="#11152B" CornerRadius="10">
+                <Border Padding="14,12" Background="{ThemeResource YFStatusBarBrush}" CornerRadius="10">
                     <Grid ColumnSpacing="10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -188,7 +187,7 @@
             </StackPanel>
 
             <StackPanel x:Name="ReadyStep" Visibility="Collapsed" Spacing="18">
-                <Border Padding="24" BorderBrush="{StaticResource YFStrokeBrightBrush}" BorderThickness="1" CornerRadius="16">
+                <Border Padding="24" BorderBrush="{ThemeResource YFStrokeBrightBrush}" BorderThickness="1" CornerRadius="16">
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                             <GradientStop Color="#0B3342" Offset="0" />

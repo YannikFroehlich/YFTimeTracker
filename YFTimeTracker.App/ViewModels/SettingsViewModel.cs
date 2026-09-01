@@ -16,6 +16,7 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly IBackupService backupService;
     private readonly IFilePickerService filePicker;
     private readonly IExplorerService explorerService;
+    private readonly IThemeService themeService;
     private string? lastExportedFilePath;
     private readonly IGameTrackingService trackingService;
     private readonly IGameInstallationProvider installationProvider;
@@ -50,6 +51,7 @@ public sealed class SettingsViewModel : ObservableObject
     private string diagnosticsDataDirectory = "Datenordner wird geladen …";
     private string diagnosticsLogDirectory = "Logordner wird geladen …";
     private bool isExportFolderAvailable;
+    private ThemeOption selectedTheme;
 
     public SettingsViewModel(
         ISettingsStore settings,
@@ -57,6 +59,7 @@ public sealed class SettingsViewModel : ObservableObject
         IBackupService backupService,
         IFilePickerService filePicker,
         IExplorerService explorerService,
+        IThemeService themeService,
         IGameTrackingService trackingService,
         IGameInstallationProvider installationProvider,
         IAppUpdateService appUpdateService,
@@ -67,11 +70,20 @@ public sealed class SettingsViewModel : ObservableObject
         this.backupService = backupService;
         this.filePicker = filePicker;
         this.explorerService = explorerService;
+        this.themeService = themeService;
         this.trackingService = trackingService;
         this.installationProvider = installationProvider;
         this.appUpdateService = appUpdateService;
         this.diagnosticsService = diagnosticsService;
         dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+
+        ThemeOptions =
+        [
+            new ThemeOption(AppThemePreference.System, "System"),
+            new ThemeOption(AppThemePreference.Light, "Hell"),
+            new ThemeOption(AppThemePreference.Dark, "Dunkel")
+        ];
+        selectedTheme = ThemeOptions[2];
 
         LoadCommand = new AsyncRelayCommand(LoadAsync);
         SaveCommand = new AsyncRelayCommand(SaveAsync);
@@ -249,6 +261,10 @@ public sealed class SettingsViewModel : ObservableObject
 
     public bool IsExportFolderAvailable { get => isExportFolderAvailable; private set => SetProperty(ref isExportFolderAvailable, value); }
 
+    public IReadOnlyList<ThemeOption> ThemeOptions { get; }
+
+    public ThemeOption SelectedTheme { get => selectedTheme; set => SetProperty(ref selectedTheme, value); }
+
     public IAsyncRelayCommand LoadCommand { get; }
 
     public IAsyncRelayCommand SaveCommand { get; }
@@ -273,6 +289,7 @@ public sealed class SettingsViewModel : ObservableObject
         TrackingIntervalSeconds = await settings.GetIntAsync(AppSettingKeys.TrackingIntervalSeconds, 3, CancellationToken.None);
         HeartbeatIntervalSeconds = await settings.GetIntAsync(AppSettingKeys.HeartbeatIntervalSeconds, 30, CancellationToken.None);
         BackupRetentionDays = await settings.GetIntAsync(AppSettingKeys.BackupRetentionDays, 14, CancellationToken.None);
+        SelectedTheme = ThemeOptions.FirstOrDefault(option => option.Value == themeService.CurrentPreference) ?? ThemeOptions[2];
 
         var state = await startupService.GetStateAsync(CancellationToken.None);
         StartWithWindows = state == StartupState.Enabled;
@@ -303,6 +320,7 @@ public sealed class SettingsViewModel : ObservableObject
         await settings.SetAsync(AppSettingKeys.TrackingIntervalSeconds, Math.Clamp((int)TrackingIntervalSeconds, 1, 60).ToString(), CancellationToken.None);
         await settings.SetAsync(AppSettingKeys.HeartbeatIntervalSeconds, Math.Clamp((int)HeartbeatIntervalSeconds, 5, 300).ToString(), CancellationToken.None);
         await settings.SetAsync(AppSettingKeys.BackupRetentionDays, Math.Clamp((int)BackupRetentionDays, 1, 365).ToString(), CancellationToken.None);
+        await themeService.SetThemeAsync(SelectedTheme.Value, CancellationToken.None);
 
         var startupState = await startupService.SetEnabledAsync(StartWithWindows, CancellationToken.None);
         StartupStateText = FormatStartupState(startupState);
@@ -492,3 +510,5 @@ public sealed class SettingsViewModel : ObservableObject
             : $" · {bytes / 1024d:0.#} KB";
     }
 }
+
+public sealed record ThemeOption(AppThemePreference Value, string Label);

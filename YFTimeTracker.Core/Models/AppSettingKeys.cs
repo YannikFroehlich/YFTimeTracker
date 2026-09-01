@@ -12,4 +12,5 @@ public static class AppSettingKeys
     public const string BackupRetentionDays = "backup.retentionDays";
     public const string StartupEnabled = "windows.startupEnabled";
     public const string LastBackupDate = "backup.lastBackupDate";
+    public const string Theme = "ui.theme";
 }

@@ -130,7 +130,7 @@
                                 Value="{Binding HeartbeatIntervalSeconds, Mode=TwoWay}" />
                         </Grid>
 
-                        <Border Padding="12,10" Background="#08182B" CornerRadius="9">
+                        <Border Padding="12,10" Background="{ThemeResource YFStatusBarBrush}" CornerRadius="9">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <FontIcon FontSize="14" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE946;" />
                                 <TextBlock MaxWidth="420" Style="{StaticResource YFMutedTextStyle}" Text="Kürzere Intervalle reagieren schneller, benötigen aber etwas mehr Systemleistung." TextWrapping="Wrap" />
@@ -152,6 +152,17 @@
                         </Grid>
 
                         <Border Style="{StaticResource YFSubtleCardStyle}">
+                            <StackPanel Spacing="10">
+                                <TextBlock Style="{StaticResource YFCaptionStyle}" Text="DESIGN" />
+                                <ComboBox
+                                    HorizontalAlignment="Stretch"
+                                    DisplayMemberPath="Label"
+                                    ItemsSource="{Binding ThemeOptions}"
+                                    SelectedItem="{Binding SelectedTheme, Mode=TwoWay}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource YFSubtleCardStyle}">
                             <ToggleSwitch
                                 Header="Beim Schließen im Tray behalten"
                                 OffContent="App beenden"
@@ -166,13 +177,13 @@
                                     OffContent="Deaktiviert"
                                     OnContent="Aktiviert"
                                     IsOn="{Binding StartWithWindows, Mode=TwoWay}" />
-                                <Border Padding="9,4" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#182440" CornerRadius="7">
-                                    <TextBlock FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="{Binding StartupStateText}" />
+                                <Border Padding="9,4" HorizontalAlignment="Right" VerticalAlignment="Top" Background="{ThemeResource YFStatusBarBrush}" CornerRadius="7">
+                                    <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding StartupStateText}" />
                                 </Border>
                             </Grid>
                         </Border>
 
-                        <Border Padding="12,10" Background="#11152B" CornerRadius="9">
+                        <Border Padding="12,10" Background="{ThemeResource YFStatusBarBrush}" CornerRadius="9">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <Ellipse Width="8" Height="8" Fill="{StaticResource YFGreenBrush}" />
                                 <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Das Tray-Symbol zeigt den aktuellen Trackingstatus." TextWrapping="Wrap" />
@@ -258,7 +269,7 @@
                                 </Border>
                                 <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="{Binding AvailableUpdateText}" />
                             </StackPanel>
-                            <TextBlock Foreground="{StaticResource YFTextBrush}" Text="{Binding UpdateStatusText}" TextWrapping="Wrap" />
+                            <TextBlock Foreground="{ThemeResource YFTextBrush}" Text="{Binding UpdateStatusText}" TextWrapping="Wrap" />
                             <ProgressBar
                                 Height="5"
                                 Maximum="100"
@@ -312,7 +323,7 @@
 
                             <Border Style="{StaticResource YFSubtleCardStyle}">
                                 <StackPanel Spacing="8">
-                                    <TextBlock FontWeight="SemiBold" Foreground="{StaticResource YFTextBrush}" Text="{Binding DiagnosticsVersionText}" />
+                                    <TextBlock FontWeight="SemiBold" Foreground="{ThemeResource YFTextBrush}" Text="{Binding DiagnosticsVersionText}" />
                                     <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding DiagnosticsRuntimeText}" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
@@ -328,11 +339,11 @@
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
                                 <TextBlock Foreground="{StaticResource YFBlueBrush}" Text="Installation" />
-                                <TextBlock Grid.Column="1" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource YFMutedBrush}" Text="{Binding DiagnosticsInstallDirectory}" TextWrapping="Wrap" />
+                                <TextBlock Grid.Column="1" FontFamily="Consolas" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding DiagnosticsInstallDirectory}" TextWrapping="Wrap" />
                                 <TextBlock Grid.Row="1" Foreground="{StaticResource YFBlueBrush}" Text="Daten" />
-                                <TextBlock Grid.Row="1" Grid.Column="1" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource YFMutedBrush}" Text="{Binding DiagnosticsDataDirectory}" TextWrapping="Wrap" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" FontFamily="Consolas" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding DiagnosticsDataDirectory}" TextWrapping="Wrap" />
                                 <TextBlock Grid.Row="2" Foreground="{StaticResource YFBlueBrush}" Text="Logs" />
-                                <TextBlock Grid.Row="2" Grid.Column="1" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource YFMutedBrush}" Text="{Binding DiagnosticsLogDirectory}" TextWrapping="Wrap" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" FontFamily="Consolas" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding DiagnosticsLogDirectory}" TextWrapping="Wrap" />
                             </Grid>
                         </StackPanel>
 
@@ -355,7 +366,7 @@
                 </Border>
             </Grid>
 
-            <Border Grid.Row="2" Margin="0,14,0,0" Padding="14,10" Background="#0A1728" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
+            <Border Grid.Row="2" Margin="0,14,0,0" Padding="14,10" Background="{ThemeResource YFStatusBarBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
                 <Grid ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />

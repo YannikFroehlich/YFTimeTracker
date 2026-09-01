@@ -49,7 +49,7 @@
                     x:Name="TodayCard"
                     MinHeight="142"
                     Padding="20"
-                    Background="{StaticResource YFBlueCardGradientBrush}"
+                    Background="{ThemeResource YFBlueCardGradientBrush}"
                     BorderBrush="#214A91"
                     BorderThickness="1"
                     CornerRadius="14">
@@ -85,7 +85,7 @@
                     MinHeight="142"
                     Margin="12,0"
                     Padding="20"
-                    Background="{StaticResource YFPurpleCardGradientBrush}"
+                    Background="{ThemeResource YFPurpleCardGradientBrush}"
                     BorderBrush="#38266D"
                     BorderThickness="1"
                     CornerRadius="14">
@@ -120,7 +120,7 @@
                     Grid.Column="2"
                     MinHeight="142"
                     Padding="20"
-                    Background="{StaticResource YFCyanCardGradientBrush}"
+                    Background="{ThemeResource YFCyanCardGradientBrush}"
                     BorderBrush="#18566D"
                     BorderThickness="1"
                     CornerRadius="14">
@@ -222,7 +222,7 @@
 
                         <Grid Grid.Row="1" Margin="0,18,0,0" Visibility="{Binding ActiveEmptyVisibility}">
                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-                                <Border Width="74" Height="74" Background="#101E35" BorderBrush="#24446D" BorderThickness="1" CornerRadius="37">
+                                <Border Width="74" Height="74" Background="{ThemeResource YFEmptyStateIconBrush}" BorderBrush="{ThemeResource YFEmptyStateIconBorderBrush}" BorderThickness="1" CornerRadius="37">
                                     <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="28" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE7FC;" />
                                 </Border>
                                 <TextBlock HorizontalAlignment="Center" FontSize="20" FontWeight="SemiBold" Text="{Binding ActiveGameName}" />
@@ -246,7 +246,7 @@
                         <Grid>
                             <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="WÖCHENTLICHE SPIELZEIT" />
                             <Border Padding="9,4" HorizontalAlignment="Right" Background="#121E32" CornerRadius="7">
-                                <TextBlock FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="DIESE WOCHE" />
+                                <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="DIESE WOCHE" />
                             </Border>
                         </Grid>
 
@@ -344,7 +344,7 @@
                         Visibility="{Binding RecentGamesVisibility}">
                         <ListView.ItemTemplate>
                             <DataTemplate>
-                                <Border MinHeight="58" BorderBrush="#142239" BorderThickness="0,1,0,0">
+                                <Border MinHeight="58" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="0,1,0,0">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="2*" />
@@ -366,13 +366,13 @@
                                         </StackPanel>
                                         <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="#C7D2E6" Text="{Binding TotalPlaytime}" />
                                         <TextBlock Grid.Column="2" VerticalAlignment="Center" Foreground="{Binding LastSessionBrush}" Text="{Binding LastSession}" />
-                                        <FontIcon Grid.Column="3" VerticalAlignment="Center" FontSize="14" Foreground="{StaticResource YFMutedBrush}" Glyph="&#xE76C;" />
+                                        <FontIcon Grid.Column="3" VerticalAlignment="Center" FontSize="14" Foreground="{ThemeResource YFMutedBrush}" Glyph="&#xE76C;" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
-                    <Border Grid.Row="2" MinHeight="150" Background="#07101E" CornerRadius="10" Visibility="{Binding RecentEmptyVisibility}">
+                    <Border Grid.Row="2" MinHeight="150" Background="{ThemeResource YFEmptyStatePanelBrush}" CornerRadius="10" Visibility="{Binding RecentEmptyVisibility}">
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
                             <FontIcon FontSize="26" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE8D4;" />
                             <TextBlock FontSize="16" FontWeight="SemiBold" Text="Noch keine Spielhistorie" />

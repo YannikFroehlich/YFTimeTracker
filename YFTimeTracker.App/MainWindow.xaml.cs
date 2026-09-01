@@ -23,6 +23,7 @@ public sealed partial class MainWindow : Window
     private readonly IAppUpdateService appUpdateService;
     private readonly IFirstRunSetupService firstRunSetupService;
     private readonly IGameTrackingService trackingService;
+    private readonly IThemeService themeService;
     private readonly AppWindow appWindow;
     private readonly SemaphoreSlim dialogLock = new(1, 1);
     private CancellationTokenSource? globalSearchCancellation;
@@ -38,12 +39,17 @@ public sealed partial class MainWindow : Window
         appUpdateService = App.Services.GetRequiredService<IAppUpdateService>();
         firstRunSetupService = App.Services.GetRequiredService<IFirstRunSetupService>();
         trackingService = App.Services.GetRequiredService<IGameTrackingService>();
+        themeService = App.Services.GetRequiredService<IThemeService>();
         RootGrid.DataContext = dashboardViewModel;
+        RootGrid.RequestedTheme = themeService.CurrentTheme;
+        themeService.ThemeChanged += ThemeService_ThemeChanged;
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBarDragRegion);
         appWindow = ConfigureWindow();
         appWindow.Closing += AppWindow_Closing;
+        RootGrid.ActualThemeChanged += (_, _) => ApplyTitleBarButtonColors();
+        ApplyTitleBarButtonColors();
 
         Navigation.SelectedItem = Navigation.MenuItems[0];
         ContentFrame.Navigate(typeof(DashboardPage));
@@ -116,6 +122,11 @@ public sealed partial class MainWindow : Window
     public void SetMinimizeOnClose(bool value)
     {
         minimizeOnClose = value;
+    }
+
+    private void ThemeService_ThemeChanged(object? sender, ElementTheme theme)
+    {
+        DispatcherQueue.TryEnqueue(() => RootGrid.RequestedTheme = theme);
     }
 
     public async Task<bool> ShowFirstRunSetupIfRequiredAsync(bool force = false)
@@ -570,9 +581,20 @@ public sealed partial class MainWindow : Window
 
         appWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
         appWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
-        appWindow.TitleBar.ButtonForegroundColor = Color.FromArgb(255, 244, 247, 255);
-        appWindow.TitleBar.ButtonHoverBackgroundColor = Color.FromArgb(255, 19, 39, 66);
-        appWindow.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(255, 30, 57, 92);
         return appWindow;
+    }
+
+    private void ApplyTitleBarButtonColors()
+    {
+        var isLight = RootGrid.ActualTheme == ElementTheme.Light;
+        appWindow.TitleBar.ButtonForegroundColor = isLight
+            ? Color.FromArgb(255, 17, 23, 38)
+            : Color.FromArgb(255, 244, 247, 255);
+        appWindow.TitleBar.ButtonHoverBackgroundColor = isLight
+            ? Color.FromArgb(255, 228, 233, 245)
+            : Color.FromArgb(255, 19, 39, 66);
+        appWindow.TitleBar.ButtonPressedBackgroundColor = isLight
+            ? Color.FromArgb(255, 207, 224, 255)
+            : Color.FromArgb(255, 30, 57, 92);
     }
 }

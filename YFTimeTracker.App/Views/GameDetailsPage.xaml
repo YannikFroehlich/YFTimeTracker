@@ -36,12 +36,12 @@
 
             <Border Grid.Row="1" MinHeight="300" Style="{StaticResource YFCardStyle}" Visibility="{Binding ErrorVisibility}">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-                    <Border Width="68" Height="68" Background="#26131D" BorderBrush="{StaticResource YFRedBrush}" BorderThickness="1" CornerRadius="34">
+                    <Border Width="68" Height="68" Background="{ThemeResource YFDangerButtonBackgroundBrush}" BorderBrush="{StaticResource YFRedBrush}" BorderThickness="1" CornerRadius="34">
                         <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="26" Foreground="{StaticResource YFRedBrush}" Glyph="&#xEA39;" />
                     </Border>
-                    <TextBlock FontSize="18" FontWeight="SemiBold" Text="Spiel nicht verfügbar" />
-                    <TextBlock MaxWidth="520" TextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
-                    <Button Click="BackToLibrary_Click" Style="{StaticResource YFAccentButtonStyle}" Content="Zur Bibliothek" />
+                    <TextBlock HorizontalAlignment="Center" FontSize="18" FontWeight="SemiBold" Text="Spiel nicht verfügbar" />
+                    <TextBlock MaxWidth="520" HorizontalAlignment="Center" TextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+                    <Button HorizontalAlignment="Center" Click="BackToLibrary_Click" Style="{StaticResource YFAccentButtonStyle}" Content="Zur Bibliothek" />
                 </StackPanel>
             </Border>
 
@@ -53,7 +53,7 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <Border Padding="22" Background="{StaticResource YFBlueCardGradientBrush}" BorderBrush="#214A91" BorderThickness="1" CornerRadius="16">
+                <Border Padding="22" Background="{ThemeResource YFBlueCardGradientBrush}" BorderBrush="#214A91" BorderThickness="1" CornerRadius="16">
                     <Grid x:Name="HeroGrid" ColumnSpacing="18" RowSpacing="16">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -114,19 +114,19 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <Border x:Name="TotalCard" Padding="18" Background="{StaticResource YFBlueCardGradientBrush}" BorderBrush="#214A91" BorderThickness="1" CornerRadius="14">
+                    <Border x:Name="TotalCard" Padding="18" Background="{ThemeResource YFBlueCardGradientBrush}" BorderBrush="#214A91" BorderThickness="1" CornerRadius="14">
                         <StackPanel Spacing="6">
                             <TextBlock Style="{StaticResource YFCaptionStyle}" Text="GESAMTSPIELZEIT" />
                             <TextBlock FontSize="25" FontWeight="SemiBold" Foreground="{StaticResource YFBlueBrush}" Text="{Binding TotalPlaytimeText}" />
                         </StackPanel>
                     </Border>
-                    <Border x:Name="SessionCountCard" Grid.Column="1" Padding="18" Background="{StaticResource YFPurpleCardGradientBrush}" BorderBrush="#38266D" BorderThickness="1" CornerRadius="14">
+                    <Border x:Name="SessionCountCard" Grid.Column="1" Padding="18" Background="{ThemeResource YFPurpleCardGradientBrush}" BorderBrush="#38266D" BorderThickness="1" CornerRadius="14">
                         <StackPanel Spacing="6">
                             <TextBlock Style="{StaticResource YFCaptionStyle}" Text="SESSIONS" />
                             <TextBlock FontSize="25" FontWeight="SemiBold" Foreground="#B18CFF" Text="{Binding SessionCountText}" />
                         </StackPanel>
                     </Border>
-                    <Border x:Name="AverageCard" Grid.Column="2" Padding="18" Background="{StaticResource YFCyanCardGradientBrush}" BorderBrush="#18566D" BorderThickness="1" CornerRadius="14">
+                    <Border x:Name="AverageCard" Grid.Column="2" Padding="18" Background="{ThemeResource YFCyanCardGradientBrush}" BorderBrush="#18566D" BorderThickness="1" CornerRadius="14">
                         <StackPanel Spacing="6">
                             <TextBlock Style="{StaticResource YFCaptionStyle}" Text="Ø SESSION" />
                             <TextBlock FontSize="25" FontWeight="SemiBold" Foreground="{StaticResource YFCyanBrush}" Text="{Binding AverageSessionText}" />
@@ -201,7 +201,7 @@
                                                                 <RowDefinition Height="22" />
                                                             </Grid.RowDefinitions>
                                                             <Border Width="15" Height="{Binding BarHeight}" VerticalAlignment="Bottom" Background="{Binding BarColor}" CornerRadius="4,4,1,1" />
-                                                            <TextBlock Grid.Row="1" FontSize="8" Foreground="{StaticResource YFMutedBrush}" Text="{Binding Label}" />
+                                                            <TextBlock Grid.Row="1" FontSize="8" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding Label}" />
                                                         </Grid>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
@@ -226,7 +226,7 @@
                                     </StackPanel>
                                     <Button HorizontalAlignment="Right" Command="{Binding NewSessionCommand}" Style="{StaticResource YFOutlineButtonStyle}" Content="Neue Session" />
                                 </Grid>
-                                <Grid Grid.Row="1" Padding="12,9" Background="#0A1728" CornerRadius="9,9,0,0" Visibility="{Binding SessionsVisibility}">
+                                <Grid Grid.Row="1" Padding="12,9" Background="{ThemeResource YFStatusBarBrush}" CornerRadius="9,9,0,0" Visibility="{Binding SessionsVisibility}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="1.25*" />
                                         <ColumnDefinition Width="1.25*" />
@@ -247,7 +247,7 @@
                                         Visibility="{Binding SessionsVisibility}">
                                         <ListView.ItemTemplate>
                                             <DataTemplate>
-                                                <Border MinHeight="58" Padding="12,9" BorderBrush="#142239" BorderThickness="0,1,0,0">
+                                                <Border MinHeight="58" Padding="12,9" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="0,1,0,0">
                                                     <Grid>
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="1.25*" />
@@ -256,7 +256,7 @@
                                                             <ColumnDefinition Width="100" />
                                                         </Grid.ColumnDefinitions>
                                                         <TextBlock VerticalAlignment="Center" FontSize="12" Text="{Binding DateLabel}" />
-                                                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource YFMutedBrush}" Text="{Binding TimeRange}" />
+                                                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding TimeRange}" />
                                                         <Border Grid.Column="2" Padding="8,4" HorizontalAlignment="Right" VerticalAlignment="Center" Background="#10243F" CornerRadius="7">
                                                             <TextBlock FontSize="9" Foreground="{StaticResource YFBlueBrush}" Text="{Binding StatusText}" />
                                                         </Border>
@@ -315,7 +315,7 @@
                                                             <TextBlock FontSize="8" Foreground="{StaticResource YFCyanBrush}" Text="{Binding Role}" />
                                                         </Border>
                                                     </Grid>
-                                                    <TextBlock FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="{Binding Path}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Path}" />
+                                                    <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding Path}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Path}" />
                                                     <TextBlock FontSize="10" Foreground="{StaticResource YFBlueBrush}" Text="{Binding Status}" />
                                                 </StackPanel>
                                             </Border>
@@ -323,13 +323,13 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <TextBlock Style="{StaticResource YFCaptionStyle}" Text="PRIMÄRE EXE" />
-                                <TextBlock FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="{Binding PrimaryExecutablePath}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding PrimaryExecutablePath}" />
+                                <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding PrimaryExecutablePath}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding PrimaryExecutablePath}" />
                             </StackPanel>
                         </Border>
                     </StackPanel>
                 </Grid>
 
-                <Border Grid.Row="3" Margin="0,14,0,0" Padding="12,9" Background="#0A1728" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
+                <Border Grid.Row="3" Margin="0,14,0,0" Padding="12,9" Background="{ThemeResource YFStatusBarBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
                     <StackPanel Orientation="Horizontal" Spacing="9">
                         <FontIcon FontSize="13" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE946;" />
                         <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />

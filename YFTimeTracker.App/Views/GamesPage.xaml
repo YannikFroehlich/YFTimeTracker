@@ -121,19 +121,19 @@
                             SelectedItem="{Binding SelectedGame, Mode=TwoWay}"
                             Visibility="{Binding GamesVisibility}">
                             <ListView.Resources>
-                                <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="#10243F" />
-                                <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="#17345A" />
-                                <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="#132D64" />
-                                <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="#173875" />
-                                <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPressed" Color="#1B4388" />
+                                <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="{ThemeResource YFListRowBackgroundHoverColor}" />
+                                <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="{ThemeResource YFListRowBackgroundPressedColor}" />
+                                <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="{ThemeResource YFListRowBackgroundSelectedColor}" />
+                                <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="{ThemeResource YFListRowBackgroundSelectedHoverColor}" />
+                                <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPressed" Color="{ThemeResource YFListRowBackgroundSelectedPressedColor}" />
                             </ListView.Resources>
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem" BasedOn="{StaticResource YFListViewItemStyle}">
                                     <Setter Property="MinHeight" Value="66" />
                                     <Setter Property="Margin" Value="0,0,0,8" />
                                     <Setter Property="Padding" Value="10" />
-                                    <Setter Property="Background" Value="#091628" />
-                                    <Setter Property="BorderBrush" Value="#172B46" />
+                                    <Setter Property="Background" Value="{ThemeResource YFListRowBackgroundBrush}" />
+                                    <Setter Property="BorderBrush" Value="{ThemeResource YFListRowBorderBrush}" />
                                     <Setter Property="BorderThickness" Value="1" />
                                     <Setter Property="CornerRadius" Value="10" />
                                 </Style>
@@ -160,7 +160,7 @@
                                             <StackPanel Orientation="Horizontal" Spacing="7">
                                                 <TextBlock FontSize="9" Foreground="{StaticResource YFCyanBrush}" Text="{Binding SourceLabel}" />
                                                 <TextBlock FontSize="10" Foreground="{Binding ActivityColor}" Text="{Binding ActivityText}" />
-                                                <TextBlock FontSize="10" Foreground="{StaticResource YFMutedBrush}" Text="{Binding LastPlayedText}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding LastPlayedText}" TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
                                         </StackPanel>
                                         <Button
@@ -179,12 +179,12 @@
                             </ListView.ItemTemplate>
                         </ListView>
                         <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" Visibility="{Binding EmptyVisibility}">
-                            <Border Width="62" Height="62" Background="#101E35" BorderBrush="#24446D" BorderThickness="1" CornerRadius="31">
+                            <Border Width="62" Height="62" Background="{ThemeResource YFEmptyStateIconBrush}" BorderBrush="{ThemeResource YFEmptyStateIconBorderBrush}" BorderThickness="1" CornerRadius="31">
                                 <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE7FC;" />
                             </Border>
-                            <TextBlock FontSize="16" FontWeight="SemiBold" Text="Keine Spiele gefunden" />
-                            <TextBlock MaxWidth="290" TextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="{Binding EmptyStateText}" TextWrapping="Wrap" />
-                            <Button Command="{Binding ClearFiltersCommand}" Style="{StaticResource YFOutlineButtonStyle}" Content="Filter zurücksetzen" />
+                            <TextBlock HorizontalAlignment="Center" FontSize="16" FontWeight="SemiBold" Text="Keine Spiele gefunden" />
+                            <TextBlock MaxWidth="290" HorizontalAlignment="Center" TextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="{Binding EmptyStateText}" TextWrapping="Wrap" />
+                            <Button HorizontalAlignment="Center" Command="{Binding ClearFiltersCommand}" Style="{StaticResource YFOutlineButtonStyle}" Content="Filter zurücksetzen" />
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -231,7 +231,7 @@
                             <Button Command="{Binding NewGameCommand}" Style="{StaticResource YFOutlineButtonStyle}" Content="Eingaben leeren" />
                         </StackPanel>
 
-                        <Border Height="1" Background="{StaticResource YFStrokeBrush}" />
+                        <Border Height="1" Background="{ThemeResource YFStrokeBrush}" />
 
                         <StackPanel Spacing="5">
                             <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SESSIONS" />
@@ -254,13 +254,13 @@
                                 Content="Hinzufügen" />
                         </Grid>
 
-                        <Border Background="#07111F" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="10">
+                        <Border Background="{ThemeResource YFEmptyStatePanelBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="10">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
-                                <Grid Padding="14,10" Background="#0A1728">
+                                <Grid Padding="14,10" Background="{ThemeResource YFStatusBarBrush}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="*" />
@@ -278,7 +278,7 @@
                                     SelectedItem="{Binding SelectedSession, Mode=TwoWay}">
                                     <ListView.ItemTemplate>
                                         <DataTemplate>
-                                            <Border MinHeight="48" Padding="14,8" BorderBrush="#142239" BorderThickness="0,1,0,0">
+                                            <Border MinHeight="48" Padding="14,8" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="0,1,0,0">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*" />
@@ -286,7 +286,7 @@
                                                         <ColumnDefinition Width="110" />
                                                     </Grid.ColumnDefinitions>
                                                     <TextBlock VerticalAlignment="Center" FontSize="12" Text="{Binding StartedAt}" />
-                                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource YFMutedBrush}" Text="{Binding EndedAt}" />
+                                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding EndedAt}" />
                                                     <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource YFBlueBrush}" Text="{Binding Duration}" />
                                                 </Grid>
                                             </Border>
@@ -305,7 +305,7 @@
                 </Border>
             </Grid>
 
-            <Border Grid.Row="3" Margin="0,12,0,0" Padding="12,9" Background="#0A1728" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
+            <Border Grid.Row="3" Margin="0,12,0,0" Padding="12,9" Background="{ThemeResource YFStatusBarBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
                 <StackPanel Orientation="Horizontal" Spacing="9">
                     <FontIcon FontSize="13" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE946;" />
                     <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
