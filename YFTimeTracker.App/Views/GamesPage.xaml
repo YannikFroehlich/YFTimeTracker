@@ -31,14 +31,7 @@
             </Grid>
 
             <Border Grid.Row="1" Margin="0,0,0,14" Padding="14" Style="{StaticResource YFCardStyle}">
-                <Grid x:Name="LibraryFilterGrid" ColumnSpacing="10" RowSpacing="10">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
+                <Grid x:Name="LibraryFilterGrid" ColumnSpacing="10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="175" />
@@ -94,11 +87,13 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <Grid>
-                            <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="DEINE SPIELE" />
+                        <Grid Margin="0,0,0,12">
+                            <StackPanel VerticalAlignment="Center" Spacing="4">
+                                <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="DEINE SPIELE" />
+                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+                            </StackPanel>
                             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="7">
                                 <Border Padding="8,4" VerticalAlignment="Center" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="7">
                                     <TextBlock FontSize="9" Foreground="{StaticResource YFBlueBrush}" Text="{Binding ResultSummary}" />
@@ -113,9 +108,8 @@
                                 </Button>
                             </StackPanel>
                         </Grid>
-                        <TextBlock Grid.Row="1" Margin="0,8,0,12" Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
                         <ListView
-                            Grid.Row="2"
+                            Grid.Row="1"
                             MinHeight="480"
                             ItemsSource="{Binding Games}"
                             SelectedItem="{Binding SelectedGame, Mode=TwoWay}"
@@ -178,7 +172,7 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
-                        <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" Visibility="{Binding EmptyVisibility}">
+                        <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" Visibility="{Binding EmptyVisibility}">
                             <Border Width="62" Height="62" Background="{ThemeResource YFEmptyStateIconBrush}" BorderBrush="{ThemeResource YFEmptyStateIconBorderBrush}" BorderThickness="1" CornerRadius="31">
                                 <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE7FC;" />
                             </Border>
