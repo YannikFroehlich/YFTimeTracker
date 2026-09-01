@@ -1,0 +1,85 @@
+name: "🐞 Fehlerbericht"
+description: Einen Fehler in YFTimeTracker melden
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke, dass du einen Fehler meldest. Je vollständiger die Angaben, desto schneller lässt sich das Problem eingrenzen.
+
+  - type: input
+    id: version
+    attributes:
+      label: YFTimeTracker-Version
+      description: Zu finden unter Einstellungen → Diagnose & Support.
+      placeholder: z. B. 0.6.2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-type
+    attributes:
+      label: Installationsart
+      options:
+        - Setup (automatische Updates)
+        - MSI
+        - Portable ZIP
+    validations:
+      required: true
+
+  - type: input
+    id: windows-version
+    attributes:
+      label: Windows-Version/Build
+      placeholder: z. B. Windows 11 23H2, Build 22631
+    validations:
+      required: false
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Schritte zur Reproduktion
+      description: Was hast du getan, damit der Fehler auftritt?
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartetes Verhalten
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Tatsächliches Verhalten
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: diagnostics
+    attributes:
+      label: Diagnosebericht
+      description: >
+        Ein Diagnose-ZIP hilft oft, den Fehler schneller einzugrenzen. Es enthält
+        Systeminformationen und höchstens drei aktuelle Logdateien, aber keine
+        Datenbank, Backups oder Spielsessions. Erzeugen unter
+        **Einstellungen → Diagnose & Support → Diagnosebericht exportieren**
+        und hier als Dateianhang beifügen.
+      options:
+        - label: Ich habe ein Diagnose-ZIP erstellt und angehängt
+        - label: Nicht zutreffend oder nicht möglich
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Weitere Hinweise
+      description: Screenshots, betroffene Spiele/Launcher oder sonstiger Kontext.
+    validations:
+      required: false

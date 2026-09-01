@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Entwicklungs- und Release-Ablauf
+    url: https://github.com/YannikFroehlich/YFTimeTracker/blob/main/CONTRIBUTING.md
+    about: Verbindliche Hinweise zu Branches, Commits, Tests und Pull Requests

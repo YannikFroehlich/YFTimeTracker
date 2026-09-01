@@ -1,0 +1,34 @@
+name: "✨ Funktionswunsch"
+description: Eine neue Funktion oder Verbesserung vorschlagen
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Welches Problem soll gelöst werden?
+      description: Woran fehlt es dir aktuell in YFTimeTracker?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Vorgeschlagene Lösung
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Bisherige Behelfslösungen oder Alternativen
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Weitere Hinweise
+      description: Screenshots, Beispiele aus anderen Apps oder sonstiger Kontext.
+    validations:
+      required: false
