@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using YFTimeTracker.App.Services;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
 using YFTimeTracker.Core.Validation;
@@ -13,6 +15,8 @@ public sealed class SessionsViewModel : ObservableObject
     private readonly IGameSessionRepository sessionRepository;
     private readonly IGameSessionEditor sessionEditor;
     private readonly IClock clock;
+    private readonly IFilePickerService filePicker;
+    private readonly IExplorerService explorerService;
     private readonly IGameIconService? gameIcons;
     private readonly List<GameSession> loadedSessions = [];
     private readonly Dictionary<long, string?> iconPathsByGame = [];
@@ -34,18 +38,25 @@ public sealed class SessionsViewModel : ObservableObject
     private TimeSpan? editorEndTime;
     private long? editingSessionId;
     private bool editorFieldsEnabled = true;
+    private string? lastExportedFilePath;
+    private bool isExportEnabled;
+    private bool isExportFolderAvailable;
 
     public SessionsViewModel(
         IGameCatalogService catalog,
         IGameSessionRepository sessionRepository,
         IGameSessionEditor sessionEditor,
         IClock clock,
+        IFilePickerService filePicker,
+        IExplorerService explorerService,
         IGameIconService? gameIcons = null)
     {
         this.catalog = catalog;
         this.sessionRepository = sessionRepository;
         this.sessionEditor = sessionEditor;
         this.clock = clock;
+        this.filePicker = filePicker;
+        this.explorerService = explorerService;
         this.gameIcons = gameIcons;
 
         PeriodOptions =
@@ -62,6 +73,8 @@ public sealed class SessionsViewModel : ObservableObject
         ClearFiltersCommand = new RelayCommand(ClearFilters);
         saveSessionCommand = new AsyncRelayCommand(SaveSessionAsync, () => EditorCanSave);
         SaveSessionCommand = saveSessionCommand;
+        ExportCsvCommand = new AsyncRelayCommand(ExportCsvAsync);
+        OpenExportFolderCommand = new RelayCommand(OpenExportFolder);
 
         ResetEditorTimes();
     }
@@ -230,6 +243,14 @@ public sealed class SessionsViewModel : ObservableObject
     public IRelayCommand ClearFiltersCommand { get; }
 
     public IAsyncRelayCommand SaveSessionCommand { get; }
+
+    public IAsyncRelayCommand ExportCsvCommand { get; }
+
+    public IRelayCommand OpenExportFolderCommand { get; }
+
+    public bool IsExportEnabled { get => isExportEnabled; private set => SetProperty(ref isExportEnabled, value); }
+
+    public bool IsExportFolderAvailable { get => isExportFolderAvailable; private set => SetProperty(ref isExportFolderAvailable, value); }
 
     public async Task RefreshAsync()
     {
@@ -490,7 +511,67 @@ public sealed class SessionsViewModel : ObservableObject
         EmptyStateText = loadedSessions.Count == 0
             ? "In diesem Zeitraum wurden noch keine Sessions aufgezeichnet."
             : "Für die aktuellen Such- und Spielfilter wurden keine Sessions gefunden.";
+        IsExportEnabled = Sessions.Count > 0;
         UpdateSummary();
+    }
+
+    private async Task ExportCsvAsync()
+    {
+        if (Sessions.Count == 0)
+        {
+            return;
+        }
+
+        var path = await filePicker.PickSessionsExportAsync(SelectedPeriod.Label, CancellationToken.None);
+        if (path is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await File.WriteAllTextAsync(path, BuildSessionsCsv(Sessions), new UTF8Encoding(true));
+            StatusMessage = $"Sessions als CSV exportiert: {Path.GetFileName(path)}";
+            lastExportedFilePath = path;
+            IsExportFolderAvailable = true;
+        }
+        catch (Exception exception)
+        {
+            StatusMessage = $"CSV-Export fehlgeschlagen: {exception.Message}";
+        }
+    }
+
+    private void OpenExportFolder()
+    {
+        if (lastExportedFilePath is not null)
+        {
+            explorerService.RevealFile(lastExportedFilePath);
+        }
+    }
+
+    private static string BuildSessionsCsv(IEnumerable<SessionListItemViewModel> sessions)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine("Spiel;Quelle;Start;Ende;Dauer;Status");
+        foreach (var session in sessions)
+        {
+            builder.AppendLine(string.Join(';',
+                CsvField(session.GameName),
+                CsvField(session.SourceLabel),
+                session.StartedAtUtc.LocalDateTime.ToString("dd.MM.yyyy HH:mm:ss"),
+                session.EndedAtUtc?.LocalDateTime.ToString("dd.MM.yyyy HH:mm:ss") ?? "Läuft",
+                CsvField(session.Duration),
+                CsvField(session.StatusText)));
+        }
+
+        return builder.ToString();
+    }
+
+    private static string CsvField(string value)
+    {
+        return value.Contains(';') || value.Contains('"') || value.Contains('\n') || value.Contains('\r')
+            ? $"\"{value.Replace("\"", "\"\"")}\""
+            : value;
     }
 
     private void UpdateSummary()

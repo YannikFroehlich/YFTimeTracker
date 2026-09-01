@@ -30,7 +30,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Style="{StaticResource YFPageTitleStyle}" Text="Jahresrückblick" />
-                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Deine persönlichen Spielzeit-Highlights eines ganzen Jahres" />
+                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Deine persönlichen Spielzeit-Highlights eines ganzen Jahres" TextWrapping="Wrap" />
                 </StackPanel>
                 <StackPanel
                     x:Name="HeaderActions"
@@ -183,7 +183,7 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Grid Width="66" Height="218">
+                                                <Grid Width="60" Height="218">
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition Height="30" />
                                                         <RowDefinition Height="160" />

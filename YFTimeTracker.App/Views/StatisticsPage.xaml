@@ -35,7 +35,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Style="{StaticResource YFPageTitleStyle}" Text="Statistiken" />
-                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Deine Spielmuster, Rekorde und Langzeittrends" />
+                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Deine Spielmuster, Rekorde und Langzeittrends" TextWrapping="Wrap" />
                 </StackPanel>
                 <StackPanel
                     x:Name="HeaderActions"

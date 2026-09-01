@@ -31,7 +31,7 @@
             </Grid>
 
             <Border Grid.Row="1" Margin="0,0,0,14" Padding="14" Style="{StaticResource YFCardStyle}">
-                <Grid x:Name="LibraryFilterGrid" ColumnSpacing="10">
+                <Grid x:Name="LibraryFilterGrid" ColumnSpacing="10" RowSpacing="10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="175" />
@@ -39,6 +39,13 @@
                         <ColumnDefinition Width="190" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
                     <TextBox
                         x:Name="LibrarySearchBox"

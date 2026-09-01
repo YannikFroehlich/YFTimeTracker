@@ -138,6 +138,12 @@ public sealed partial class SessionsPage : Page
 
     private void UpdateResponsiveLayout(double width)
     {
+        var compactHeader = width < 640;
+        Grid.SetRow(HeaderActions, compactHeader ? 1 : 0);
+        Grid.SetColumn(HeaderActions, compactHeader ? 0 : 1);
+        HeaderActions.HorizontalAlignment = compactHeader ? HorizontalAlignment.Left : HorizontalAlignment.Right;
+        HeaderActions.Margin = compactHeader ? new Thickness(0, 12, 0, 0) : new Thickness(0);
+
         var stackSummary = width < 760;
         SummaryGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
         SummaryGrid.ColumnDefinitions[1].Width = stackSummary ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
