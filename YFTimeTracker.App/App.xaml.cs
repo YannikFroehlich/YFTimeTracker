@@ -69,6 +69,7 @@ public partial class App : Application
 
                 services.AddSingleton<IFilePickerService, WinUiFilePickerService>();
                 services.AddSingleton<IExplorerService, WindowsExplorerService>();
+                services.AddSingleton<IGameLaunchService, WindowsGameLaunchService>();
                 services.AddSingleton<IThemeService, ThemeService>();
                 services.AddSingleton<IStartupService, WinUiStartupService>();
                 services.AddSingleton<ITrayService, TrayService>();

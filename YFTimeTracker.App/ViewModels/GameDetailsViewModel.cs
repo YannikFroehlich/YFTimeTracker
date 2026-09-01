@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml;
+using YFTimeTracker.App.Services;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
 using YFTimeTracker.Core.Validation;
@@ -18,8 +19,10 @@ public sealed class GameDetailsViewModel : ObservableObject
     private readonly IGameSessionEditor sessionEditor;
     private readonly IClock clock;
     private readonly IGameIconService? gameIcons;
+    private readonly IGameLaunchService? gameLaunchService;
     private readonly AsyncRelayCommand saveGameCommand;
     private readonly AsyncRelayCommand saveSessionCommand;
+    private readonly RelayCommand launchGameCommand;
     private Game? loadedGame;
     private long gameId;
     private SessionListItemViewModel? selectedSession;
@@ -57,7 +60,8 @@ public sealed class GameDetailsViewModel : ObservableObject
         IGameSessionRepository sessionRepository,
         IGameSessionEditor sessionEditor,
         IClock clock,
-        IGameIconService? gameIcons = null)
+        IGameIconService? gameIcons = null,
+        IGameLaunchService? gameLaunchService = null)
     {
         this.games = games;
         this.catalog = catalog;
@@ -65,6 +69,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         this.sessionEditor = sessionEditor;
         this.clock = clock;
         this.gameIcons = gameIcons;
+        this.gameLaunchService = gameLaunchService;
 
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         saveGameCommand = new AsyncRelayCommand(SaveGameAsync, () => loadedGame is not null);
@@ -72,6 +77,8 @@ public sealed class GameDetailsViewModel : ObservableObject
         NewSessionCommand = new RelayCommand(BeginNewSession);
         saveSessionCommand = new AsyncRelayCommand(SaveSessionAsync, () => SessionCanSave);
         SaveSessionCommand = saveSessionCommand;
+        launchGameCommand = new RelayCommand(LaunchGame, () => loadedGame?.PrimaryExecutable is not null);
+        LaunchGameCommand = launchGameCommand;
         ResetEditorTimes();
     }
 
@@ -195,6 +202,8 @@ public sealed class GameDetailsViewModel : ObservableObject
 
     public IAsyncRelayCommand SaveSessionCommand { get; }
 
+    public IRelayCommand LaunchGameCommand { get; }
+
     public async Task LoadAsync(long requestedGameId)
     {
         gameId = requestedGameId;
@@ -231,6 +240,7 @@ public sealed class GameDetailsViewModel : ObservableObject
             ErrorVisibility = Visibility.Collapsed;
             saveGameCommand.NotifyCanExecuteChanged();
             saveSessionCommand.NotifyCanExecuteChanged();
+            launchGameCommand.NotifyCanExecuteChanged();
             StatusMessage = $"Zuletzt aktualisiert um {TimeZoneInfo.ConvertTime(clock.UtcNow, TimeZoneInfo.Local):HH:mm}.";
         }
         catch (Exception exception)
@@ -523,6 +533,25 @@ public sealed class GameDetailsViewModel : ObservableObject
         ErrorVisibility = Visibility.Visible;
         saveGameCommand.NotifyCanExecuteChanged();
         saveSessionCommand.NotifyCanExecuteChanged();
+        launchGameCommand.NotifyCanExecuteChanged();
+    }
+
+    private void LaunchGame()
+    {
+        if (gameLaunchService is null || loadedGame?.PrimaryExecutable is not { } executable)
+        {
+            return;
+        }
+
+        try
+        {
+            gameLaunchService.Launch(executable.ExecutablePath);
+            StatusMessage = "Spiel wird gestartet …";
+        }
+        catch (Exception exception)
+        {
+            StatusMessage = $"Spiel konnte nicht gestartet werden: {exception.Message}";
+        }
     }
 
     private static string FormatSource(GameSource source) => source switch

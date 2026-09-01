@@ -1,3 +1,4 @@
+using YFTimeTracker.App.Services;
 using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
@@ -77,6 +78,47 @@ public sealed class GameDetailsViewModelTests
         Assert.AreEqual(1, editor.DeleteCallCount);
     }
 
+    [TestMethod]
+    public async Task LaunchGameCommand_starts_the_primary_executable_and_reports_status()
+    {
+        var now = DateTimeOffset.Parse("2026-08-31T12:00:00Z");
+        var game = CreateGame();
+        var launchService = new FakeGameLaunchService();
+        var viewModel = new GameDetailsViewModel(
+            new FakeGameRepository(game),
+            new FakeCatalog(game),
+            new FakeSessionRepository([]),
+            new FakeSessionEditor(new FakeSessionRepository([]), game),
+            new FixedClock(now),
+            gameLaunchService: launchService);
+
+        await viewModel.LoadAsync(game.Id);
+        viewModel.LaunchGameCommand.Execute(null);
+
+        Assert.AreEqual(@"C:\Games\TestGame\game.exe", launchService.LaunchedPath);
+        Assert.AreEqual("Spiel wird gestartet …", viewModel.StatusMessage);
+    }
+
+    [TestMethod]
+    public async Task LaunchGameCommand_reports_failure_instead_of_throwing()
+    {
+        var now = DateTimeOffset.Parse("2026-08-31T12:00:00Z");
+        var game = CreateGame();
+        var launchService = new FakeGameLaunchService { ThrowOnLaunch = new FileNotFoundException("Datei fehlt") };
+        var viewModel = new GameDetailsViewModel(
+            new FakeGameRepository(game),
+            new FakeCatalog(game),
+            new FakeSessionRepository([]),
+            new FakeSessionEditor(new FakeSessionRepository([]), game),
+            new FixedClock(now),
+            gameLaunchService: launchService);
+
+        await viewModel.LoadAsync(game.Id);
+        viewModel.LaunchGameCommand.Execute(null);
+
+        Assert.AreEqual("Spiel konnte nicht gestartet werden: Datei fehlt", viewModel.StatusMessage);
+    }
+
     private static GameDetailsViewModel CreateViewModel(Game game, FakeSessionRepository sessions, DateTimeOffset now)
     {
         return new GameDetailsViewModel(
@@ -85,6 +127,23 @@ public sealed class GameDetailsViewModelTests
             sessions,
             new FakeSessionEditor(sessions, game),
             new FixedClock(now));
+    }
+
+    private sealed class FakeGameLaunchService : IGameLaunchService
+    {
+        public string? LaunchedPath { get; private set; }
+
+        public Exception? ThrowOnLaunch { get; set; }
+
+        public void Launch(string executablePath)
+        {
+            if (ThrowOnLaunch is { } exception)
+            {
+                throw exception;
+            }
+
+            LaunchedPath = executablePath;
+        }
     }
 
     private static Game CreateGame()

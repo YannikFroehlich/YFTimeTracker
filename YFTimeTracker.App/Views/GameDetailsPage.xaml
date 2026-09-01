@@ -23,15 +23,20 @@
                         <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Spielzeit, Sessions und lokale Erkennung auf einen Blick" />
                     </StackPanel>
                 </StackPanel>
-                <Button
-                    HorizontalAlignment="Right"
-                    Command="{Binding RefreshCommand}"
-                    Style="{StaticResource YFOutlineButtonStyle}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon FontSize="13" Glyph="&#xE72C;" />
-                        <TextBlock Text="Aktualisieren" />
-                    </StackPanel>
-                </Button>
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="10">
+                    <Button Command="{Binding LaunchGameCommand}" Style="{StaticResource YFAccentButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="13" Glyph="&#xE768;" />
+                            <TextBlock Text="Starten" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding RefreshCommand}" Style="{StaticResource YFOutlineButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="13" Glyph="&#xE72C;" />
+                            <TextBlock Text="Aktualisieren" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
             </Grid>
 
             <Border Grid.Row="1" MinHeight="300" Style="{StaticResource YFCardStyle}" Visibility="{Binding ErrorVisibility}">
