@@ -1,3 +1,4 @@
+using YFTimeTracker.App.Services;
 using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
@@ -20,7 +21,7 @@ public sealed class StatisticsViewModelTests
                 new GamePlaytimeStatistics(1, "Alpha Game", GameSource.Steam, TimeSpan.FromHours(6), 2, now),
                 new GamePlaytimeStatistics(2, "Beta", GameSource.Manual, TimeSpan.FromHours(2), 1, now.AddDays(-1))
             ]);
-        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now));
+        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), new FakeFilePicker());
 
         await viewModel.RefreshAsync();
 
@@ -49,7 +50,7 @@ public sealed class StatisticsViewModelTests
     {
         var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
         var report = CreateReport(TimeSpan.Zero, TimeSpan.Zero, 0, []);
-        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now));
+        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), new FakeFilePicker());
 
         await viewModel.RefreshAsync();
 
@@ -60,6 +61,59 @@ public sealed class StatisticsViewModelTests
         Assert.AreEqual("Noch keine Daten", viewModel.TopGameText);
         Assert.IsEmpty(viewModel.GameShares);
         Assert.HasCount(26, viewModel.HeatmapWeeks);
+    }
+
+    [TestMethod]
+    public async Task ExportCsv_writes_games_table_to_picked_path()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var report = CreateReport(
+            total: TimeSpan.FromHours(8),
+            previous: TimeSpan.FromHours(4),
+            sessionCount: 3,
+            games:
+            [
+                new GamePlaytimeStatistics(1, "Alpha Game", GameSource.Steam, TimeSpan.FromHours(6), 2, now),
+                new GamePlaytimeStatistics(2, "Beta", GameSource.Manual, TimeSpan.FromHours(2), 1, now.AddDays(-1))
+            ]);
+        var exportPath = Path.Combine(Path.GetTempPath(), $"yftimetracker-statistics-test-{Guid.NewGuid():N}.csv");
+        var filePicker = new FakeFilePicker(exportPath);
+        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), filePicker);
+        await viewModel.RefreshAsync();
+
+        try
+        {
+            Assert.IsTrue(viewModel.IsExportEnabled);
+
+            await viewModel.ExportCsvCommand.ExecuteAsync(null);
+
+            var lines = await File.ReadAllLinesAsync(exportPath);
+            var alphaLastPlayed = TimeZoneInfo.ConvertTime(now, TimeZoneInfo.Local).ToString("dd.MM.yyyy");
+            var betaLastPlayed = TimeZoneInfo.ConvertTime(now.AddDays(-1), TimeZoneInfo.Local).ToString("dd.MM.yyyy");
+            Assert.AreEqual("Rang;Spiel;Quelle;Spielzeit;Spielzeit (Stunden);Anteil (%);Sessions;Zuletzt gespielt", lines[0]);
+            Assert.AreEqual($"1;Alpha Game;STEAM;6 h 00 min;6,00;75,0;2;{alphaLastPlayed}", lines[1]);
+            Assert.AreEqual($"2;Beta;MANUELL;2 h 00 min;2,00;25,0;1;{betaLastPlayed}", lines[2]);
+            StringAssert.Contains(viewModel.StatusMessage, Path.GetFileName(exportPath));
+        }
+        finally
+        {
+            File.Delete(exportPath);
+        }
+    }
+
+    [TestMethod]
+    public async Task ExportCsv_is_disabled_without_games()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var report = CreateReport(TimeSpan.Zero, TimeSpan.Zero, 0, []);
+        var filePicker = new FakeFilePicker(Path.Combine(Path.GetTempPath(), "should-not-be-created.csv"));
+        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), filePicker);
+        await viewModel.RefreshAsync();
+
+        await viewModel.ExportCsvCommand.ExecuteAsync(null);
+
+        Assert.IsFalse(viewModel.IsExportEnabled);
+        Assert.IsFalse(File.Exists(Path.Combine(Path.GetTempPath(), "should-not-be-created.csv")));
     }
 
     private static PlaytimeStatistics CreateReport(
@@ -128,5 +182,20 @@ public sealed class StatisticsViewModelTests
                         new DateOnly(2026, 8, 30).AddDays(offset - (weekCount * 7 - 1)),
                         offset == weekCount * 7 - 1 ? TimeSpan.FromMinutes(45) : TimeSpan.Zero))
                     .ToArray());
+    }
+
+    private sealed class FakeFilePicker(string? exportPath = null) : IFilePickerService
+    {
+        public Task<string?> PickExecutableAsync(CancellationToken cancellationToken) => Task.FromResult<string?>(null);
+
+        public Task<string?> PickExportArchiveAsync(CancellationToken cancellationToken) => Task.FromResult<string?>(null);
+
+        public Task<string?> PickDiagnosticsArchiveAsync(CancellationToken cancellationToken) => Task.FromResult<string?>(null);
+
+        public Task<string?> PickImportArchiveAsync(CancellationToken cancellationToken) => Task.FromResult<string?>(null);
+
+        public Task<string?> PickYearReviewImageAsync(int year, CancellationToken cancellationToken) => Task.FromResult<string?>(null);
+
+        public Task<string?> PickStatisticsExportAsync(string periodLabel, CancellationToken cancellationToken) => Task.FromResult(exportPath);
     }
 }

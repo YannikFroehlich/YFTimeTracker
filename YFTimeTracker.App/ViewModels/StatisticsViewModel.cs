@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml;
 using Windows.Foundation;
+using YFTimeTracker.App.Services;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
 
@@ -28,7 +30,9 @@ public sealed class StatisticsViewModel : ObservableObject
 
     private readonly IPlaytimeStatisticsService statistics;
     private readonly IClock clock;
+    private readonly IFilePickerService filePicker;
     private StatisticsPeriodOption selectedPeriod;
+    private PlaytimeStatistics? lastReport;
     private int refreshVersion;
     private string periodDescription = "Die letzten 30 Tage";
     private string totalDurationText = "0 min";
@@ -52,11 +56,13 @@ public sealed class StatisticsViewModel : ObservableObject
     private IReadOnlyList<Point> trendLinePoints = [];
     private IReadOnlyList<Point> trendAreaPoints = [];
     private string topGameShareText = "–";
+    private bool isExportEnabled;
 
-    public StatisticsViewModel(IPlaytimeStatisticsService statistics, IClock clock)
+    public StatisticsViewModel(IPlaytimeStatisticsService statistics, IClock clock, IFilePickerService filePicker)
     {
         this.statistics = statistics;
         this.clock = clock;
+        this.filePicker = filePicker;
         Periods =
         [
             new StatisticsPeriodOption(StatisticsPeriodKind.Last7Days, "7 Tage"),
@@ -66,6 +72,7 @@ public sealed class StatisticsViewModel : ObservableObject
         ];
         selectedPeriod = Periods[1];
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
+        ExportCsvCommand = new AsyncRelayCommand(ExportCsvAsync);
     }
 
     public IReadOnlyList<StatisticsPeriodOption> Periods { get; }
@@ -126,6 +133,8 @@ public sealed class StatisticsViewModel : ObservableObject
 
     public string TopGameShareText { get => topGameShareText; private set => SetProperty(ref topGameShareText, value); }
 
+    public bool IsExportEnabled { get => isExportEnabled; private set => SetProperty(ref isExportEnabled, value); }
+
     public ObservableCollection<StatisticsTrendPointViewModel> Timeline { get; } = [];
 
     public ObservableCollection<TopGameStatisticsViewModel> TopGames { get; } = [];
@@ -137,6 +146,8 @@ public sealed class StatisticsViewModel : ObservableObject
     public ObservableCollection<HeatmapWeekViewModel> HeatmapWeeks { get; } = [];
 
     public IAsyncRelayCommand RefreshCommand { get; }
+
+    public IAsyncRelayCommand ExportCsvCommand { get; }
 
     public async Task RefreshAsync()
     {
@@ -173,8 +184,65 @@ public sealed class StatisticsViewModel : ObservableObject
         }
     }
 
+    private async Task ExportCsvAsync()
+    {
+        if (lastReport is not { Games.Count: > 0 } report)
+        {
+            return;
+        }
+
+        var path = await filePicker.PickStatisticsExportAsync(SelectedPeriod.Label, CancellationToken.None);
+        if (path is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await File.WriteAllTextAsync(path, BuildGamesCsv(report), new UTF8Encoding(true));
+            StatusMessage = $"Statistik als CSV exportiert: {Path.GetFileName(path)}";
+        }
+        catch (Exception exception)
+        {
+            StatusMessage = $"CSV-Export fehlgeschlagen: {exception.Message}";
+        }
+    }
+
+    private static string BuildGamesCsv(PlaytimeStatistics report)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine("Rang;Spiel;Quelle;Spielzeit;Spielzeit (Stunden);Anteil (%);Sessions;Zuletzt gespielt");
+        for (var index = 0; index < report.Games.Count; index++)
+        {
+            var game = report.Games[index];
+            var share = report.TotalDuration <= TimeSpan.Zero
+                ? 0
+                : game.Duration.TotalSeconds / report.TotalDuration.TotalSeconds * 100;
+            builder.AppendLine(string.Join(';',
+                (index + 1).ToString(GermanCulture),
+                CsvField(game.Name),
+                CsvField(FormatSource(game.Source)),
+                CsvField(TimeFormatter.Format(game.Duration)),
+                game.Duration.TotalHours.ToString("0.00", GermanCulture),
+                share.ToString("0.0", GermanCulture),
+                game.SessionCount.ToString(GermanCulture),
+                TimeZoneInfo.ConvertTime(game.LastPlayedAtUtc, TimeZoneInfo.Local).ToString("dd.MM.yyyy", GermanCulture)));
+        }
+
+        return builder.ToString();
+    }
+
+    private static string CsvField(string value)
+    {
+        return value.Contains(';') || value.Contains('"') || value.Contains('\n') || value.Contains('\r')
+            ? $"\"{value.Replace("\"", "\"\"")}\""
+            : value;
+    }
+
     private void ApplyReport(PlaytimeStatistics report)
     {
+        lastReport = report;
+        IsExportEnabled = report.Games.Count > 0;
         PeriodDescription = FormatPeriodDescription(report);
         TotalDurationText = TimeFormatter.Format(report.TotalDuration);
         SessionCountText = FormatCount(report.SessionCount, "Session", "Sessions", "Keine Sessions");

@@ -55,6 +55,12 @@
                             <TextBlock Text="Aktualisieren" />
                         </StackPanel>
                     </Button>
+                    <Button Command="{Binding ExportCsvCommand}" IsEnabled="{Binding IsExportEnabled}" Style="{StaticResource YFOutlineButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="13" Glyph="&#xE896;" />
+                            <TextBlock Text="Als CSV exportieren" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Grid>
 
