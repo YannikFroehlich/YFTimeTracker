@@ -13,4 +13,5 @@ public static class AppSettingKeys
     public const string StartupEnabled = "windows.startupEnabled";
     public const string LastBackupDate = "backup.lastBackupDate";
     public const string Theme = "ui.theme";
+    public const string LastSeenChangelogHeading = "ui.lastSeenChangelogHeading";
 }

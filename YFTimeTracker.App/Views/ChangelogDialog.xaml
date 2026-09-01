@@ -1,0 +1,33 @@
+<ContentDialog
+    x:Class="YFTimeTracker.App.Views.ChangelogDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="{ThemeResource YFSurfaceRaisedBrush}"
+    BorderBrush="{ThemeResource YFStrokeBrightBrush}"
+    BorderThickness="1"
+    CloseButtonText="Schließen"
+    CornerRadius="18"
+    DefaultButton="Close">
+    <Grid Width="440" MaxHeight="520">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Margin="4,0,4,18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Image Width="38" Height="38" Source="/Assets/YFTimeTrackerLogo.png" Stretch="Uniform" />
+            <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" Spacing="1">
+                <TextBlock FontFamily="Segoe UI Variable Display" FontSize="18" FontWeight="SemiBold" Text="Was ist neu in YFTimeTracker" />
+                <TextBlock x:Name="VersionText" Style="{StaticResource YFMutedTextStyle}" />
+            </StackPanel>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="BulletsPanel" Spacing="10" />
+        </ScrollViewer>
+    </Grid>
+</ContentDialog>
