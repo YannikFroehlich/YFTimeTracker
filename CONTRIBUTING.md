@@ -93,7 +93,10 @@ Ein Pull Request sollte:
 3. die ausgeführten Tests nennen,
 4. bei UI-Änderungen Screenshots enthalten,
 5. Migrationen, Exportformat- oder Einstellungsänderungen ausdrücklich erwähnen,
-6. Dokumentation aktualisieren, falls Verhalten oder Bedienung geändert wurden.
+6. Dokumentation aktualisieren, falls Verhalten oder Bedienung geändert wurden,
+7. bei sichtbaren Änderungen einen Abschnitt in `CHANGELOG.md` ergänzen, sofern noch keiner für die geplante Version existiert.
+
+Der App zeigt beim ersten Start nach einem Update einmalig den obersten Abschnitt aus `CHANGELOG.md` an. Ohne einen neuen Abschnitt für die jeweilige Version bleibt dieser Dialog aus.
 
 ## Automatische Veröffentlichung
 

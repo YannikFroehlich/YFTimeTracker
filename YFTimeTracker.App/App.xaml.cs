@@ -116,6 +116,15 @@ public partial class App : Application
             MainWindow.ShowDashboard();
         }
 
+        if (setupWasShown)
+        {
+            await MainWindow.ShowChangelogIfAvailableAsync(silent: true);
+        }
+        else if (!startMinimized)
+        {
+            await MainWindow.ShowChangelogIfAvailableAsync();
+        }
+
         _ = MainWindow.CheckForUpdatesOnStartupAsync(showPrompt: !startMinimized || setupWasShown);
     }
 

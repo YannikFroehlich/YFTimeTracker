@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
@@ -12,6 +13,7 @@ using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.App.Views;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
+using YFTimeTracker.Core.Services;
 
 namespace YFTimeTracker.App;
 
@@ -29,6 +31,7 @@ public sealed partial class MainWindow : Window
     private CancellationTokenSource? globalSearchCancellation;
     private bool minimizeOnClose = true;
     private bool firstRunSetupActive;
+    private bool changelogCheckStarted;
 
     public MainWindow()
     {
@@ -77,6 +80,8 @@ public sealed partial class MainWindow : Window
             {
                 dashboardRefreshTimer.Start();
             }
+
+            _ = ShowChangelogIfAvailableAsync();
         });
     }
 
@@ -176,6 +181,60 @@ public sealed partial class MainWindow : Window
             firstRunSetupActive = false;
             dialogLock.Release();
         }
+    }
+
+    public async Task ShowChangelogIfAvailableAsync(bool silent = false)
+    {
+        if (changelogCheckStarted)
+        {
+            return;
+        }
+
+        changelogCheckStarted = true;
+
+        var latest = ReadLatestChangelogEntry();
+        if (latest is null || latest.Bullets.Count == 0)
+        {
+            return;
+        }
+
+        var lastSeenHeading = await settingsStore.GetAsync(AppSettingKeys.LastSeenChangelogHeading, CancellationToken.None);
+        if (!silent
+            && !string.Equals(latest.Heading, lastSeenHeading, StringComparison.Ordinal)
+            && await dialogLock.WaitAsync(0))
+        {
+            try
+            {
+                await WaitForRootGridAsync();
+                if (RootGrid.XamlRoot is not null)
+                {
+                    var dialog = new ChangelogDialog(latest.Heading, latest.Bullets)
+                    {
+                        XamlRoot = RootGrid.XamlRoot
+                    };
+                    await dialog.ShowAsync();
+                }
+            }
+            finally
+            {
+                dialogLock.Release();
+            }
+        }
+
+        await settingsStore.SetAsync(AppSettingKeys.LastSeenChangelogHeading, latest.Heading, CancellationToken.None);
+    }
+
+    private static ChangelogEntry? ReadLatestChangelogEntry()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        using var stream = assembly.GetManifestResourceStream("CHANGELOG.md");
+        if (stream is null)
+        {
+            return null;
+        }
+
+        using var reader = new StreamReader(stream);
+        return ChangelogParser.TryGetLatestEntry(reader.ReadToEnd());
     }
 
     public async Task CheckForUpdatesOnStartupAsync(bool showPrompt)

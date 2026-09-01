@@ -29,6 +29,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Tray-Betrieb, Tracking-Pause, optionaler Autostart und Einzelinstanz-Schutz
 - Lokale Backups sowie Import und Export
 - Automatische Update-Prüfung für installierte Ausgaben
+- "Was ist neu"-Dialog mit den Änderungen der Version beim ersten Start nach einem Update
 - Diagnoseansicht und Export eines datensparsamen Diagnose-ZIP
 
 ## Installation
