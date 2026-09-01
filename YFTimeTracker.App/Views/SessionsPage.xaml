@@ -26,7 +26,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Style="{StaticResource YFPageTitleStyle}" Text="Sessions" />
-                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Durchsuche, ergänze und korrigiere deine aufgezeichnete Spielzeit" />
+                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Durchsuche, ergänze und korrigiere deine aufgezeichnete Spielzeit" TextWrapping="Wrap" />
                 </StackPanel>
                 <StackPanel
                     x:Name="HeaderActions"
@@ -71,7 +71,7 @@
                         <StackPanel Spacing="7">
                             <TextBlock Style="{StaticResource YFCaptionStyle}" Text="SESSIONS IM FILTER" />
                             <TextBlock FontSize="28" FontWeight="SemiBold" Text="{Binding SessionCountText}" />
-                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Echte Einträge im gewählten Zeitraum" />
+                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Echte Einträge im gewählten Zeitraum" TextWrapping="Wrap" />
                         </StackPanel>
                         <Border Grid.Column="1" Width="48" Height="48" Background="#173E80" CornerRadius="24">
                             <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE787;" />
@@ -88,7 +88,7 @@
                         <StackPanel Spacing="7">
                             <TextBlock Style="{StaticResource YFCaptionStyle}" Text="GESAMTZEIT" />
                             <TextBlock FontSize="28" FontWeight="SemiBold" Text="{Binding TotalDurationText}" />
-                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Summe der sichtbaren Sessions" />
+                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Summe der sichtbaren Sessions" TextWrapping="Wrap" />
                         </StackPanel>
                         <Border Grid.Column="1" Width="48" Height="48" Background="#34216B" CornerRadius="24">
                             <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="#B18CFF" Glyph="&#xE916;" />
@@ -105,7 +105,7 @@
                         <StackPanel Spacing="7">
                             <TextBlock Style="{StaticResource YFCaptionStyle}" Text="Ø SESSION" />
                             <TextBlock FontSize="28" FontWeight="SemiBold" Text="{Binding AverageDurationText}" />
-                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Durchschnitt im aktuellen Filter" />
+                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Durchschnitt im aktuellen Filter" TextWrapping="Wrap" />
                         </StackPanel>
                         <Border Grid.Column="1" Width="48" Height="48" Background="#0A4354" CornerRadius="24">
                             <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE9D9;" />
@@ -115,13 +115,18 @@
             </Grid>
 
             <Border Grid.Row="2" Margin="0,14,0,0" Padding="14" Style="{StaticResource YFCardStyle}">
-                <Grid x:Name="FilterGrid" ColumnSpacing="10">
+                <Grid x:Name="FilterGrid" ColumnSpacing="10" RowSpacing="10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="220" />
                         <ColumnDefinition Width="200" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
                     <TextBox
                         x:Name="SearchBox"
@@ -307,10 +312,14 @@
                         </StackPanel>
 
                         <Border Padding="12" Background="{ThemeResource YFStatusBarBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
-                            <StackPanel Orientation="Horizontal" Spacing="9">
+                            <Grid ColumnSpacing="9">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
                                 <FontIcon FontSize="13" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE946;" />
-                                <TextBlock MaxWidth="310" Style="{StaticResource YFMutedTextStyle}" Text="Zeiten werden lokal eingegeben und intern sicher als UTC gespeichert." TextWrapping="Wrap" />
-                            </StackPanel>
+                                <TextBlock Grid.Column="1" Style="{StaticResource YFMutedTextStyle}" Text="Zeiten werden lokal eingegeben und intern sicher als UTC gespeichert." TextWrapping="Wrap" />
+                            </Grid>
                         </Border>
 
                         <Button Command="{Binding SaveSessionCommand}" IsEnabled="{Binding EditorCanSave}" Style="{StaticResource YFAccentButtonStyle}" Content="{Binding SaveButtonText}" />

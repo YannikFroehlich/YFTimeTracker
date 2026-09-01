@@ -203,163 +203,173 @@
                 </Border>
 
                 <Border x:Name="DataSettingsCard" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,14,0,0" Style="{StaticResource YFCardStyle}">
-                    <Grid ColumnSpacing="24">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="1.1*" />
-                            <ColumnDefinition Width="0.9*" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Spacing="14">
+                    <StackPanel Spacing="18">
+                        <Grid>
                             <StackPanel Margin="0,0,44,0">
                                 <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="DATEN &amp; SICHERUNG" />
                                 <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Alle Daten bleiben lokal auf diesem Computer" />
                             </StackPanel>
-                            <NumberBox
-                                Header="Backup-Aufbewahrung (Tage)"
-                                Maximum="365"
-                                Minimum="1"
-                                SpinButtonPlacementMode="Compact"
-                                Value="{Binding BackupRetentionDays, Mode=TwoWay}" />
-                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Speicherort: %LocalAppData%\YFTimeTracker" />
-                        </StackPanel>
+                            <Border Width="34" Height="34" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#0B3039" CornerRadius="10">
+                                <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE8F1;" />
+                            </Border>
+                        </Grid>
 
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="10">
-                            <Button HorizontalAlignment="Stretch" Command="{Binding ExportCommand}" Style="{StaticResource YFAccentButtonStyle}">
-                                <StackPanel Orientation="Horizontal" Spacing="9">
-                                    <FontIcon FontSize="14" Glyph="&#xE74E;" />
-                                    <TextBlock Text="Daten exportieren" />
-                                </StackPanel>
-                            </Button>
-                            <Button HorizontalAlignment="Stretch" Command="{Binding ImportCommand}" Style="{StaticResource YFOutlineButtonStyle}">
-                                <StackPanel Orientation="Horizontal" Spacing="9">
-                                    <FontIcon FontSize="14" Glyph="&#xE8B5;" />
-                                    <TextBlock Text="Sicherung importieren" />
-                                </StackPanel>
-                            </Button>
-                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Exporte enthalten Spiele, Sessions und Einstellungen in einem ZIP-Archiv." TextWrapping="Wrap" />
-                        </StackPanel>
+                        <Grid ColumnSpacing="24">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.1*" />
+                                <ColumnDefinition Width="0.9*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="14">
+                                <NumberBox
+                                    Header="Backup-Aufbewahrung (Tage)"
+                                    Maximum="365"
+                                    Minimum="1"
+                                    SpinButtonPlacementMode="Compact"
+                                    Value="{Binding BackupRetentionDays, Mode=TwoWay}" />
+                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Speicherort: %LocalAppData%\YFTimeTracker" />
+                            </StackPanel>
 
-                        <Border Width="34" Height="34" Grid.ColumnSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#0B3039" CornerRadius="10">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE8F1;" />
-                        </Border>
-                    </Grid>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="10">
+                                <Button HorizontalAlignment="Stretch" Command="{Binding ExportCommand}" Style="{StaticResource YFAccentButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                        <FontIcon FontSize="14" Glyph="&#xE74E;" />
+                                        <TextBlock Text="Daten exportieren" />
+                                    </StackPanel>
+                                </Button>
+                                <Button HorizontalAlignment="Stretch" Command="{Binding ImportCommand}" Style="{StaticResource YFOutlineButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                        <FontIcon FontSize="14" Glyph="&#xE8B5;" />
+                                        <TextBlock Text="Sicherung importieren" />
+                                    </StackPanel>
+                                </Button>
+                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Exporte enthalten Spiele, Sessions und Einstellungen in einem ZIP-Archiv." TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
                 </Border>
 
                 <Border x:Name="UpdateSettingsCard" Grid.Row="2" Grid.ColumnSpan="2" Margin="0,14,0,0" Style="{StaticResource YFCardStyle}">
-                    <Grid ColumnSpacing="24">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="1.2*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Spacing="10">
+                    <StackPanel Spacing="18">
+                        <Grid>
                             <StackPanel Margin="0,0,44,0">
                                 <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="APP-UPDATES" />
                                 <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Neue Versionen sicher aus den öffentlichen GitHub-Releases laden" />
                             </StackPanel>
+                            <Border Width="34" Height="34" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#102B50" CornerRadius="10">
+                                <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE777;" />
+                            </Border>
+                        </Grid>
 
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Border Padding="9,5" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="7">
-                                    <TextBlock FontSize="11" Foreground="{StaticResource YFBlueBrush}" Text="{Binding CurrentAppVersionText}" />
-                                </Border>
-                                <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="{Binding AvailableUpdateText}" />
+                        <Grid ColumnSpacing="24">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.2*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Spacing="10">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <Border Padding="9,5" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="7">
+                                        <TextBlock FontSize="11" Foreground="{StaticResource YFBlueBrush}" Text="{Binding CurrentAppVersionText}" />
+                                    </Border>
+                                    <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="{Binding AvailableUpdateText}" />
+                                </StackPanel>
+                                <TextBlock Foreground="{ThemeResource YFTextBrush}" Text="{Binding UpdateStatusText}" TextWrapping="Wrap" />
+                                <ProgressBar
+                                    Height="5"
+                                    Maximum="100"
+                                    Value="{Binding UpdateProgress}"
+                                    Visibility="{Binding UpdateProgressVisibility}" />
+                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Es wird kein GitHub-Token gespeichert oder mit der App ausgeliefert." TextWrapping="Wrap" />
                             </StackPanel>
-                            <TextBlock Foreground="{ThemeResource YFTextBrush}" Text="{Binding UpdateStatusText}" TextWrapping="Wrap" />
-                            <ProgressBar
-                                Height="5"
-                                Maximum="100"
-                                Value="{Binding UpdateProgress}"
-                                Visibility="{Binding UpdateProgressVisibility}" />
-                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Es wird kein GitHub-Token gespeichert oder mit der App ausgeliefert." TextWrapping="Wrap" />
-                        </StackPanel>
 
-                        <StackPanel Grid.Column="1" MinWidth="210" VerticalAlignment="Center" Spacing="10">
-                            <Button
-                                HorizontalAlignment="Stretch"
-                                Click="CheckForUpdates_Click"
-                                IsEnabled="{Binding CanCheckForUpdates}"
-                                Style="{StaticResource YFOutlineButtonStyle}">
-                                <StackPanel Orientation="Horizontal" Spacing="9">
-                                    <FontIcon FontSize="14" Glyph="&#xE895;" />
-                                    <TextBlock Text="Auf Updates prüfen" />
-                                </StackPanel>
-                            </Button>
-                            <Button
-                                HorizontalAlignment="Stretch"
-                                Click="InstallUpdate_Click"
-                                Style="{StaticResource YFAccentButtonStyle}"
-                                Visibility="{Binding InstallUpdateVisibility}">
-                                <StackPanel Orientation="Horizontal" Spacing="9">
-                                    <FontIcon FontSize="14" Glyph="&#xE896;" />
-                                    <TextBlock Text="Update installieren" />
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
-
-                        <Border Width="34" Height="34" Grid.ColumnSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#102B50" CornerRadius="10">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE777;" />
-                        </Border>
-                    </Grid>
+                            <StackPanel Grid.Column="1" MinWidth="210" VerticalAlignment="Center" Spacing="10">
+                                <Button
+                                    HorizontalAlignment="Stretch"
+                                    Click="CheckForUpdates_Click"
+                                    IsEnabled="{Binding CanCheckForUpdates}"
+                                    Style="{StaticResource YFOutlineButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                        <FontIcon FontSize="14" Glyph="&#xE895;" />
+                                        <TextBlock Text="Auf Updates prüfen" />
+                                    </StackPanel>
+                                </Button>
+                                <Button
+                                    HorizontalAlignment="Stretch"
+                                    Click="InstallUpdate_Click"
+                                    Style="{StaticResource YFAccentButtonStyle}"
+                                    Visibility="{Binding InstallUpdateVisibility}">
+                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                        <FontIcon FontSize="14" Glyph="&#xE896;" />
+                                        <TextBlock Text="Update installieren" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
                 </Border>
 
                 <Border x:Name="DiagnosticsSettingsCard" Grid.Row="3" Grid.ColumnSpan="2" Margin="0,14,0,0" Style="{StaticResource YFCardStyle}">
-                    <Grid ColumnSpacing="24">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="1.25*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Spacing="12">
+                    <StackPanel Spacing="18">
+                        <Grid>
                             <StackPanel Margin="0,0,44,0">
                                 <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="DIAGNOSE &amp; SUPPORT" />
                                 <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Version, Speicherorte und lokale Fehlerprotokolle" />
                             </StackPanel>
-
-                            <Border Style="{StaticResource YFSubtleCardStyle}">
-                                <StackPanel Spacing="8">
-                                    <TextBlock FontWeight="SemiBold" Foreground="{ThemeResource YFTextBrush}" Text="{Binding DiagnosticsVersionText}" />
-                                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding DiagnosticsRuntimeText}" TextWrapping="Wrap" />
-                                </StackPanel>
+                            <Border Width="34" Height="34" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#291B52" CornerRadius="10">
+                                <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15" Foreground="#B18CFF" Glyph="&#xE90F;" />
                             </Border>
+                        </Grid>
 
-                            <Grid ColumnSpacing="16" RowSpacing="7">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <TextBlock Foreground="{StaticResource YFBlueBrush}" Text="Installation" />
-                                <TextBlock Grid.Column="1" FontFamily="Consolas" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding DiagnosticsInstallDirectory}" TextWrapping="Wrap" />
-                                <TextBlock Grid.Row="1" Foreground="{StaticResource YFBlueBrush}" Text="Daten" />
-                                <TextBlock Grid.Row="1" Grid.Column="1" FontFamily="Consolas" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding DiagnosticsDataDirectory}" TextWrapping="Wrap" />
-                                <TextBlock Grid.Row="2" Foreground="{StaticResource YFBlueBrush}" Text="Logs" />
-                                <TextBlock Grid.Row="2" Grid.Column="1" FontFamily="Consolas" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding DiagnosticsLogDirectory}" TextWrapping="Wrap" />
-                            </Grid>
-                        </StackPanel>
+                        <Grid ColumnSpacing="24">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.25*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="1" MinWidth="235" VerticalAlignment="Center" Spacing="10">
-                            <Button HorizontalAlignment="Stretch" Command="{Binding OpenLogDirectoryCommand}" Style="{StaticResource YFOutlineButtonStyle}">
-                                <StackPanel Orientation="Horizontal" Spacing="9">
-                                    <FontIcon FontSize="14" Glyph="&#xED25;" />
-                                    <TextBlock Text="Logordner öffnen" />
-                                </StackPanel>
-                            </Button>
-                            <Button HorizontalAlignment="Stretch" Command="{Binding ExportDiagnosticsCommand}" Style="{StaticResource YFAccentButtonStyle}">
-                                <StackPanel Orientation="Horizontal" Spacing="9">
-                                    <FontIcon FontSize="14" Glyph="&#xE74E;" />
-                                    <TextBlock Text="Diagnosebericht exportieren" />
-                                </StackPanel>
-                            </Button>
-                            <TextBlock MaxWidth="260" Style="{StaticResource YFMutedTextStyle}" Text="Enthält Systeminformationen und bis zu drei aktuelle Logs, aber keine Datenbank oder Sicherungen." TextWrapping="Wrap" />
-                        </StackPanel>
+                            <StackPanel Spacing="12">
+                                <Border Style="{StaticResource YFSubtleCardStyle}">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock FontWeight="SemiBold" Foreground="{ThemeResource YFTextBrush}" Text="{Binding DiagnosticsVersionText}" />
+                                        <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding DiagnosticsRuntimeText}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
 
-                        <Border Width="34" Height="34" Grid.ColumnSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#291B52" CornerRadius="10">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15" Foreground="#B18CFF" Glyph="&#xE90F;" />
-                        </Border>
-                    </Grid>
+                                <Grid ColumnSpacing="16" RowSpacing="7">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Foreground="{StaticResource YFBlueBrush}" Text="Installation" />
+                                    <TextBlock Grid.Column="1" FontFamily="Consolas" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding DiagnosticsInstallDirectory}" TextWrapping="Wrap" />
+                                    <TextBlock Grid.Row="1" Foreground="{StaticResource YFBlueBrush}" Text="Daten" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" FontFamily="Consolas" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding DiagnosticsDataDirectory}" TextWrapping="Wrap" />
+                                    <TextBlock Grid.Row="2" Foreground="{StaticResource YFBlueBrush}" Text="Logs" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" FontFamily="Consolas" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding DiagnosticsLogDirectory}" TextWrapping="Wrap" />
+                                </Grid>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" MinWidth="235" VerticalAlignment="Center" Spacing="10">
+                                <Button HorizontalAlignment="Stretch" Command="{Binding OpenLogDirectoryCommand}" Style="{StaticResource YFOutlineButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                        <FontIcon FontSize="14" Glyph="&#xED25;" />
+                                        <TextBlock Text="Logordner öffnen" />
+                                    </StackPanel>
+                                </Button>
+                                <Button HorizontalAlignment="Stretch" Command="{Binding ExportDiagnosticsCommand}" Style="{StaticResource YFAccentButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                        <FontIcon FontSize="14" Glyph="&#xE74E;" />
+                                        <TextBlock Text="Diagnosebericht exportieren" />
+                                    </StackPanel>
+                                </Button>
+                                <TextBlock MaxWidth="260" Style="{StaticResource YFMutedTextStyle}" Text="Enthält Systeminformationen und bis zu drei aktuelle Logs, aber keine Datenbank oder Sicherungen." TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
                 </Border>
             </Grid>
 
