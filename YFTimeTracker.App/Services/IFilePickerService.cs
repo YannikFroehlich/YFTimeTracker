@@ -9,4 +9,6 @@ public interface IFilePickerService
     Task<string?> PickDiagnosticsArchiveAsync(CancellationToken cancellationToken);
 
     Task<string?> PickImportArchiveAsync(CancellationToken cancellationToken);
+
+    Task<string?> PickYearReviewImageAsync(int year, CancellationToken cancellationToken);
 }

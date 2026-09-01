@@ -1,6 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.Graphics.Imaging;
+using Windows.Storage.Streams;
+using YFTimeTracker.App.Services;
 using YFTimeTracker.App.ViewModels;
 
 namespace YFTimeTracker.App.Views;
@@ -33,6 +38,48 @@ public sealed partial class YearReviewPage : Page
     private async void RefreshTimer_Tick(object? sender, object e)
     {
         await ViewModel.RefreshAsync();
+    }
+
+    private async void ShareButton_Click(object sender, RoutedEventArgs e)
+    {
+        var filePicker = App.Services.GetRequiredService<IFilePickerService>();
+        var year = ViewModel.SelectedYear?.Year ?? DateTime.Now.Year;
+        var path = await filePicker.PickYearReviewImageAsync(year, CancellationToken.None);
+        if (path is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var bitmap = new RenderTargetBitmap();
+            await bitmap.RenderAsync(ShareContent);
+            var pixels = await bitmap.GetPixelsAsync();
+
+            using var stream = new InMemoryRandomAccessStream();
+            var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
+            encoder.SetPixelData(
+                BitmapPixelFormat.Bgra8,
+                BitmapAlphaMode.Premultiplied,
+                (uint)bitmap.PixelWidth,
+                (uint)bitmap.PixelHeight,
+                96,
+                96,
+                pixels.ToArray());
+            await encoder.FlushAsync();
+
+            using var reader = new DataReader(stream.GetInputStreamAt(0));
+            await reader.LoadAsync((uint)stream.Size);
+            var bytes = new byte[stream.Size];
+            reader.ReadBytes(bytes);
+
+            await File.WriteAllBytesAsync(path, bytes);
+            ViewModel.StatusMessage = $"Jahresrückblick als Bild gespeichert: {Path.GetFileName(path)}";
+        }
+        catch (Exception exception)
+        {
+            ViewModel.StatusMessage = $"Bild konnte nicht erstellt werden: {exception.Message}";
+        }
     }
 
     private void TopGames_ItemClick(object sender, ItemClickEventArgs e)

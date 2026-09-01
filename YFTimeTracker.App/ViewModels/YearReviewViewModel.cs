@@ -33,9 +33,11 @@ public sealed class YearReviewViewModel : ObservableObject
     private string longestSessionText = "Noch keine Session";
     private string longestSessionDetailText = "Dein längster Spieleabend erscheint hier.";
     private string chartMaximumText = "1 h";
+    private string shareFooterText = "YFTimeTracker · Jahresrückblick";
     private string statusMessage = "Jahresrückblick wird vorbereitet …";
     private Visibility dataVisibility = Visibility.Collapsed;
     private Visibility emptyVisibility = Visibility.Visible;
+    private bool isShareEnabled;
 
     public YearReviewViewModel(
         IYearReviewService reviews,
@@ -92,11 +94,15 @@ public sealed class YearReviewViewModel : ObservableObject
 
     public string ChartMaximumText { get => chartMaximumText; private set => SetProperty(ref chartMaximumText, value); }
 
-    public string StatusMessage { get => statusMessage; private set => SetProperty(ref statusMessage, value); }
+    public string ShareFooterText { get => shareFooterText; private set => SetProperty(ref shareFooterText, value); }
+
+    public string StatusMessage { get => statusMessage; internal set => SetProperty(ref statusMessage, value); }
 
     public Visibility DataVisibility { get => dataVisibility; private set => SetProperty(ref dataVisibility, value); }
 
     public Visibility EmptyVisibility { get => emptyVisibility; private set => SetProperty(ref emptyVisibility, value); }
+
+    public bool IsShareEnabled { get => isShareEnabled; private set => SetProperty(ref isShareEnabled, value); }
 
     public IAsyncRelayCommand RefreshCommand { get; }
 
@@ -203,8 +209,11 @@ public sealed class YearReviewViewModel : ObservableObject
 
         UpdateMonths(report.Months, report.MostActiveMonth?.Month);
         UpdateGames(report.TotalDuration, visibleGames, iconPaths);
-        DataVisibility = report.TotalDuration > TimeSpan.Zero ? Visibility.Visible : Visibility.Collapsed;
-        EmptyVisibility = report.TotalDuration > TimeSpan.Zero ? Visibility.Collapsed : Visibility.Visible;
+        var hasData = report.TotalDuration > TimeSpan.Zero;
+        DataVisibility = hasData ? Visibility.Visible : Visibility.Collapsed;
+        EmptyVisibility = hasData ? Visibility.Collapsed : Visibility.Visible;
+        IsShareEnabled = hasData;
+        ShareFooterText = $"YFTimeTracker · Jahresrückblick {report.Year}";
     }
 
     private void UpdateMonths(IReadOnlyList<YearReviewMonth> months, int? mostActiveMonth)

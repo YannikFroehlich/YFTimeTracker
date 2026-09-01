@@ -66,6 +66,21 @@ public sealed class WinUiFilePickerService(IAppPathProvider paths) : IFilePicker
         return file?.Path;
     }
 
+    public async Task<string?> PickYearReviewImageAsync(int year, CancellationToken cancellationToken)
+    {
+        var picker = new FileSavePicker
+        {
+            SuggestedStartLocation = PickerLocationId.PicturesLibrary,
+            SuggestedFileName = $"YFTimeTracker-Jahresrueckblick-{year}"
+        };
+        InitializePicker(picker);
+        picker.FileTypeChoices.Add("PNG-Bild", [".png"]);
+
+        var file = await picker.PickSaveFileAsync();
+        cancellationToken.ThrowIfCancellationRequested();
+        return file?.Path;
+    }
+
     private static void InitializePicker(object picker)
     {
         var window = App.MainWindow ?? throw new InvalidOperationException("No main window is available.");
