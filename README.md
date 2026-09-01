@@ -14,15 +14,17 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 
 - Automatische Erkennung laufender Spiele und sekundengenaue Sessions
 - Mehrere EXE-Dateien und Prozesse pro Spiel ohne doppelte Sessions
-- Lokale Launcher-Erkennung für Steam, Epic Games, GOG und Xbox-/Microsoft-Store-Spiele
+- Lokale Launcher-Erkennung für Steam, Epic Games, GOG, Xbox-/Microsoft-Store, Battle.net und Ubisoft Connect
 - Xbox-Erkennung über die lokale Windows-Paketverwaltung und `MicrosoftGame.config`, ohne Xbox-Anmeldung oder Web-API
 - Dashboard mit Live-Tracking, Tages-, Wochen- und Gesamtwerten
+- Helles und dunkles Design, umschaltbar in den Einstellungen
 - Globale Suche nach Spielen, EXE-Dateien, Sessions und App-Bereichen
 - Bibliothek mit Suche, Sortierung, Spieldetails und EXE-Verwaltung
 - Lokale Spiel-Icons aus den registrierten EXE-Dateien mit datensparsamem Cache
 - Anlegen, Bearbeiten und Löschen manueller Sessions
-- Statistiken für frei wählbare Zeiträume und einzelne Spiele
-- Jahresrückblick mit Monatsverlauf, Vorjahresvergleich, Rekorden und Top-Spielen
+- Statistiken für frei wählbare Zeiträume und einzelne Spiele mit CSV-Export
+- Jahresrückblick mit Monatsverlauf, Vorjahresvergleich, Rekorden, Top-Spielen und PNG-Export
+- Direkter Link zum Explorer-Ordner nach einem Export
 - Ersteinrichtungs-Assistent für Tracking, Launcher, Tray und Autostart
 - Tray-Betrieb, Tracking-Pause, optionaler Autostart und Einzelinstanz-Schutz
 - Lokale Backups sowie Import und Export

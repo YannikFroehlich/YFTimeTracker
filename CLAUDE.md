@@ -91,6 +91,7 @@ When changing this file, prefer adding to `YFTimeTracker.Core.Tests/Services/Gam
 - Tracking pause must not import games or open new sessions.
 - No secrets, access tokens, or personal file paths in source or commits. No GitHub token is ever embedded in the app; auto-update only checks the public stable release channel and never offers prereleases.
 - Release artifacts are intentionally unsigned; code signing is out of scope for this project.
+- When a change adds, removes, or materially changes a user-facing feature (new launcher support, export formats, theme options, etc.), update the `README.md` feature list (`## Funktionen`) in the same change so it doesn't drift from what the app actually does.
 
 ## Branching and releases
 
