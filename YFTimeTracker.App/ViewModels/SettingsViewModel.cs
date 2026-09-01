@@ -15,6 +15,8 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly IStartupService startupService;
     private readonly IBackupService backupService;
     private readonly IFilePickerService filePicker;
+    private readonly IExplorerService explorerService;
+    private string? lastExportedFilePath;
     private readonly IGameTrackingService trackingService;
     private readonly IGameInstallationProvider installationProvider;
     private readonly IAppUpdateService appUpdateService;
@@ -47,12 +49,14 @@ public sealed class SettingsViewModel : ObservableObject
     private string diagnosticsInstallDirectory = "Installationsordner wird geladen …";
     private string diagnosticsDataDirectory = "Datenordner wird geladen …";
     private string diagnosticsLogDirectory = "Logordner wird geladen …";
+    private bool isExportFolderAvailable;
 
     public SettingsViewModel(
         ISettingsStore settings,
         IStartupService startupService,
         IBackupService backupService,
         IFilePickerService filePicker,
+        IExplorerService explorerService,
         IGameTrackingService trackingService,
         IGameInstallationProvider installationProvider,
         IAppUpdateService appUpdateService,
@@ -62,6 +66,7 @@ public sealed class SettingsViewModel : ObservableObject
         this.startupService = startupService;
         this.backupService = backupService;
         this.filePicker = filePicker;
+        this.explorerService = explorerService;
         this.trackingService = trackingService;
         this.installationProvider = installationProvider;
         this.appUpdateService = appUpdateService;
@@ -74,6 +79,7 @@ public sealed class SettingsViewModel : ObservableObject
         ImportCommand = new AsyncRelayCommand(ImportAsync);
         OpenLogDirectoryCommand = new RelayCommand(OpenLogDirectory);
         ExportDiagnosticsCommand = new AsyncRelayCommand(ExportDiagnosticsAsync);
+        OpenExportFolderCommand = new RelayCommand(OpenExportFolder);
 
         ApplyUpdateState(appUpdateService.State);
         appUpdateService.StateChanged += AppUpdateService_StateChanged;
@@ -241,6 +247,8 @@ public sealed class SettingsViewModel : ObservableObject
         private set => SetProperty(ref diagnosticsLogDirectory, value);
     }
 
+    public bool IsExportFolderAvailable { get => isExportFolderAvailable; private set => SetProperty(ref isExportFolderAvailable, value); }
+
     public IAsyncRelayCommand LoadCommand { get; }
 
     public IAsyncRelayCommand SaveCommand { get; }
@@ -252,6 +260,8 @@ public sealed class SettingsViewModel : ObservableObject
     public IRelayCommand OpenLogDirectoryCommand { get; }
 
     public IAsyncRelayCommand ExportDiagnosticsCommand { get; }
+
+    public IRelayCommand OpenExportFolderCommand { get; }
 
     public async Task LoadAsync()
     {
@@ -320,6 +330,7 @@ public sealed class SettingsViewModel : ObservableObject
 
         var result = await backupService.ExportAsync(path, CancellationToken.None);
         StatusMessage = $"Export gespeichert: {result.GameCount} Spiele, {result.SessionCount} Sessions";
+        SetExportedFile(path);
     }
 
     private async Task ImportAsync()
@@ -388,10 +399,25 @@ public sealed class SettingsViewModel : ObservableObject
             StatusMessage = "Diagnosebericht wird erstellt …";
             var result = await diagnosticsService.ExportAsync(path, CancellationToken.None);
             StatusMessage = $"Diagnosebericht gespeichert: {Path.GetFileName(result.ArchivePath)} · {result.IncludedLogCount} Logdatei(en)";
+            SetExportedFile(result.ArchivePath);
         }
         catch
         {
             StatusMessage = "Diagnosebericht konnte nicht erstellt werden";
+        }
+    }
+
+    private void SetExportedFile(string path)
+    {
+        lastExportedFilePath = path;
+        IsExportFolderAvailable = true;
+    }
+
+    private void OpenExportFolder()
+    {
+        if (lastExportedFilePath is not null)
+        {
+            explorerService.RevealFile(lastExportedFilePath);
         }
     }
 

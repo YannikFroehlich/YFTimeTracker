@@ -68,6 +68,7 @@ public partial class App : Application
                 services.AddYFTimeTrackerData();
 
                 services.AddSingleton<IFilePickerService, WinUiFilePickerService>();
+                services.AddSingleton<IExplorerService, WindowsExplorerService>();
                 services.AddSingleton<IStartupService, WinUiStartupService>();
                 services.AddSingleton<ITrayService, TrayService>();
                 services.AddSingleton<IAppUpdateService, VelopackAppUpdateService>();

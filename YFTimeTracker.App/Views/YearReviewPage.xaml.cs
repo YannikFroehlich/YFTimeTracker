@@ -75,6 +75,7 @@ public sealed partial class YearReviewPage : Page
 
             await File.WriteAllBytesAsync(path, bytes);
             ViewModel.StatusMessage = $"Jahresrückblick als Bild gespeichert: {Path.GetFileName(path)}";
+            ViewModel.SetExportedFile(path);
         }
         catch (Exception exception)
         {

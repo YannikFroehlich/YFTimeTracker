@@ -31,8 +31,10 @@ public sealed class StatisticsViewModel : ObservableObject
     private readonly IPlaytimeStatisticsService statistics;
     private readonly IClock clock;
     private readonly IFilePickerService filePicker;
+    private readonly IExplorerService explorerService;
     private StatisticsPeriodOption selectedPeriod;
     private PlaytimeStatistics? lastReport;
+    private string? lastExportedFilePath;
     private int refreshVersion;
     private string periodDescription = "Die letzten 30 Tage";
     private string totalDurationText = "0 min";
@@ -57,12 +59,18 @@ public sealed class StatisticsViewModel : ObservableObject
     private IReadOnlyList<Point> trendAreaPoints = [];
     private string topGameShareText = "–";
     private bool isExportEnabled;
+    private bool isExportFolderAvailable;
 
-    public StatisticsViewModel(IPlaytimeStatisticsService statistics, IClock clock, IFilePickerService filePicker)
+    public StatisticsViewModel(
+        IPlaytimeStatisticsService statistics,
+        IClock clock,
+        IFilePickerService filePicker,
+        IExplorerService explorerService)
     {
         this.statistics = statistics;
         this.clock = clock;
         this.filePicker = filePicker;
+        this.explorerService = explorerService;
         Periods =
         [
             new StatisticsPeriodOption(StatisticsPeriodKind.Last7Days, "7 Tage"),
@@ -73,6 +81,7 @@ public sealed class StatisticsViewModel : ObservableObject
         selectedPeriod = Periods[1];
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         ExportCsvCommand = new AsyncRelayCommand(ExportCsvAsync);
+        OpenExportFolderCommand = new RelayCommand(OpenExportFolder);
     }
 
     public IReadOnlyList<StatisticsPeriodOption> Periods { get; }
@@ -135,6 +144,8 @@ public sealed class StatisticsViewModel : ObservableObject
 
     public bool IsExportEnabled { get => isExportEnabled; private set => SetProperty(ref isExportEnabled, value); }
 
+    public bool IsExportFolderAvailable { get => isExportFolderAvailable; private set => SetProperty(ref isExportFolderAvailable, value); }
+
     public ObservableCollection<StatisticsTrendPointViewModel> Timeline { get; } = [];
 
     public ObservableCollection<TopGameStatisticsViewModel> TopGames { get; } = [];
@@ -148,6 +159,8 @@ public sealed class StatisticsViewModel : ObservableObject
     public IAsyncRelayCommand RefreshCommand { get; }
 
     public IAsyncRelayCommand ExportCsvCommand { get; }
+
+    public IRelayCommand OpenExportFolderCommand { get; }
 
     public async Task RefreshAsync()
     {
@@ -201,10 +214,20 @@ public sealed class StatisticsViewModel : ObservableObject
         {
             await File.WriteAllTextAsync(path, BuildGamesCsv(report), new UTF8Encoding(true));
             StatusMessage = $"Statistik als CSV exportiert: {Path.GetFileName(path)}";
+            lastExportedFilePath = path;
+            IsExportFolderAvailable = true;
         }
         catch (Exception exception)
         {
             StatusMessage = $"CSV-Export fehlgeschlagen: {exception.Message}";
+        }
+    }
+
+    private void OpenExportFolder()
+    {
+        if (lastExportedFilePath is not null)
+        {
+            explorerService.RevealFile(lastExportedFilePath);
         }
     }
 

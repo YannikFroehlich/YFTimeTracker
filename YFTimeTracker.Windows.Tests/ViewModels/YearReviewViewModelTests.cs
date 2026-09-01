@@ -1,3 +1,4 @@
+using YFTimeTracker.App.Services;
 using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
@@ -33,9 +34,11 @@ public sealed class YearReviewViewModelTests
                 new YearReviewGame(2, "Beta", GameSource.Manual, TimeSpan.FromHours(4), 1, @"C:\Games\Beta.exe")
             ]);
         var iconService = new FakeGameIconService(@"C:\Cache\game.png");
+        var explorerService = new FakeExplorerService();
         var viewModel = new YearReviewViewModel(
             new FakeYearReviewService([2026, 2025], report),
             new FixedClock(now),
+            explorerService,
             iconService);
 
         await viewModel.InitializeAsync();
@@ -80,7 +83,8 @@ public sealed class YearReviewViewModelTests
             []);
         var viewModel = new YearReviewViewModel(
             new FakeYearReviewService([2026], report),
-            new FixedClock(now));
+            new FixedClock(now),
+            new FakeExplorerService());
 
         await viewModel.InitializeAsync();
 
@@ -91,7 +95,41 @@ public sealed class YearReviewViewModelTests
         Assert.HasCount(12, viewModel.Months);
         Assert.AreEqual(Microsoft.UI.Xaml.Visibility.Collapsed, viewModel.DataVisibility);
         Assert.AreEqual(Microsoft.UI.Xaml.Visibility.Visible, viewModel.EmptyVisibility);
+        Assert.IsFalse(viewModel.IsExportFolderAvailable);
     }
+
+    [TestMethod]
+    public void SetExportedFile_enables_open_folder_command()
+    {
+        var now = DateTimeOffset.Parse("2026-08-31T12:00:00Z");
+        var explorerService = new FakeExplorerService();
+        var viewModel = new YearReviewViewModel(
+            new FakeYearReviewService([2026], CreateEmptyReport()),
+            new FixedClock(now),
+            explorerService);
+
+        viewModel.SetExportedFile(@"C:\Exports\review.png");
+
+        Assert.IsTrue(viewModel.IsExportFolderAvailable);
+
+        viewModel.OpenExportFolderCommand.Execute(null);
+
+        Assert.AreEqual(@"C:\Exports\review.png", explorerService.RevealedPath);
+    }
+
+    private static YearReview CreateEmptyReport() => new(
+        2026,
+        TimeSpan.Zero,
+        TimeSpan.Zero,
+        0,
+        0,
+        0,
+        TimeSpan.Zero,
+        null,
+        null,
+        null,
+        Enumerable.Range(1, 12).Select(month => new YearReviewMonth(month, TimeSpan.Zero)).ToArray(),
+        []);
 
     private sealed class FakeYearReviewService(
         IReadOnlyList<int> years,
@@ -121,5 +159,12 @@ public sealed class YearReviewViewModelTests
     private sealed class FixedClock(DateTimeOffset now) : IClock
     {
         public DateTimeOffset UtcNow { get; } = now;
+    }
+
+    private sealed class FakeExplorerService : IExplorerService
+    {
+        public string? RevealedPath { get; private set; }
+
+        public void RevealFile(string path) => RevealedPath = path;
     }
 }

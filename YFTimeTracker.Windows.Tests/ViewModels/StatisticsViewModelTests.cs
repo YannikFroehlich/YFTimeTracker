@@ -21,7 +21,7 @@ public sealed class StatisticsViewModelTests
                 new GamePlaytimeStatistics(1, "Alpha Game", GameSource.Steam, TimeSpan.FromHours(6), 2, now),
                 new GamePlaytimeStatistics(2, "Beta", GameSource.Manual, TimeSpan.FromHours(2), 1, now.AddDays(-1))
             ]);
-        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), new FakeFilePicker());
+        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), new FakeFilePicker(), new FakeExplorerService());
 
         await viewModel.RefreshAsync();
 
@@ -50,7 +50,7 @@ public sealed class StatisticsViewModelTests
     {
         var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
         var report = CreateReport(TimeSpan.Zero, TimeSpan.Zero, 0, []);
-        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), new FakeFilePicker());
+        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), new FakeFilePicker(), new FakeExplorerService());
 
         await viewModel.RefreshAsync();
 
@@ -78,7 +78,8 @@ public sealed class StatisticsViewModelTests
             ]);
         var exportPath = Path.Combine(Path.GetTempPath(), $"yftimetracker-statistics-test-{Guid.NewGuid():N}.csv");
         var filePicker = new FakeFilePicker(exportPath);
-        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), filePicker);
+        var explorerService = new FakeExplorerService();
+        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), filePicker, explorerService);
         await viewModel.RefreshAsync();
 
         try
@@ -94,6 +95,10 @@ public sealed class StatisticsViewModelTests
             Assert.AreEqual($"1;Alpha Game;STEAM;6 h 00 min;6,00;75,0;2;{alphaLastPlayed}", lines[1]);
             Assert.AreEqual($"2;Beta;MANUELL;2 h 00 min;2,00;25,0;1;{betaLastPlayed}", lines[2]);
             StringAssert.Contains(viewModel.StatusMessage, Path.GetFileName(exportPath));
+            Assert.IsTrue(viewModel.IsExportFolderAvailable);
+
+            viewModel.OpenExportFolderCommand.Execute(null);
+            Assert.AreEqual(exportPath, explorerService.RevealedPath);
         }
         finally
         {
@@ -107,12 +112,14 @@ public sealed class StatisticsViewModelTests
         var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
         var report = CreateReport(TimeSpan.Zero, TimeSpan.Zero, 0, []);
         var filePicker = new FakeFilePicker(Path.Combine(Path.GetTempPath(), "should-not-be-created.csv"));
-        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), filePicker);
+        var explorerService = new FakeExplorerService();
+        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), filePicker, explorerService);
         await viewModel.RefreshAsync();
 
         await viewModel.ExportCsvCommand.ExecuteAsync(null);
 
         Assert.IsFalse(viewModel.IsExportEnabled);
+        Assert.IsFalse(viewModel.IsExportFolderAvailable);
         Assert.IsFalse(File.Exists(Path.Combine(Path.GetTempPath(), "should-not-be-created.csv")));
     }
 
@@ -197,5 +204,12 @@ public sealed class StatisticsViewModelTests
         public Task<string?> PickYearReviewImageAsync(int year, CancellationToken cancellationToken) => Task.FromResult<string?>(null);
 
         public Task<string?> PickStatisticsExportAsync(string periodLabel, CancellationToken cancellationToken) => Task.FromResult(exportPath);
+    }
+
+    private sealed class FakeExplorerService : IExplorerService
+    {
+        public string? RevealedPath { get; private set; }
+
+        public void RevealFile(string path) => RevealedPath = path;
     }
 }

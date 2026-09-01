@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml;
+using YFTimeTracker.App.Services;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
 
@@ -16,8 +17,10 @@ public sealed class YearReviewViewModel : ObservableObject
     private const string RedColor = "#FF6B7A";
     private readonly IYearReviewService reviews;
     private readonly IClock clock;
+    private readonly IExplorerService explorerService;
     private readonly IGameIconService? gameIcons;
     private YearReviewYearOption? selectedYear;
+    private string? lastExportedFilePath;
     private bool initialized;
     private int refreshVersion;
     private string yearTitle = "DEIN JAHR";
@@ -38,16 +41,20 @@ public sealed class YearReviewViewModel : ObservableObject
     private Visibility dataVisibility = Visibility.Collapsed;
     private Visibility emptyVisibility = Visibility.Visible;
     private bool isShareEnabled;
+    private bool isExportFolderAvailable;
 
     public YearReviewViewModel(
         IYearReviewService reviews,
         IClock clock,
+        IExplorerService explorerService,
         IGameIconService? gameIcons = null)
     {
         this.reviews = reviews;
         this.clock = clock;
+        this.explorerService = explorerService;
         this.gameIcons = gameIcons;
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
+        OpenExportFolderCommand = new RelayCommand(OpenExportFolder);
     }
 
     public ObservableCollection<YearReviewYearOption> Years { get; } = [];
@@ -104,7 +111,25 @@ public sealed class YearReviewViewModel : ObservableObject
 
     public bool IsShareEnabled { get => isShareEnabled; private set => SetProperty(ref isShareEnabled, value); }
 
+    public bool IsExportFolderAvailable { get => isExportFolderAvailable; private set => SetProperty(ref isExportFolderAvailable, value); }
+
     public IAsyncRelayCommand RefreshCommand { get; }
+
+    public IRelayCommand OpenExportFolderCommand { get; }
+
+    internal void SetExportedFile(string path)
+    {
+        lastExportedFilePath = path;
+        IsExportFolderAvailable = true;
+    }
+
+    private void OpenExportFolder()
+    {
+        if (lastExportedFilePath is not null)
+        {
+            explorerService.RevealFile(lastExportedFilePath);
+        }
+    }
 
     public async Task InitializeAsync()
     {

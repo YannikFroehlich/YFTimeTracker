@@ -315,7 +315,24 @@
             </Border>
 
             <Border Grid.Row="5" Padding="12,9" Background="#081321" BorderBrush="{StaticResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
-                <TextBlock FontSize="11" Foreground="{StaticResource YFMutedBrush}" Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis" />
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource YFMutedBrush}" Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis" />
+                    <Button
+                        Grid.Column="1"
+                        Padding="10,6"
+                        Command="{Binding OpenExportFolderCommand}"
+                        IsEnabled="{Binding IsExportFolderAvailable}"
+                        Style="{StaticResource YFOutlineButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <FontIcon FontSize="12" Glyph="&#xED25;" />
+                            <TextBlock FontSize="12" Text="Ordner öffnen" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
             </Border>
         </Grid>
     </ScrollViewer>
