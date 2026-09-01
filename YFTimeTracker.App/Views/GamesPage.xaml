@@ -100,7 +100,7 @@
                         <Grid>
                             <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="DEINE SPIELE" />
                             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="7">
-                                <Border Padding="8,4" VerticalAlignment="Center" Background="#10243F" CornerRadius="7">
+                                <Border Padding="8,4" VerticalAlignment="Center" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="7">
                                     <TextBlock FontSize="9" Foreground="{StaticResource YFBlueBrush}" Text="{Binding ResultSummary}" />
                                 </Border>
                                 <Button
@@ -196,7 +196,7 @@
                                 <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SPIELINFORMATIONEN" />
                                 <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Ein Spiel wird anhand seines vollständigen EXE-Pfads erkannt." />
                             </StackPanel>
-                            <Border Padding="9,4" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#10243F" CornerRadius="8">
+                            <Border Padding="9,4" HorizontalAlignment="Right" VerticalAlignment="Top" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="8">
                                 <TextBlock FontSize="10" Foreground="{StaticResource YFBlueBrush}" Text="LOKALES TRACKING" />
                             </Border>
                         </Grid>

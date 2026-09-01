@@ -78,12 +78,12 @@
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6">
                             <StackPanel Orientation="Horizontal" Spacing="9">
                                 <TextBlock FontFamily="Segoe UI Variable Display" FontSize="28" FontWeight="SemiBold" Text="{Binding GameName}" TextTrimming="CharacterEllipsis" />
-                                <Border Padding="9,4" VerticalAlignment="Center" Background="#12345D" CornerRadius="7">
+                                <Border Padding="9,4" VerticalAlignment="Center" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="7">
                                     <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource YFCyanBrush}" Text="{Binding SourceLabel}" />
                                 </Border>
                             </StackPanel>
                             <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding SourceDetail}" />
-                            <TextBlock MaxWidth="640" FontSize="11" Foreground="#8299BA" Text="{Binding InstallDirectory}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding InstallDirectory}" />
+                            <TextBlock MaxWidth="640" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding InstallDirectory}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding InstallDirectory}" />
                         </StackPanel>
 
                         <StackPanel x:Name="NameEditor" Grid.Column="2" VerticalAlignment="Center" Spacing="7">
@@ -162,7 +162,7 @@
                                         <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SPIELZEITVERLAUF" />
                                         <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Echte Spielzeit der letzten 30 Tage" />
                                     </StackPanel>
-                                    <Border Padding="9,4" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#10243F" CornerRadius="8">
+                                    <Border Padding="9,4" HorizontalAlignment="Right" VerticalAlignment="Top" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="8">
                                         <TextBlock FontSize="10" Foreground="{StaticResource YFBlueBrush}" Text="30 TAGE" />
                                     </Border>
                                 </Grid>
@@ -182,9 +182,9 @@
                                             <RowDefinition Height="22" />
                                         </Grid.RowDefinitions>
                                         <Grid>
-                                            <Border Height="1" VerticalAlignment="Top" Background="#1A2B43" />
-                                            <Border Height="1" VerticalAlignment="Center" Background="#15243A" />
-                                            <Border Height="1" VerticalAlignment="Bottom" Background="#1A2B43" />
+                                            <Border Height="1" VerticalAlignment="Top" Background="{ThemeResource YFStrokeBrush}" />
+                                            <Border Height="1" VerticalAlignment="Center" Background="{ThemeResource YFStrokeBrush}" />
+                                            <Border Height="1" VerticalAlignment="Bottom" Background="{ThemeResource YFStrokeBrush}" />
                                         </Grid>
                                         <ScrollViewer Grid.RowSpan="2" HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled" VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
                                             <ItemsControl MinWidth="760" ItemsSource="{Binding Timeline}">
@@ -257,7 +257,7 @@
                                                         </Grid.ColumnDefinitions>
                                                         <TextBlock VerticalAlignment="Center" FontSize="12" Text="{Binding DateLabel}" />
                                                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding TimeRange}" />
-                                                        <Border Grid.Column="2" Padding="8,4" HorizontalAlignment="Right" VerticalAlignment="Center" Background="#10243F" CornerRadius="7">
+                                                        <Border Grid.Column="2" Padding="8,4" HorizontalAlignment="Right" VerticalAlignment="Center" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="7">
                                                             <TextBlock FontSize="9" Foreground="{StaticResource YFBlueBrush}" Text="{Binding StatusText}" />
                                                         </Border>
                                                         <TextBlock Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource YFBlueBrush}" Text="{Binding Duration}" />
@@ -307,11 +307,11 @@
                                 <ItemsControl ItemsSource="{Binding Executables}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Margin="0,0,0,8" Padding="12" Background="#081526" BorderBrush="#18304E" BorderThickness="1" CornerRadius="9">
+                                            <Border Margin="0,0,0,8" Padding="12" Background="{ThemeResource YFListRowBackgroundBrush}" BorderBrush="{ThemeResource YFListRowBorderBrush}" BorderThickness="1" CornerRadius="9">
                                                 <StackPanel Spacing="5">
                                                     <Grid>
                                                         <TextBlock Margin="0,0,74,0" FontSize="12" FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                                        <Border Padding="7,3" HorizontalAlignment="Right" Background="#102B4A" CornerRadius="6">
+                                                        <Border Padding="7,3" HorizontalAlignment="Right" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="6">
                                                             <TextBlock FontSize="8" Foreground="{StaticResource YFCyanBrush}" Text="{Binding Role}" />
                                                         </Border>
                                                     </Grid>

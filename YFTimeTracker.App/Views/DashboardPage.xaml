@@ -164,13 +164,13 @@
                             <Border
                                 Padding="9,4"
                                 HorizontalAlignment="Right"
-                                Background="#102B27"
-                                BorderBrush="#1E795D"
+                                Background="{ThemeResource YFStatusChipSuccessBackgroundBrush}"
+                                BorderBrush="{ThemeResource YFStatusChipSuccessBorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="10">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <Ellipse Width="7" Height="7" Fill="{StaticResource YFGreenBrush}" />
-                                    <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource YFGreenBrush}" Text="LIVE" />
+                                    <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="{ThemeResource YFStatusChipSuccessForegroundBrush}" Text="LIVE" />
                                 </StackPanel>
                             </Border>
                         </Grid>
@@ -245,7 +245,7 @@
                         </Grid.RowDefinitions>
                         <Grid>
                             <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="WÖCHENTLICHE SPIELZEIT" />
-                            <Border Padding="9,4" HorizontalAlignment="Right" Background="#121E32" CornerRadius="7">
+                            <Border Padding="9,4" HorizontalAlignment="Right" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="7">
                                 <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="DIESE WOCHE" />
                             </Border>
                         </Grid>
@@ -266,9 +266,9 @@
                                     <RowDefinition Height="*" />
                                     <RowDefinition Height="1" />
                                 </Grid.RowDefinitions>
-                                <Border Background="#1B2A40" />
-                                <Border Grid.Row="1" Height="1" VerticalAlignment="Center" Background="#17243A" />
-                                <Border Grid.Row="2" Background="#1B2A40" />
+                                <Border Background="{ThemeResource YFStrokeBrush}" />
+                                <Border Grid.Row="1" Height="1" VerticalAlignment="Center" Background="{ThemeResource YFStrokeBrush}" />
+                                <Border Grid.Row="2" Background="{ThemeResource YFStrokeBrush}" />
                                 <ItemsControl Grid.RowSpan="3" ItemsSource="{Binding WeekDays}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>

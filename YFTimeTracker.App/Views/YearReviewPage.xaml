@@ -210,7 +210,7 @@
                         <Border x:Name="HighlightsCard" Grid.Column="1" MinHeight="330" Style="{StaticResource YFCardStyle}">
                             <StackPanel Spacing="14">
                                 <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="HIGHLIGHTS" />
-                                <Border Padding="16" Background="#0E1D33" BorderBrush="#1D3C61" BorderThickness="1" CornerRadius="12">
+                                <Border Padding="16" Background="{ThemeResource YFListRowBackgroundBrush}" BorderBrush="{ThemeResource YFListRowBorderBrush}" BorderThickness="1" CornerRadius="12">
                                     <Grid ColumnSpacing="12">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="46" />
@@ -226,7 +226,7 @@
                                         </StackPanel>
                                     </Grid>
                                 </Border>
-                                <Border Padding="16" Background="#121A31" BorderBrush="#34305B" BorderThickness="1" CornerRadius="12">
+                                <Border Padding="16" Background="{ThemeResource YFListRowBackgroundBrush}" BorderBrush="{ThemeResource YFListRowBorderBrush}" BorderThickness="1" CornerRadius="12">
                                     <Grid ColumnSpacing="12">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="46" />
@@ -282,7 +282,7 @@
                                                         <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                                                         <TextBlock FontSize="9" Foreground="{StaticResource YFCyanBrush}" Text="{Binding Source}" />
                                                     </StackPanel>
-                                                    <ProgressBar Height="5" Maximum="100" Background="#132239" Foreground="{StaticResource YFBlueBrush}" Value="{Binding Progress}" />
+                                                    <ProgressBar Height="5" Maximum="100" Background="{ThemeResource YFButtonBackgroundBrush}" Foreground="{StaticResource YFBlueBrush}" Value="{Binding Progress}" />
                                                     <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding SessionText}" />
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center">

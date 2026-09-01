@@ -49,6 +49,12 @@
                     <Color x:Key="YFTextBoxHoverBackgroundColor">#0D1D34</Color>
                     <Color x:Key="YFTextBoxFocusedBackgroundColor">#0F2038</Color>
                     <Color x:Key="YFTextBoxHoverBorderColor">#3568A8</Color>
+                    <Color x:Key="YFStatusChipSuccessBackgroundColor">#102B27</Color>
+                    <Color x:Key="YFStatusChipSuccessBorderColor">#1E795D</Color>
+                    <Color x:Key="YFStatusChipSuccessForegroundColor">#29E7A4</Color>
+                    <Color x:Key="YFStatusChipInfoBackgroundColor">#10233E</Color>
+                    <Color x:Key="YFStatusChipInfoBorderColor">#244D7E</Color>
+                    <Color x:Key="YFStatusChipInfoForegroundColor">#A8DFFF</Color>
 
                     <SolidColorBrush x:Key="YFBackgroundBrush" Color="{StaticResource YFBackgroundColor}" />
                     <SolidColorBrush x:Key="YFNavigationBrush" Color="{StaticResource YFNavigationColor}" />
@@ -76,6 +82,12 @@
                     <SolidColorBrush x:Key="YFListRowBackgroundSelectedBrush" Color="{StaticResource YFListRowBackgroundSelectedColor}" />
                     <SolidColorBrush x:Key="YFListRowBackgroundSelectedHoverBrush" Color="{StaticResource YFListRowBackgroundSelectedHoverColor}" />
                     <SolidColorBrush x:Key="YFListRowBackgroundSelectedPressedBrush" Color="{StaticResource YFListRowBackgroundSelectedPressedColor}" />
+                    <SolidColorBrush x:Key="YFStatusChipSuccessBackgroundBrush" Color="{StaticResource YFStatusChipSuccessBackgroundColor}" />
+                    <SolidColorBrush x:Key="YFStatusChipSuccessBorderBrush" Color="{StaticResource YFStatusChipSuccessBorderColor}" />
+                    <SolidColorBrush x:Key="YFStatusChipSuccessForegroundBrush" Color="{StaticResource YFStatusChipSuccessForegroundColor}" />
+                    <SolidColorBrush x:Key="YFStatusChipInfoBackgroundBrush" Color="{StaticResource YFStatusChipInfoBackgroundColor}" />
+                    <SolidColorBrush x:Key="YFStatusChipInfoBorderBrush" Color="{StaticResource YFStatusChipInfoBorderColor}" />
+                    <SolidColorBrush x:Key="YFStatusChipInfoForegroundBrush" Color="{StaticResource YFStatusChipInfoForegroundColor}" />
 
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{StaticResource YFButtonHoverBackgroundColor}" />
                     <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="{StaticResource YFButtonPressedBackgroundColor}" />
@@ -157,6 +169,12 @@
                     <Color x:Key="YFTextBoxHoverBackgroundColor">#E4E9F5</Color>
                     <Color x:Key="YFTextBoxFocusedBackgroundColor">#FFFFFF</Color>
                     <Color x:Key="YFTextBoxHoverBorderColor">#8FAEDD</Color>
+                    <Color x:Key="YFStatusChipSuccessBackgroundColor">#DFF6EA</Color>
+                    <Color x:Key="YFStatusChipSuccessBorderColor">#3FAE7C</Color>
+                    <Color x:Key="YFStatusChipSuccessForegroundColor">#128A5E</Color>
+                    <Color x:Key="YFStatusChipInfoBackgroundColor">#DCEBFF</Color>
+                    <Color x:Key="YFStatusChipInfoBorderColor">#7FB0EE</Color>
+                    <Color x:Key="YFStatusChipInfoForegroundColor">#0B5FB8</Color>
 
                     <SolidColorBrush x:Key="YFBackgroundBrush" Color="{StaticResource YFBackgroundColor}" />
                     <SolidColorBrush x:Key="YFNavigationBrush" Color="{StaticResource YFNavigationColor}" />
@@ -184,6 +202,12 @@
                     <SolidColorBrush x:Key="YFListRowBackgroundSelectedBrush" Color="{StaticResource YFListRowBackgroundSelectedColor}" />
                     <SolidColorBrush x:Key="YFListRowBackgroundSelectedHoverBrush" Color="{StaticResource YFListRowBackgroundSelectedHoverColor}" />
                     <SolidColorBrush x:Key="YFListRowBackgroundSelectedPressedBrush" Color="{StaticResource YFListRowBackgroundSelectedPressedColor}" />
+                    <SolidColorBrush x:Key="YFStatusChipSuccessBackgroundBrush" Color="{StaticResource YFStatusChipSuccessBackgroundColor}" />
+                    <SolidColorBrush x:Key="YFStatusChipSuccessBorderBrush" Color="{StaticResource YFStatusChipSuccessBorderColor}" />
+                    <SolidColorBrush x:Key="YFStatusChipSuccessForegroundBrush" Color="{StaticResource YFStatusChipSuccessForegroundColor}" />
+                    <SolidColorBrush x:Key="YFStatusChipInfoBackgroundBrush" Color="{StaticResource YFStatusChipInfoBackgroundColor}" />
+                    <SolidColorBrush x:Key="YFStatusChipInfoBorderBrush" Color="{StaticResource YFStatusChipInfoBorderColor}" />
+                    <SolidColorBrush x:Key="YFStatusChipInfoForegroundBrush" Color="{StaticResource YFStatusChipInfoForegroundColor}" />
 
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{StaticResource YFButtonHoverBackgroundColor}" />
                     <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="{StaticResource YFButtonPressedBackgroundColor}" />
