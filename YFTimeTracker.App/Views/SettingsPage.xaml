@@ -264,7 +264,7 @@
                             </Grid>
 
                             <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Border Padding="9,5" Background="#132544" CornerRadius="7">
+                                <Border Padding="9,5" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="7">
                                     <TextBlock FontSize="11" Foreground="{StaticResource YFBlueBrush}" Text="{Binding CurrentAppVersionText}" />
                                 </Border>
                                 <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="{Binding AvailableUpdateText}" />

@@ -462,7 +462,7 @@ public sealed class StatisticsViewModel : ObservableObject
         3 => "#99387BFF",
         2 => "#66387BFF",
         1 => "#33387BFF",
-        _ => "#10233E"
+        _ => "#1F9AA8BF"
     };
 
     private void UpdateWeekdays(PlaytimeStatistics report)
