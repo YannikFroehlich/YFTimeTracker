@@ -209,15 +209,10 @@
                             <ColumnDefinition Width="0.9*" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Spacing="14">
-                            <Grid>
-                                <StackPanel>
-                                    <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="DATEN &amp; SICHERUNG" />
-                                    <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Alle Daten bleiben lokal auf diesem Computer" />
-                                </StackPanel>
-                                <Border Width="46" Height="46" HorizontalAlignment="Right" Background="#0B3039" CornerRadius="12">
-                                    <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE8F1;" />
-                                </Border>
-                            </Grid>
+                            <StackPanel Margin="0,0,44,0">
+                                <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="DATEN &amp; SICHERUNG" />
+                                <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Alle Daten bleiben lokal auf diesem Computer" />
+                            </StackPanel>
                             <NumberBox
                                 Header="Backup-Aufbewahrung (Tage)"
                                 Maximum="365"
@@ -242,6 +237,10 @@
                             </Button>
                             <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Exporte enthalten Spiele, Sessions und Einstellungen in einem ZIP-Archiv." TextWrapping="Wrap" />
                         </StackPanel>
+
+                        <Border Width="34" Height="34" Grid.ColumnSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#0B3039" CornerRadius="10">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE8F1;" />
+                        </Border>
                     </Grid>
                 </Border>
 
@@ -253,15 +252,10 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Spacing="10">
-                            <Grid>
-                                <StackPanel>
-                                    <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="APP-UPDATES" />
-                                    <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Neue Versionen sicher aus den öffentlichen GitHub-Releases laden" />
-                                </StackPanel>
-                                <Border Width="46" Height="46" HorizontalAlignment="Right" Background="#102B50" CornerRadius="12">
-                                    <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE777;" />
-                                </Border>
-                            </Grid>
+                            <StackPanel Margin="0,0,44,0">
+                                <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="APP-UPDATES" />
+                                <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Neue Versionen sicher aus den öffentlichen GitHub-Releases laden" />
+                            </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Spacing="12">
                                 <Border Padding="9,5" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="7">
@@ -300,6 +294,10 @@
                                 </StackPanel>
                             </Button>
                         </StackPanel>
+
+                        <Border Width="34" Height="34" Grid.ColumnSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#102B50" CornerRadius="10">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE777;" />
+                        </Border>
                     </Grid>
                 </Border>
 
@@ -311,15 +309,10 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Spacing="12">
-                            <Grid>
-                                <StackPanel>
-                                    <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="DIAGNOSE &amp; SUPPORT" />
-                                    <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Version, Speicherorte und lokale Fehlerprotokolle" />
-                                </StackPanel>
-                                <Border Width="46" Height="46" HorizontalAlignment="Right" Background="#291B52" CornerRadius="12">
-                                    <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="#B18CFF" Glyph="&#xE90F;" />
-                                </Border>
-                            </Grid>
+                            <StackPanel Margin="0,0,44,0">
+                                <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="DIAGNOSE &amp; SUPPORT" />
+                                <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Version, Speicherorte und lokale Fehlerprotokolle" />
+                            </StackPanel>
 
                             <Border Style="{StaticResource YFSubtleCardStyle}">
                                 <StackPanel Spacing="8">
@@ -362,6 +355,10 @@
                             </Button>
                             <TextBlock MaxWidth="260" Style="{StaticResource YFMutedTextStyle}" Text="Enthält Systeminformationen und bis zu drei aktuelle Logs, aber keine Datenbank oder Sicherungen." TextWrapping="Wrap" />
                         </StackPanel>
+
+                        <Border Width="34" Height="34" Grid.ColumnSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#291B52" CornerRadius="10">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15" Foreground="#B18CFF" Glyph="&#xE90F;" />
+                        </Border>
                     </Grid>
                 </Border>
             </Grid>
@@ -372,7 +369,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal" Spacing="9">
+                    <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Spacing="9">
                         <FontIcon FontSize="13" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE946;" />
                         <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
                     </StackPanel>
