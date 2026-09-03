@@ -52,7 +52,13 @@ public sealed class GameCatalogService(
         }, cancellationToken);
     }
 
-    public async Task UpdateGameAsync(long gameId, string displayName, string executablePath, CancellationToken cancellationToken)
+    public async Task UpdateGameAsync(
+        long gameId,
+        string displayName,
+        string executablePath,
+        int? dailyPlaytimeLimitMinutes,
+        int? weeklyPlaytimeLimitMinutes,
+        CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
 
@@ -70,6 +76,8 @@ public sealed class GameCatalogService(
         }
 
         game.Name = displayName.Trim();
+        game.DailyPlaytimeLimitMinutes = dailyPlaytimeLimitMinutes is > 0 ? dailyPlaytimeLimitMinutes : null;
+        game.WeeklyPlaytimeLimitMinutes = weeklyPlaytimeLimitMinutes is > 0 ? weeklyPlaytimeLimitMinutes : null;
         await games.UpdateAsync(game, cancellationToken);
         await games.SetPrimaryExecutableAsync(game.Id, new GameExecutable
         {

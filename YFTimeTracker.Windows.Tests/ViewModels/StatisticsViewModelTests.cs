@@ -180,6 +180,13 @@ public sealed class StatisticsViewModelTests
             TimeZoneInfo localTimeZone,
             CancellationToken cancellationToken) => Task.FromResult(report.TotalDuration);
 
+        public Task<TimeSpan> GetDurationForGameAndLocalRangeAsync(
+            long gameId,
+            DateOnly localStart,
+            DateOnly localEndExclusive,
+            TimeZoneInfo localTimeZone,
+            CancellationToken cancellationToken) => throw new NotSupportedException();
+
         public Task<IReadOnlyList<DailyPlaytimeInfo>> GetActivityHeatmapAsync(
             int weekCount,
             TimeZoneInfo localTimeZone,

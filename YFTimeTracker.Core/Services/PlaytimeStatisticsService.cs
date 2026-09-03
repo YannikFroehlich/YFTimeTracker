@@ -169,6 +169,20 @@ public sealed class PlaytimeStatisticsService(
         return GetDurationForUtcRange(relevantSessions, rangeStartUtc, rangeEndUtc);
     }
 
+    public async Task<TimeSpan> GetDurationForGameAndLocalRangeAsync(long gameId, DateOnly localStart, DateOnly localEndExclusive, TimeZoneInfo localTimeZone, CancellationToken cancellationToken)
+    {
+        if (localEndExclusive <= localStart)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var rangeStartUtc = LocalDateStartToUtc(localStart, localTimeZone);
+        var rangeEndUtc = LocalDateStartToUtc(localEndExclusive, localTimeZone);
+        var relevantSessions = await sessions.GetSessionsForGameAsync(gameId, rangeStartUtc, rangeEndUtc, cancellationToken);
+
+        return GetDurationForUtcRange(relevantSessions, rangeStartUtc, rangeEndUtc);
+    }
+
     public async Task<IReadOnlyList<DailyPlaytimeInfo>> GetActivityHeatmapAsync(int weekCount, TimeZoneInfo localTimeZone, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(localTimeZone);

@@ -114,6 +114,36 @@ public sealed class PlaytimeStatisticsServiceTests
     }
 
     [TestMethod]
+    public async Task GetDurationForGameAndLocalRangeAsync_filters_by_game_and_includes_open_session_up_to_now()
+    {
+        var clock = new FakeClock(Utc(2026, 8, 30, 12));
+        var games = new InMemoryGameRepository();
+        var alpha = await AddGameAsync(games, "Alpha", clock.UtcNow);
+        var beta = await AddGameAsync(games, "Beta", clock.UtcNow);
+        var sessions = new InMemoryGameSessionRepository(id => id == alpha.Id ? alpha : id == beta.Id ? beta : null);
+
+        await AddClosedSessionAsync(sessions, alpha.Id, Utc(2026, 8, 30, 8), Utc(2026, 8, 30, 9));
+        await AddClosedSessionAsync(sessions, beta.Id, Utc(2026, 8, 30, 8), Utc(2026, 8, 30, 11));
+        await sessions.AddAsync(new GameSession
+        {
+            GameId = alpha.Id,
+            StartedAtUtc = Utc(2026, 8, 30, 11),
+            LastSeenAtUtc = clock.UtcNow,
+            BootSessionId = "boot"
+        }, CancellationToken.None);
+
+        var service = CreateService(sessions, clock);
+        var duration = await service.GetDurationForGameAndLocalRangeAsync(
+            alpha.Id,
+            new DateOnly(2026, 8, 30),
+            new DateOnly(2026, 8, 31),
+            TimeZoneInfo.Utc,
+            CancellationToken.None);
+
+        Assert.AreEqual(TimeSpan.FromHours(2), duration);
+    }
+
+    [TestMethod]
     public async Task GetStatisticsAsync_aggregates_last_seven_days_previous_period_games_and_weekdays()
     {
         var clock = new FakeClock(Utc(2026, 8, 30, 12));

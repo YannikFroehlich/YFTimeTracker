@@ -15,6 +15,8 @@ public sealed class TrayService : ITrayService
     private const uint NimAdd = 0x00000000;
     private const uint NimModify = 0x00000001;
     private const uint NimDelete = 0x00000002;
+    private const uint NifInfo = 0x00000010;
+    private const uint NiifInfo = 0x00000001;
     private const uint WmLButtonDoubleClick = 0x0203;
     private const uint WmRButtonUp = 0x0205;
     private const int GwlpWndProc = -4;
@@ -215,7 +217,9 @@ public sealed class TrayService : ITrayService
             uFlags = NifMessage | NifIcon | NifTip,
             uCallbackMessage = CallbackMessage,
             hIcon = iconHandle,
-            szTip = TrimForTray(CreateTrayToolTip())
+            szTip = TrimForTray(CreateTrayToolTip()),
+            szInfo = string.Empty,
+            szInfoTitle = string.Empty
         };
 
         Shell_NotifyIcon(message, ref data);
@@ -269,9 +273,36 @@ public sealed class TrayService : ITrayService
         UpdateIcon(NimModify);
     }
 
+    public void ShowBalloonNotification(string title, string message)
+    {
+        if (hwnd == IntPtr.Zero || !iconAdded)
+        {
+            return;
+        }
+
+        var data = new NotifyIconData
+        {
+            cbSize = Marshal.SizeOf<NotifyIconData>(),
+            hWnd = hwnd,
+            uID = IconId,
+            uFlags = NifInfo,
+            szTip = string.Empty,
+            szInfoTitle = TrimForBalloon(title, 63),
+            szInfo = TrimForBalloon(message, 255),
+            dwInfoFlags = NiifInfo
+        };
+
+        Shell_NotifyIcon(NimModify, ref data);
+    }
+
     private static string TrimForTray(string text)
     {
         return text.Length > 127 ? text[..124] + "..." : text;
+    }
+
+    private static string TrimForBalloon(string text, int maxLength)
+    {
+        return text.Length > maxLength ? text[..(maxLength - 3)] + "..." : text;
     }
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
@@ -330,6 +361,21 @@ public sealed class TrayService : ITrayService
 
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
         public string szTip;
+
+        public uint dwState;
+        public uint dwStateMask;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+        public string szInfo;
+
+        public uint uTimeoutOrVersion;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+        public string szInfoTitle;
+
+        public uint dwInfoFlags;
+        public Guid guidItem;
+        public IntPtr hBalloonIcon;
     }
 
     [StructLayout(LayoutKind.Sequential)]

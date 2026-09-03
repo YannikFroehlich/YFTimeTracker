@@ -331,6 +331,28 @@
                                 <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding PrimaryExecutablePath}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding PrimaryExecutablePath}" />
                             </StackPanel>
                         </Border>
+
+                        <Border Style="{StaticResource YFCardStyle}">
+                            <StackPanel Spacing="13">
+                                <StackPanel Spacing="5">
+                                    <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SPIELZEIT-LIMITS" />
+                                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Optionale Benachrichtigung, wenn ein Zeitlimit erreicht wird. 0 = kein Limit." TextWrapping="Wrap" />
+                                </StackPanel>
+                                <NumberBox
+                                    Header="Tageslimit (Minuten)"
+                                    Minimum="0"
+                                    Maximum="1440"
+                                    SpinButtonPlacementMode="Compact"
+                                    Value="{Binding DailyPlaytimeLimitMinutes, Mode=TwoWay}" />
+                                <NumberBox
+                                    Header="Wochenlimit (Minuten)"
+                                    Minimum="0"
+                                    Maximum="10080"
+                                    SpinButtonPlacementMode="Compact"
+                                    Value="{Binding WeeklyPlaytimeLimitMinutes, Mode=TwoWay}" />
+                                <Button HorizontalAlignment="Stretch" Command="{Binding SaveGameCommand}" Style="{StaticResource YFAccentButtonStyle}" Content="Speichern" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Grid>
 

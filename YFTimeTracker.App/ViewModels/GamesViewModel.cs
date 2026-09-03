@@ -404,7 +404,13 @@ public sealed class GamesViewModel : ObservableObject
             }
             else
             {
-                await catalog.UpdateGameAsync(SelectedGame.Id, DisplayName, ExecutablePath, CancellationToken.None);
+                await catalog.UpdateGameAsync(
+                    SelectedGame.Id,
+                    DisplayName,
+                    ExecutablePath,
+                    SelectedGame.Model.DailyPlaytimeLimitMinutes,
+                    SelectedGame.Model.WeeklyPlaytimeLimitMinutes,
+                    CancellationToken.None);
             }
 
             await RefreshAsync();

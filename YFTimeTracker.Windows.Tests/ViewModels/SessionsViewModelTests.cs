@@ -225,7 +225,7 @@ public sealed class SessionsViewModelTests
 
         public Task<Game> AddGameAsync(string executablePath, string? displayName, CancellationToken cancellationToken) => throw new NotSupportedException();
 
-        public Task UpdateGameAsync(long gameId, string displayName, string executablePath, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task UpdateGameAsync(long gameId, string displayName, string executablePath, int? dailyPlaytimeLimitMinutes, int? weeklyPlaytimeLimitMinutes, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task DeleteGameAsync(long gameId, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
@@ -308,6 +308,13 @@ public sealed class SessionsViewModelTests
 
         public Task<IReadOnlyList<GameSession>> GetSessionsForGameAsync(long gameId, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<GameSession>>(Items.Where(session => session.GameId == gameId).ToArray());
+
+        public Task<IReadOnlyList<GameSession>> GetSessionsForGameAsync(long gameId, DateTimeOffset fromUtc, DateTimeOffset toUtc, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<GameSession>>(Items
+                .Where(session => session.GameId == gameId)
+                .Where(session => (session.EndedAtUtc ?? session.LastSeenAtUtc) > fromUtc)
+                .Where(session => session.StartedAtUtc < toUtc)
+                .ToArray());
 
         public Task<IReadOnlyList<GameSession>> GetRecentCompletedSessionsAsync(int count, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<GameSession>>(Items.Where(session => !session.IsOpen).Take(count).ToArray());

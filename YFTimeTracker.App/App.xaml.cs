@@ -73,6 +73,7 @@ public partial class App : Application
                 services.AddSingleton<IThemeService, ThemeService>();
                 services.AddSingleton<IStartupService, WinUiStartupService>();
                 services.AddSingleton<ITrayService, TrayService>();
+                services.AddSingleton<IPlaytimeLimitNotifier, PlaytimeLimitNotifier>();
                 services.AddSingleton<IAppUpdateService, VelopackAppUpdateService>();
                 services.AddSingleton<IAppDiagnosticsService, AppDiagnosticsService>();
                 services.AddSingleton<IFirstRunSetupService, FirstRunSetupService>();
@@ -101,6 +102,7 @@ public partial class App : Application
 
         MainWindow = Services.GetRequiredService<MainWindow>();
         Services.GetRequiredService<ITrayService>().Initialize(MainWindow);
+        Services.GetRequiredService<IPlaytimeLimitNotifier>().Initialize();
         MainWindow.Activate();
 
         var setupWasShown = await MainWindow.ShowFirstRunSetupIfRequiredAsync();
@@ -141,6 +143,7 @@ public partial class App : Application
             if (app.host is not null)
             {
                 await app.host.Services.GetRequiredService<IGameTrackingService>().StopAsync(CancellationToken.None);
+                app.host.Services.GetRequiredService<IPlaytimeLimitNotifier>().Dispose();
                 app.host.Services.GetRequiredService<ITrayService>().Dispose();
                 await app.host.StopAsync(CancellationToken.None);
                 app.host.Dispose();

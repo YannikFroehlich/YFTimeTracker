@@ -43,6 +43,8 @@ public sealed class GameDetailsViewModel : ObservableObject
     private string statusMessage = "Spieldetails werden geladen …";
     private string sessionEditorTitle = "NEUE SESSION";
     private string sessionEditorDescription = "Ergänze fehlende Spielzeit mit lokalen Start- und Endzeiten.";
+    private double dailyPlaytimeLimitMinutes;
+    private double weeklyPlaytimeLimitMinutes;
     private string sessionSaveButtonText = "Session hinzufügen";
     private DateTimeOffset editorStartDate;
     private DateTimeOffset editorEndDate;
@@ -105,6 +107,18 @@ public sealed class GameDetailsViewModel : ObservableObject
     public string InstallDirectory { get => installDirectory; private set => SetProperty(ref installDirectory, value); }
 
     public string PrimaryExecutablePath { get => primaryExecutablePath; private set => SetProperty(ref primaryExecutablePath, value); }
+
+    public double DailyPlaytimeLimitMinutes
+    {
+        get => dailyPlaytimeLimitMinutes;
+        set => SetProperty(ref dailyPlaytimeLimitMinutes, value);
+    }
+
+    public double WeeklyPlaytimeLimitMinutes
+    {
+        get => weeklyPlaytimeLimitMinutes;
+        set => SetProperty(ref weeklyPlaytimeLimitMinutes, value);
+    }
 
     public string TotalPlaytimeText { get => totalPlaytimeText; private set => SetProperty(ref totalPlaytimeText, value); }
 
@@ -298,6 +312,8 @@ public sealed class GameDetailsViewModel : ObservableObject
             ? "Kein Installationsordner hinterlegt"
             : game.InstallDirectory;
         PrimaryExecutablePath = game.PrimaryExecutable?.ExecutablePath ?? string.Empty;
+        DailyPlaytimeLimitMinutes = game.DailyPlaytimeLimitMinutes ?? 0;
+        WeeklyPlaytimeLimitMinutes = game.WeeklyPlaytimeLimitMinutes ?? 0;
 
         Executables.Clear();
         foreach (var executable in game.Executables
@@ -420,6 +436,8 @@ public sealed class GameDetailsViewModel : ObservableObject
                 loadedGame.Id,
                 GameName,
                 loadedGame.PrimaryExecutable?.ExecutablePath ?? string.Empty,
+                DailyPlaytimeLimitMinutes > 0 ? (int)DailyPlaytimeLimitMinutes : null,
+                WeeklyPlaytimeLimitMinutes > 0 ? (int)WeeklyPlaytimeLimitMinutes : null,
                 CancellationToken.None);
             await RefreshAsync();
             StatusMessage = "Spielname gespeichert";
