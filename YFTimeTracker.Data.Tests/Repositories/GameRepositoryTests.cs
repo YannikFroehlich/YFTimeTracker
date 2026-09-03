@@ -193,4 +193,27 @@ public sealed class GameRepositoryTests
         Assert.IsTrue(game.Executables[0].IsPrimary);
         Assert.AreEqual(@"C:\GAMES\LEGACY.EXE", game.Executables[0].ExecutablePathKey);
     }
+
+    [TestMethod]
+    public async Task Migration_leaves_playtime_limits_null_for_pre_existing_games()
+    {
+        using var paths = new TempAppPathProvider();
+        var factory = new TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            var migrator = context.Database.GetService<IMigrator>();
+            await migrator.MigrateAsync("20260831120000_AddReadModelIndexes");
+            var addedAtUtc = DateTimeOffset.Parse("2026-08-31T10:00:00Z").UtcTicks;
+            await context.Database.ExecuteSqlRawAsync(
+                "INSERT INTO Games (Name, ExecutablePath, ExecutablePathKey, ExecutableName, Source, AddedAtUtc) VALUES ({0}, {1}, {2}, {3}, {4}, {5})",
+                "Pre-migration Game", @"C:\Games\Existing.exe", @"C:\GAMES\EXISTING.EXE", "Existing.exe", 0, addedAtUtc);
+            await migrator.MigrateAsync();
+        }
+
+        var repository = new GameRepository(factory);
+        var game = (await repository.GetAllAsync(CancellationToken.None)).Single();
+        Assert.AreEqual("Pre-migration Game", game.Name);
+        Assert.IsNull(game.DailyPlaytimeLimitMinutes);
+        Assert.IsNull(game.WeeklyPlaytimeLimitMinutes);
+    }
 }

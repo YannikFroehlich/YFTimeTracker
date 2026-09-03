@@ -64,6 +64,20 @@ public sealed class GameSessionRepository(IDbContextFactory<YFTimeTrackerDbConte
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<GameSession>> GetSessionsForGameAsync(long gameId, DateTimeOffset fromUtc, DateTimeOffset toUtc, CancellationToken cancellationToken)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        return await context.GameSessions
+            .Include(session => session.Game)
+            .ThenInclude(game => game!.Executables)
+            .AsNoTracking()
+            .Where(session => session.GameId == gameId)
+            .Where(session => (session.EndedAtUtc ?? session.LastSeenAtUtc) > fromUtc)
+            .Where(session => session.StartedAtUtc < toUtc)
+            .OrderByDescending(session => session.StartedAtUtc)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<GameSession>> GetRecentCompletedSessionsAsync(int count, CancellationToken cancellationToken)
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);

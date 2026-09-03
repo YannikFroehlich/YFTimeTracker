@@ -8,7 +8,13 @@ public interface IGameCatalogService
 
     Task<Game> AddGameAsync(string executablePath, string? displayName, CancellationToken cancellationToken);
 
-    Task UpdateGameAsync(long gameId, string displayName, string executablePath, CancellationToken cancellationToken);
+    Task UpdateGameAsync(
+        long gameId,
+        string displayName,
+        string executablePath,
+        int? dailyPlaytimeLimitMinutes,
+        int? weeklyPlaytimeLimitMinutes,
+        CancellationToken cancellationToken);
 
     Task DeleteGameAsync(long gameId, CancellationToken cancellationToken);
 }

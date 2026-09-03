@@ -12,6 +12,8 @@ public interface IGameSessionRepository
 
     Task<IReadOnlyList<GameSession>> GetSessionsForGameAsync(long gameId, CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<GameSession>> GetSessionsForGameAsync(long gameId, DateTimeOffset fromUtc, DateTimeOffset toUtc, CancellationToken cancellationToken);
+
     Task<IReadOnlyList<GameSession>> GetRecentCompletedSessionsAsync(int count, CancellationToken cancellationToken);
 
     Task<GameSession> AddAsync(GameSession session, CancellationToken cancellationToken);

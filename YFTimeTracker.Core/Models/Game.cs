@@ -19,6 +19,10 @@ public sealed class Game
 
     public DateTimeOffset AddedAtUtc { get; set; }
 
+    public int? DailyPlaytimeLimitMinutes { get; set; }
+
+    public int? WeeklyPlaytimeLimitMinutes { get; set; }
+
     [JsonIgnore]
     public string LegacyExecutablePath { get; set; } = string.Empty;
 

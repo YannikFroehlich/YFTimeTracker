@@ -247,6 +247,16 @@ internal sealed class InMemoryGameSessionRepository(Func<long, Game?> gameResolv
         return Task.FromResult<IReadOnlyList<GameSession>>(sessions.Where(session => session.GameId == gameId).Select(Clone).ToArray());
     }
 
+    public Task<IReadOnlyList<GameSession>> GetSessionsForGameAsync(long gameId, DateTimeOffset fromUtc, DateTimeOffset toUtc, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var query = sessions
+            .Where(session => session.GameId == gameId)
+            .Where(session => (session.EndedAtUtc ?? session.LastSeenAtUtc) > fromUtc)
+            .Where(session => session.StartedAtUtc < toUtc);
+        return Task.FromResult<IReadOnlyList<GameSession>>(query.Select(Clone).ToArray());
+    }
+
     public Task<IReadOnlyList<GameSession>> GetRecentCompletedSessionsAsync(int count, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
