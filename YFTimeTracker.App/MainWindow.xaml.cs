@@ -1,9 +1,11 @@
+using System.Globalization;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Serilog;
 using WinRT.Interop;
 using Windows.Graphics;
@@ -32,6 +34,9 @@ public sealed partial class MainWindow : Window
     private bool minimizeOnClose = true;
     private bool firstRunSetupActive;
     private bool changelogCheckStarted;
+    private string? currentProfileDisplayName;
+    private string? currentProfileAccentColor;
+    private string? pendingProfileAccentColor;
 
     public MainWindow()
     {
@@ -62,6 +67,9 @@ public sealed partial class MainWindow : Window
         RootGrid.Loaded += async (_, _) =>
         {
             minimizeOnClose = await settingsStore.GetBoolAsync(AppSettingKeys.MinimizeOnClose, true, CancellationToken.None);
+            var profileName = await settingsStore.GetAsync(AppSettingKeys.ProfileDisplayName, CancellationToken.None);
+            var profileAccentColor = await settingsStore.GetAsync(AppSettingKeys.ProfileAccentColor, CancellationToken.None);
+            ApplyProfileHeader(profileName, profileAccentColor);
             await dashboardViewModel.RefreshAsync();
         };
     }
@@ -132,6 +140,84 @@ public sealed partial class MainWindow : Window
     private void ThemeService_ThemeChanged(object? sender, ElementTheme theme)
     {
         DispatcherQueue.TryEnqueue(() => RootGrid.RequestedTheme = theme);
+    }
+
+    private void ApplyProfileHeader(string? displayName, string? accentColorHex)
+    {
+        currentProfileDisplayName = displayName;
+        currentProfileAccentColor = accentColorHex;
+
+        var trimmedName = displayName?.Trim();
+        ProfileNameText.Text = string.IsNullOrWhiteSpace(trimmedName) ? "Lokales Profil" : trimmedName;
+        ProfileInitialsText.Text = string.IsNullOrWhiteSpace(trimmedName) ? "YF" : GetInitials(trimmedName!);
+        ProfileAvatarBorder.Background = string.IsNullOrWhiteSpace(accentColorHex)
+            ? (Brush)Application.Current.Resources["YFLogoGradientBrush"]
+            : new SolidColorBrush(ParseAccentColor(accentColorHex));
+    }
+
+    private void ProfileFlyout_Opening(object? sender, object e)
+    {
+        ProfileNameInput.Text = currentProfileDisplayName ?? string.Empty;
+        pendingProfileAccentColor = currentProfileAccentColor;
+        HighlightSelectedSwatch(pendingProfileAccentColor);
+    }
+
+    private void ProfileSwatch_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: string accentColorHex })
+        {
+            return;
+        }
+
+        pendingProfileAccentColor = string.IsNullOrEmpty(accentColorHex) ? null : accentColorHex;
+        HighlightSelectedSwatch(pendingProfileAccentColor);
+    }
+
+    private void HighlightSelectedSwatch(string? accentColorHex)
+    {
+        foreach (var child in ProfileSwatchPanel.Children)
+        {
+            if (child is not Button { Tag: string swatchColorHex } swatch)
+            {
+                continue;
+            }
+
+            var isSelected = string.Equals(swatchColorHex, accentColorHex ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+            swatch.BorderBrush = isSelected
+                ? (Brush)Application.Current.Resources["YFTextBrush"]
+                : new SolidColorBrush(Colors.Transparent);
+        }
+    }
+
+    private async void ProfileSaveButton_Click(object sender, RoutedEventArgs e)
+    {
+        var name = ProfileNameInput.Text.Trim();
+        await settingsStore.SetAsync(AppSettingKeys.ProfileDisplayName, name, CancellationToken.None);
+        await settingsStore.SetAsync(AppSettingKeys.ProfileAccentColor, pendingProfileAccentColor ?? string.Empty, CancellationToken.None);
+        ApplyProfileHeader(name, pendingProfileAccentColor);
+        ProfileFlyout.Hide();
+    }
+
+    private static string GetInitials(string name)
+    {
+        var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return words.Length == 0 ? "?" : string.Concat(words.Take(2).Select(word => char.ToUpperInvariant(word[0])));
+    }
+
+    private static Color ParseAccentColor(string hex)
+    {
+        var value = hex.Trim().TrimStart('#');
+        if (value.Length == 6)
+        {
+            value = "FF" + value;
+        }
+
+        if (value.Length == 8 && uint.TryParse(value, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var argb))
+        {
+            return Color.FromArgb((byte)(argb >> 24), (byte)(argb >> 16), (byte)(argb >> 8), (byte)argb);
+        }
+
+        return Color.FromArgb(255, 49, 130, 255);
     }
 
     public async Task<bool> ShowFirstRunSetupIfRequiredAsync(bool force = false)
