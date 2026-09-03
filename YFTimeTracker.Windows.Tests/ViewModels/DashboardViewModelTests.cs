@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using Microsoft.UI.Xaml;
 using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
@@ -16,6 +17,7 @@ public sealed class DashboardViewModelTests
         var viewModel = new DashboardViewModel(
             statistics,
             new FakeTrackingService(),
+            new FakeGameRepository(new Dictionary<long, Game>()),
             new FixedClock(now));
 
         await viewModel.RefreshAsync();
@@ -41,6 +43,46 @@ public sealed class DashboardViewModelTests
         Assert.AreEqual(0, gamePropertyChanges);
 
         void CountCollectionChange(object? sender, NotifyCollectionChangedEventArgs args) => collectionChanges++;
+    }
+
+    [TestMethod]
+    public async Task Active_game_with_daily_limit_shows_progress()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var runningGame = new RunningGameInfo(1, "Test Game", now.AddMinutes(-30), TimeSpan.FromMinutes(30), @"C:\Games\Test.exe");
+        var stats = CreateStats(now, TimeSpan.Zero) with { RunningGames = [runningGame] };
+        var statistics = new FakeStatisticsService(stats) { GameDuration = TimeSpan.FromMinutes(45) };
+        var game = new Game { Id = 1, Name = "Test Game", DailyPlaytimeLimitMinutes = 60, AddedAtUtc = now };
+        var viewModel = new DashboardViewModel(
+            statistics,
+            new FakeTrackingService(),
+            new FakeGameRepository(new Dictionary<long, Game> { [1] = game }),
+            new FixedClock(now));
+
+        await viewModel.RefreshAsync();
+
+        Assert.AreEqual(Visibility.Visible, viewModel.ActiveDailyProgressVisibility);
+        Assert.AreEqual("45 / 60 Min heute", viewModel.ActiveDailyProgressText);
+        Assert.AreEqual(75, viewModel.ActiveDailyProgressPercent);
+    }
+
+    [TestMethod]
+    public async Task Active_game_without_daily_limit_hides_progress()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var runningGame = new RunningGameInfo(1, "Test Game", now.AddMinutes(-30), TimeSpan.FromMinutes(30), @"C:\Games\Test.exe");
+        var stats = CreateStats(now, TimeSpan.Zero) with { RunningGames = [runningGame] };
+        var statistics = new FakeStatisticsService(stats);
+        var game = new Game { Id = 1, Name = "Test Game", AddedAtUtc = now };
+        var viewModel = new DashboardViewModel(
+            statistics,
+            new FakeTrackingService(),
+            new FakeGameRepository(new Dictionary<long, Game> { [1] = game }),
+            new FixedClock(now));
+
+        await viewModel.RefreshAsync();
+
+        Assert.AreEqual(Visibility.Collapsed, viewModel.ActiveDailyProgressVisibility);
     }
 
     private static DashboardStats CreateStats(DateTimeOffset now, TimeSpan liveIncrease)
@@ -89,11 +131,40 @@ public sealed class DashboardViewModelTests
         public Task<TimeSpan> GetDurationForLocalRangeAsync(DateOnly localStart, DateOnly localEndExclusive, TimeZoneInfo localTimeZone, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
+        public TimeSpan GameDuration { get; set; }
+
         public Task<TimeSpan> GetDurationForGameAndLocalRangeAsync(long gameId, DateOnly localStart, DateOnly localEndExclusive, TimeZoneInfo localTimeZone, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
+            Task.FromResult(GameDuration);
 
         public Task<IReadOnlyList<DailyPlaytimeInfo>> GetActivityHeatmapAsync(int weekCount, TimeZoneInfo localTimeZone, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+    }
+
+    private sealed class FakeGameRepository(IReadOnlyDictionary<long, Game> gamesById) : IGameRepository
+    {
+        public Task<IReadOnlyList<Game>> GetAllAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<Game>>(gamesById.Values.ToArray());
+
+        public Task<Game?> GetByIdAsync(long id, CancellationToken cancellationToken) =>
+            Task.FromResult(gamesById.GetValueOrDefault(id));
+
+        public Task<Game?> GetByExecutablePathKeyAsync(string executablePathKey, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<Game?> GetByExternalIdAsync(GameSource source, string externalGameId, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<Game> AddAsync(Game game, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task UpdateAsync(Game game, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<GameExecutable> AddExecutableAsync(long gameId, GameExecutable executable, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task SetPrimaryExecutableAsync(long gameId, GameExecutable executable, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task DeleteAsync(long id, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class FakeTrackingService : IGameTrackingService

@@ -3,8 +3,12 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:YFTimeTracker.App.Controls"
+    xmlns:converters="using:YFTimeTracker.App.Converters"
     Loaded="Page_Loaded"
     Unloaded="Page_Unloaded">
+    <Page.Resources>
+        <converters:HexColorBrushConverter x:Key="HexColorBrushConverter" />
+    </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <Grid x:Name="DetailsRoot" Padding="24,4,24,28" SizeChanged="DetailsRoot_SizeChanged">
             <Grid.RowDefinitions>
@@ -344,12 +348,30 @@
                                     Maximum="1440"
                                     SpinButtonPlacementMode="Compact"
                                     Value="{Binding DailyPlaytimeLimitMinutes, Mode=TwoWay}" />
+                                <StackPanel Spacing="5" Visibility="{Binding DailyProgressVisibility}">
+                                    <ProgressBar
+                                        Height="5"
+                                        Background="{ThemeResource YFButtonBackgroundBrush}"
+                                        Foreground="{Binding DailyProgressColor, Converter={StaticResource HexColorBrushConverter}}"
+                                        Maximum="100"
+                                        Value="{Binding DailyProgressPercent}" />
+                                    <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding DailyProgressText}" />
+                                </StackPanel>
                                 <NumberBox
                                     Header="Wochenlimit (Minuten)"
                                     Minimum="0"
                                     Maximum="10080"
                                     SpinButtonPlacementMode="Compact"
                                     Value="{Binding WeeklyPlaytimeLimitMinutes, Mode=TwoWay}" />
+                                <StackPanel Spacing="5" Visibility="{Binding WeeklyProgressVisibility}">
+                                    <ProgressBar
+                                        Height="5"
+                                        Background="{ThemeResource YFButtonBackgroundBrush}"
+                                        Foreground="{Binding WeeklyProgressColor, Converter={StaticResource HexColorBrushConverter}}"
+                                        Maximum="100"
+                                        Value="{Binding WeeklyProgressPercent}" />
+                                    <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding WeeklyProgressText}" />
+                                </StackPanel>
                                 <Button HorizontalAlignment="Stretch" Command="{Binding SaveGameCommand}" Style="{StaticResource YFAccentButtonStyle}" Content="Speichern" />
                             </StackPanel>
                         </Border>

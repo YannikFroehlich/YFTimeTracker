@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using YFTimeTracker.App.Services;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
+using YFTimeTracker.Core.Services;
 using YFTimeTracker.Core.Validation;
 
 namespace YFTimeTracker.App.ViewModels;
@@ -13,6 +14,8 @@ namespace YFTimeTracker.App.ViewModels;
 public sealed class GameDetailsViewModel : ObservableObject
 {
     private static readonly CultureInfo GermanCulture = CultureInfo.GetCultureInfo("de-DE");
+    private const string ProgressNormalColor = "#3182FF";
+    private const string ProgressLimitReachedColor = "#FF5368";
     private readonly IGameRepository games;
     private readonly IGameCatalogService catalog;
     private readonly IGameSessionRepository sessionRepository;
@@ -45,6 +48,14 @@ public sealed class GameDetailsViewModel : ObservableObject
     private string sessionEditorDescription = "Ergänze fehlende Spielzeit mit lokalen Start- und Endzeiten.";
     private double dailyPlaytimeLimitMinutes;
     private double weeklyPlaytimeLimitMinutes;
+    private string dailyProgressText = string.Empty;
+    private double dailyProgressPercent;
+    private string dailyProgressColor = ProgressNormalColor;
+    private Visibility dailyProgressVisibility = Visibility.Collapsed;
+    private string weeklyProgressText = string.Empty;
+    private double weeklyProgressPercent;
+    private string weeklyProgressColor = ProgressNormalColor;
+    private Visibility weeklyProgressVisibility = Visibility.Collapsed;
     private string sessionSaveButtonText = "Session hinzufügen";
     private DateTimeOffset editorStartDate;
     private DateTimeOffset editorEndDate;
@@ -119,6 +130,22 @@ public sealed class GameDetailsViewModel : ObservableObject
         get => weeklyPlaytimeLimitMinutes;
         set => SetProperty(ref weeklyPlaytimeLimitMinutes, value);
     }
+
+    public string DailyProgressText { get => dailyProgressText; private set => SetProperty(ref dailyProgressText, value); }
+
+    public double DailyProgressPercent { get => dailyProgressPercent; private set => SetProperty(ref dailyProgressPercent, value); }
+
+    public string DailyProgressColor { get => dailyProgressColor; private set => SetProperty(ref dailyProgressColor, value); }
+
+    public Visibility DailyProgressVisibility { get => dailyProgressVisibility; private set => SetProperty(ref dailyProgressVisibility, value); }
+
+    public string WeeklyProgressText { get => weeklyProgressText; private set => SetProperty(ref weeklyProgressText, value); }
+
+    public double WeeklyProgressPercent { get => weeklyProgressPercent; private set => SetProperty(ref weeklyProgressPercent, value); }
+
+    public string WeeklyProgressColor { get => weeklyProgressColor; private set => SetProperty(ref weeklyProgressColor, value); }
+
+    public Visibility WeeklyProgressVisibility { get => weeklyProgressVisibility; private set => SetProperty(ref weeklyProgressVisibility, value); }
 
     public string TotalPlaytimeText { get => totalPlaytimeText; private set => SetProperty(ref totalPlaytimeText, value); }
 
@@ -250,6 +277,7 @@ public sealed class GameDetailsViewModel : ObservableObject
             loadedGame = game;
             ApplyGame(game, resolvedIconPath);
             ApplySessions(storedSessions);
+            UpdateLimitProgress(game, storedSessions);
             ContentVisibility = Visibility.Visible;
             ErrorVisibility = Visibility.Collapsed;
             saveGameCommand.NotifyCanExecuteChanged();
@@ -406,21 +434,49 @@ public sealed class GameDetailsViewModel : ObservableObject
 
     private TimeSpan GetDurationForLocalDay(IEnumerable<GameSession> sessions, DateOnly date)
     {
-        var startUtc = LocalDateStartToUtc(date);
-        var endUtc = LocalDateStartToUtc(date.AddDays(1));
-        var total = TimeSpan.Zero;
-        foreach (var session in sessions)
+        return SessionOverlapCalculator.GetDurationForLocalRange(
+            sessions,
+            date,
+            date.AddDays(1),
+            TimeZoneInfo.Local,
+            clock.UtcNow);
+    }
+
+    private void UpdateLimitProgress(Game game, IReadOnlyList<GameSession> storedSessions)
+    {
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(clock.UtcNow, TimeZoneInfo.Local).Date);
+
+        if (game.DailyPlaytimeLimitMinutes is { } dailyLimit && dailyLimit > 0)
         {
-            var sessionEnd = session.EndedAtUtc ?? clock.UtcNow;
-            var overlapStart = session.StartedAtUtc > startUtc ? session.StartedAtUtc : startUtc;
-            var overlapEnd = sessionEnd < endUtc ? sessionEnd : endUtc;
-            if (overlapEnd > overlapStart)
-            {
-                total += overlapEnd - overlapStart;
-            }
+            var minutes = GetDurationForLocalDay(storedSessions, today).TotalMinutes;
+            DailyProgressText = $"{minutes:0} / {dailyLimit} Min heute";
+            DailyProgressPercent = Math.Clamp(minutes / dailyLimit * 100, 0, 100);
+            DailyProgressColor = minutes >= dailyLimit ? ProgressLimitReachedColor : ProgressNormalColor;
+            DailyProgressVisibility = Visibility.Visible;
+        }
+        else
+        {
+            DailyProgressVisibility = Visibility.Collapsed;
         }
 
-        return total;
+        if (game.WeeklyPlaytimeLimitMinutes is { } weeklyLimit && weeklyLimit > 0)
+        {
+            var weekStart = PlaytimeStatisticsService.GetIsoWeekStart(today);
+            var minutes = SessionOverlapCalculator.GetDurationForLocalRange(
+                storedSessions,
+                weekStart,
+                weekStart.AddDays(7),
+                TimeZoneInfo.Local,
+                clock.UtcNow).TotalMinutes;
+            WeeklyProgressText = $"{minutes:0} / {weeklyLimit} Min diese Woche";
+            WeeklyProgressPercent = Math.Clamp(minutes / weeklyLimit * 100, 0, 100);
+            WeeklyProgressColor = minutes >= weeklyLimit ? ProgressLimitReachedColor : ProgressNormalColor;
+            WeeklyProgressVisibility = Visibility.Visible;
+        }
+        else
+        {
+            WeeklyProgressVisibility = Visibility.Collapsed;
+        }
     }
 
     private async Task SaveGameAsync()
@@ -587,12 +643,6 @@ public sealed class GameDetailsViewModel : ObservableObject
     {
         var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         return words.Length == 0 ? "?" : string.Concat(words.Take(2).Select(word => char.ToUpperInvariant(word[0])));
-    }
-
-    private static DateTimeOffset LocalDateStartToUtc(DateOnly date)
-    {
-        var local = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
-        return new DateTimeOffset(local, TimeZoneInfo.Local.GetUtcOffset(local)).ToUniversalTime();
     }
 
     private static bool TryCreateUtc(DateTimeOffset date, TimeSpan time, out DateTimeOffset utc)

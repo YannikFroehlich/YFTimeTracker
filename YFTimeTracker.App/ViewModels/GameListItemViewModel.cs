@@ -1,9 +1,13 @@
+using Microsoft.UI.Xaml;
 using YFTimeTracker.Core.Models;
+using YFTimeTracker.Core.Services;
 
 namespace YFTimeTracker.App.ViewModels;
 
 public sealed class GameListItemViewModel(Game game, string? iconPath = null)
 {
+    private const string ProgressNormalColor = "#3182FF";
+    private const string ProgressLimitReachedColor = "#FF5368";
     private readonly IReadOnlyList<GameSession> gameSessions = [];
     private readonly DateTimeOffset nowUtc = DateTimeOffset.UtcNow;
 
@@ -87,6 +91,30 @@ public sealed class GameListItemViewModel(Game game, string? iconPath = null)
     public string ActivityText => IsRunning ? "AKTIV" : TotalDuration > TimeSpan.Zero ? TotalPlaytime : "NEU";
 
     public string ActivityColor => IsRunning ? "#29E7A4" : TotalDuration > TimeSpan.Zero ? "#3182FF" : "#8391A8";
+
+    public Visibility DailyProgressVisibility => game.DailyPlaytimeLimitMinutes is > 0
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public string DailyProgressText => game.DailyPlaytimeLimitMinutes is { } limit && limit > 0
+        ? $"{GetTodayDuration().TotalMinutes:0} / {limit} Min heute"
+        : string.Empty;
+
+    public double DailyProgressPercent => game.DailyPlaytimeLimitMinutes is { } limit && limit > 0
+        ? Math.Clamp(GetTodayDuration().TotalMinutes / limit * 100, 0, 100)
+        : 0;
+
+    public string DailyProgressColor => game.DailyPlaytimeLimitMinutes is { } limit
+        && limit > 0
+        && GetTodayDuration().TotalMinutes >= limit
+            ? ProgressLimitReachedColor
+            : ProgressNormalColor;
+
+    private TimeSpan GetTodayDuration()
+    {
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(nowUtc, TimeZoneInfo.Local).Date);
+        return SessionOverlapCalculator.GetDurationForLocalRange(gameSessions, today, today.AddDays(1), TimeZoneInfo.Local, nowUtc);
+    }
 
     public string SearchableText => string.Join(
         ' ',
