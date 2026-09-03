@@ -75,6 +75,7 @@ public partial class App : Application
                 services.AddSingleton<ITrayService, TrayService>();
                 services.AddSingleton<IPlaytimeLimitNotifier, PlaytimeLimitNotifier>();
                 services.AddSingleton<IAppUpdateService, VelopackAppUpdateService>();
+                services.AddSingleton<IUpdateNotificationLogger, UpdateNotificationLogger>();
                 services.AddSingleton<IAppDiagnosticsService, AppDiagnosticsService>();
                 services.AddSingleton<IFirstRunSetupService, FirstRunSetupService>();
                 services.AddSingleton<MainWindow>();
@@ -103,6 +104,7 @@ public partial class App : Application
         MainWindow = Services.GetRequiredService<MainWindow>();
         Services.GetRequiredService<ITrayService>().Initialize(MainWindow);
         Services.GetRequiredService<IPlaytimeLimitNotifier>().Initialize();
+        Services.GetRequiredService<IUpdateNotificationLogger>().Initialize();
         MainWindow.Activate();
 
         var setupWasShown = await MainWindow.ShowFirstRunSetupIfRequiredAsync();
@@ -128,7 +130,7 @@ public partial class App : Application
             await MainWindow.ShowChangelogIfAvailableAsync();
         }
 
-        _ = MainWindow.CheckForUpdatesOnStartupAsync(showPrompt: !startMinimized || setupWasShown);
+        _ = MainWindow.CheckForUpdatesOnStartupAsync();
     }
 
     public static async Task ShutdownAsync()
@@ -144,6 +146,7 @@ public partial class App : Application
             {
                 await app.host.Services.GetRequiredService<IGameTrackingService>().StopAsync(CancellationToken.None);
                 app.host.Services.GetRequiredService<IPlaytimeLimitNotifier>().Dispose();
+                app.host.Services.GetRequiredService<IUpdateNotificationLogger>().Dispose();
                 app.host.Services.GetRequiredService<ITrayService>().Dispose();
                 await app.host.StopAsync(CancellationToken.None);
                 app.host.Dispose();

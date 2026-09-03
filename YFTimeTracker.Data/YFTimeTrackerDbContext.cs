@@ -22,6 +22,8 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
 
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
+    public DbSet<NotificationLogEntry> NotificationLogEntries => Set<NotificationLogEntry>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Game>(entity =>
@@ -96,6 +98,17 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
             entity.Property(setting => setting.Key).HasMaxLength(160);
             entity.Property(setting => setting.Value).HasMaxLength(2048).IsRequired();
             entity.Property(setting => setting.UpdatedAtUtc).HasConversion(DateTimeOffsetConverter).IsRequired();
+        });
+
+        modelBuilder.Entity<NotificationLogEntry>(entity =>
+        {
+            entity.ToTable("NotificationLogEntries");
+            entity.HasKey(notification => notification.Id);
+            entity.Property(notification => notification.Kind).IsRequired();
+            entity.Property(notification => notification.Title).HasMaxLength(160).IsRequired();
+            entity.Property(notification => notification.Message).HasMaxLength(1024).IsRequired();
+            entity.Property(notification => notification.CreatedAtUtc).HasConversion(DateTimeOffsetConverter).IsRequired();
+            entity.HasIndex(notification => notification.CreatedAtUtc);
         });
     }
 }

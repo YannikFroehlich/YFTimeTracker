@@ -10,6 +10,7 @@ public sealed class PlaytimeLimitNotifier(
     IGameRepository games,
     IPlaytimeStatisticsService statistics,
     ITrayService trayService,
+    INotificationLogRepository notificationLog,
     IClock clock,
     ILogger<PlaytimeLimitNotifier> logger) : IPlaytimeLimitNotifier
 {
@@ -66,9 +67,9 @@ public sealed class PlaytimeLimitNotifier(
             if (todayDuration.TotalMinutes >= dailyLimit)
             {
                 lastDailyNotificationDate[game.Id] = today;
-                trayService.ShowBalloonNotification(
-                    "Tageslimit erreicht",
-                    $"{game.Name}: Das heutige Zeitlimit von {dailyLimit} Minuten ist erreicht.");
+                var message = $"{game.Name}: Das heutige Zeitlimit von {dailyLimit} Minuten ist erreicht.";
+                trayService.ShowBalloonNotification("Tageslimit erreicht", message);
+                await LogNotificationAsync(NotificationKind.PlaytimeLimitReached, "Tageslimit erreicht", message, game.Id);
             }
         }
 
@@ -82,11 +83,30 @@ public sealed class PlaytimeLimitNotifier(
                 if (weekDuration.TotalMinutes >= weeklyLimit)
                 {
                     lastWeeklyNotificationWeekStart[game.Id] = weekStart;
-                    trayService.ShowBalloonNotification(
-                        "Wochenlimit erreicht",
-                        $"{game.Name}: Das wöchentliche Zeitlimit von {weeklyLimit} Minuten ist erreicht.");
+                    var message = $"{game.Name}: Das wöchentliche Zeitlimit von {weeklyLimit} Minuten ist erreicht.";
+                    trayService.ShowBalloonNotification("Wochenlimit erreicht", message);
+                    await LogNotificationAsync(NotificationKind.PlaytimeLimitReached, "Wochenlimit erreicht", message, game.Id);
                 }
             }
+        }
+    }
+
+    private async Task LogNotificationAsync(NotificationKind kind, string title, string message, long gameId)
+    {
+        try
+        {
+            await notificationLog.AddAsync(new NotificationLogEntry
+            {
+                Kind = kind,
+                Title = title,
+                Message = message,
+                CreatedAtUtc = clock.UtcNow,
+                RelatedGameId = gameId
+            }, CancellationToken.None);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Failed to write notification log entry for game {GameId}.", gameId);
         }
     }
 }
