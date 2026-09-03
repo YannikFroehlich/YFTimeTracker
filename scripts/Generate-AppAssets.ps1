@@ -1,10 +1,15 @@
 [CmdletBinding()]
 param(
-    [string]$SourcePath = (Join-Path $PSScriptRoot '..\YFTimeTracker.App\Assets\YFTimeTrackerLogo.png')
+    [string]$SourcePath
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+
+if ([string]::IsNullOrWhiteSpace($SourcePath)) {
+    $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } elseif ($MyInvocation.MyCommand.Path) { Split-Path -Parent $MyInvocation.MyCommand.Path } else { (Get-Location).Path }
+    $SourcePath = Join-Path $scriptDir '..\YFTimeTracker.App\Assets\YFTimeTrackerLogo.png'
+}
 
 Add-Type -AssemblyName System.Drawing
 
@@ -22,7 +27,9 @@ function New-LogoBitmap {
         [Parameter(Mandatory)]
         [int]$Height,
 
-        [switch]$Letterbox
+        [switch]$Letterbox,
+
+        [System.Drawing.Color]$BackgroundColor = [System.Drawing.Color]::Transparent
     )
 
     $bitmap = [System.Drawing.Bitmap]::new(
@@ -33,7 +40,7 @@ function New-LogoBitmap {
 
     $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
     try {
-        $graphics.Clear([System.Drawing.Color]::FromArgb(255, 4, 9, 18))
+        $graphics.Clear($BackgroundColor)
         $graphics.CompositingMode = [System.Drawing.Drawing2D.CompositingMode]::SourceOver
         $graphics.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
         $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
@@ -90,10 +97,12 @@ function Save-PngAsset {
         [Parameter(Mandatory)]
         [int]$Height,
 
-        [switch]$Letterbox
+        [switch]$Letterbox,
+
+        [System.Drawing.Color]$BackgroundColor = [System.Drawing.Color]::Transparent
     )
 
-    $bitmap = New-LogoBitmap -Source $Source -Width $Width -Height $Height -Letterbox:$Letterbox
+    $bitmap = New-LogoBitmap -Source $Source -Width $Width -Height $Height -Letterbox:$Letterbox -BackgroundColor $BackgroundColor
     try {
         $targetPath = Join-Path $assetDirectory $Name
         $bitmap.Save($targetPath, [System.Drawing.Imaging.ImageFormat]::Png)
@@ -117,7 +126,7 @@ function Save-MultiSizeIcon {
     $entries = [System.Collections.Generic.List[object]]::new()
 
     foreach ($size in $sizes) {
-        $bitmap = New-LogoBitmap -Source $Source -Width $size -Height $size
+        $bitmap = New-LogoBitmap -Source $Source -Width $size -Height $size -BackgroundColor ([System.Drawing.Color]::Transparent)
         $memory = [System.IO.MemoryStream]::new()
         try {
             $bitmap.Save($memory, [System.Drawing.Imaging.ImageFormat]::Png)
@@ -170,8 +179,8 @@ try {
     Save-PngAsset -Source $sourceImage -Name 'Square44x44Logo.png' -Width 44 -Height 44
     Save-PngAsset -Source $sourceImage -Name 'Square150x150Logo.png' -Width 150 -Height 150
     Save-PngAsset -Source $sourceImage -Name 'StoreLogo.png' -Width 50 -Height 50
-    Save-PngAsset -Source $sourceImage -Name 'Wide310x150Logo.png' -Width 310 -Height 150 -Letterbox
-    Save-PngAsset -Source $sourceImage -Name 'SplashScreen.png' -Width 620 -Height 300 -Letterbox
+    Save-PngAsset -Source $sourceImage -Name 'Wide310x150Logo.png' -Width 310 -Height 150 -Letterbox -BackgroundColor ([System.Drawing.Color]::FromArgb(255, 4, 9, 18))
+    Save-PngAsset -Source $sourceImage -Name 'SplashScreen.png' -Width 620 -Height 300 -Letterbox -BackgroundColor ([System.Drawing.Color]::FromArgb(255, 4, 9, 18))
     Save-MultiSizeIcon -Source $sourceImage -TargetPath (Join-Path $assetDirectory 'YFTimeTracker.ico')
 }
 finally {
