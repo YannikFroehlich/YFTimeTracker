@@ -4,6 +4,7 @@
 
 ## 0.15.0 – 2026-09-03
 - Neu: Lokales Profil mit editierbarem Anzeigename und wählbarer Akzentfarbe für den Avatar, bearbeitbar per Klick auf das Profil-Icon oben rechts. Name und Farbe verlassen das Gerät nicht.
+- Neu: Benachrichtigungsverlauf über das Glocken-Icon – erreichte Zeitlimits und verfügbare Updates bleiben dort nachvollziehbar, statt nur einmalig als Tray-Hinweis zu erscheinen. Das automatische "Update verfügbar"-Popup beim App-Start entfällt dafür; Updates lassen sich weiterhin über Einstellungen oder das Tray-Menü installieren.
 
 ## 0.14.0 – 2026-09-03
 - Neu: Fortschrittsanzeige für Spielzeit-Limits in Bibliothek, Spieldetails und Dashboard – zeigt den heutigen Stand relativ zum Tageslimit, bevor die Benachrichtigung ausgelöst wird.

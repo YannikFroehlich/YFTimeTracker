@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,6 +26,7 @@ public sealed partial class MainWindow : Window
     private readonly DispatcherTimer dashboardRefreshTimer = new() { Interval = TimeSpan.FromSeconds(5) };
     private readonly ISettingsStore settingsStore;
     private readonly IAppUpdateService appUpdateService;
+    private readonly INotificationLogRepository notificationLog;
     private readonly IFirstRunSetupService firstRunSetupService;
     private readonly IGameTrackingService trackingService;
     private readonly IThemeService themeService;
@@ -45,6 +47,7 @@ public sealed partial class MainWindow : Window
         dashboardViewModel = App.Services.GetRequiredService<DashboardViewModel>();
         settingsStore = App.Services.GetRequiredService<ISettingsStore>();
         appUpdateService = App.Services.GetRequiredService<IAppUpdateService>();
+        notificationLog = App.Services.GetRequiredService<INotificationLogRepository>();
         firstRunSetupService = App.Services.GetRequiredService<IFirstRunSetupService>();
         trackingService = App.Services.GetRequiredService<IGameTrackingService>();
         themeService = App.Services.GetRequiredService<IThemeService>();
@@ -70,11 +73,14 @@ public sealed partial class MainWindow : Window
             var profileName = await settingsStore.GetAsync(AppSettingKeys.ProfileDisplayName, CancellationToken.None);
             var profileAccentColor = await settingsStore.GetAsync(AppSettingKeys.ProfileAccentColor, CancellationToken.None);
             ApplyProfileHeader(profileName, profileAccentColor);
+            await RefreshNotificationBadgeAsync();
             await dashboardViewModel.RefreshAsync();
         };
     }
 
     public GlobalSearchViewModel GlobalSearchViewModel { get; }
+
+    public ObservableCollection<NotificationListItemViewModel> NotificationItems { get; } = [];
 
     public void ShowDashboard()
     {
@@ -323,17 +329,13 @@ public sealed partial class MainWindow : Window
         return ChangelogParser.TryGetLatestEntry(reader.ReadToEnd());
     }
 
-    public async Task CheckForUpdatesOnStartupAsync(bool showPrompt)
+    public async Task CheckForUpdatesOnStartupAsync()
     {
         try
         {
-            var state = appUpdateService.State.Stage == AppUpdateStage.ReadyToInstall
-                ? appUpdateService.State
-                : await appUpdateService.CheckForUpdatesAsync(CancellationToken.None);
-
-            if (showPrompt && state.HasAvailableUpdate)
+            if (appUpdateService.State.Stage != AppUpdateStage.ReadyToInstall)
             {
-                await PromptForAvailableUpdateAsync();
+                await appUpdateService.CheckForUpdatesAsync(CancellationToken.None);
             }
         }
         catch (Exception)
@@ -423,6 +425,55 @@ public sealed partial class MainWindow : Window
     private async void DashboardRefreshTimer_Tick(object? sender, object e)
     {
         await dashboardViewModel.RefreshAsync();
+        await RefreshNotificationBadgeAsync();
+    }
+
+    private async Task RefreshNotificationBadgeAsync()
+    {
+        var unreadCount = await notificationLog.GetUnreadCountAsync(CancellationToken.None);
+        NotificationBadge.Visibility = unreadCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async void NotificationsFlyout_Opening(object? sender, object e)
+    {
+        var entries = await notificationLog.GetRecentAsync(20, CancellationToken.None);
+        NotificationItems.Clear();
+        foreach (var entry in entries)
+        {
+            var timestamp = TimeZoneInfo.ConvertTime(entry.CreatedAtUtc, TimeZoneInfo.Local);
+            NotificationItems.Add(new NotificationListItemViewModel
+            {
+                Kind = entry.Kind,
+                Title = entry.Title,
+                Message = entry.Message,
+                TimestampText = timestamp.ToString("dd.MM.yyyy · HH:mm"),
+                RelatedGameId = entry.RelatedGameId
+            });
+        }
+
+        NotificationsEmptyText.Visibility = NotificationItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        await notificationLog.MarkAllAsReadAsync(CancellationToken.None);
+        NotificationBadge.Visibility = Visibility.Collapsed;
+    }
+
+    private async void NotificationsList_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is not NotificationListItemViewModel item)
+        {
+            return;
+        }
+
+        NotificationsFlyout.Hide();
+
+        if (item.Kind == NotificationKind.UpdateAvailable)
+        {
+            await PromptForAvailableUpdateAsync();
+        }
+        else if (item.RelatedGameId is { } gameId)
+        {
+            ShowGameDetails(gameId);
+        }
     }
 
     private async void GlobalSearchBox_TextChanged(

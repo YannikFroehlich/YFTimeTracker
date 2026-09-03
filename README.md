@@ -34,6 +34,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - "Was ist neu"-Dialog mit den Änderungen der Version beim ersten Start nach einem Update
 - Diagnoseansicht und Export eines datensparsamen Diagnose-ZIP
 - Lokales Profil mit editierbarem Anzeigename und Akzentfarbe (nur auf diesem Gerät gespeichert)
+- Benachrichtigungsverlauf (erreichte Zeitlimits, verfügbare Updates) über das Glocken-Icon im Header
 
 ## Installation
 

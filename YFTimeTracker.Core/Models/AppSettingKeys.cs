@@ -16,4 +16,5 @@ public static class AppSettingKeys
     public const string LastSeenChangelogHeading = "ui.lastSeenChangelogHeading";
     public const string ProfileDisplayName = "profile.displayName";
     public const string ProfileAccentColor = "profile.accentColor";
+    public const string LastLoggedUpdateVersion = "updates.lastLoggedVersion";
 }
