@@ -17,8 +17,11 @@ public sealed class DashboardViewModel : ObservableObject
     private const string RedColor = "#FF6B7A";
     private const string CyanColor = "#2CE5F3";
     private const string BlueColor = "#387BFF";
+    private const string ProgressNormalColor = "#3182FF";
+    private const string ProgressLimitReachedColor = "#FF5368";
     private readonly IPlaytimeStatisticsService statistics;
     private readonly IGameTrackingService trackingService;
+    private readonly IGameRepository games;
     private readonly IClock clock;
     private readonly IGameIconService? gameIcons;
     private DateTimeOffset? activeStartedAtUtc;
@@ -48,15 +51,21 @@ public sealed class DashboardViewModel : ObservableObject
     private Visibility recentEmptyVisibility = Visibility.Visible;
     private string chartMaximumText = "2 h";
     private string chartMiddleText = "1 h";
+    private string activeDailyProgressText = string.Empty;
+    private double activeDailyProgressPercent;
+    private string activeDailyProgressColor = ProgressNormalColor;
+    private Visibility activeDailyProgressVisibility = Visibility.Collapsed;
 
     public DashboardViewModel(
         IPlaytimeStatisticsService statistics,
         IGameTrackingService trackingService,
+        IGameRepository games,
         IClock clock,
         IGameIconService? gameIcons = null)
     {
         this.statistics = statistics;
         this.trackingService = trackingService;
+        this.games = games;
         this.clock = clock;
         this.gameIcons = gameIcons;
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
@@ -113,6 +122,14 @@ public sealed class DashboardViewModel : ObservableObject
 
     public string ChartMiddleText { get => chartMiddleText; private set => SetProperty(ref chartMiddleText, value); }
 
+    public string ActiveDailyProgressText { get => activeDailyProgressText; private set => SetProperty(ref activeDailyProgressText, value); }
+
+    public double ActiveDailyProgressPercent { get => activeDailyProgressPercent; private set => SetProperty(ref activeDailyProgressPercent, value); }
+
+    public string ActiveDailyProgressColor { get => activeDailyProgressColor; private set => SetProperty(ref activeDailyProgressColor, value); }
+
+    public Visibility ActiveDailyProgressVisibility { get => activeDailyProgressVisibility; private set => SetProperty(ref activeDailyProgressVisibility, value); }
+
     public ObservableCollection<WeeklyBarViewModel> WeekDays { get; } = [];
 
     public ObservableCollection<RecentGameItemViewModel> RecentGames { get; } = [];
@@ -153,7 +170,7 @@ public sealed class DashboardViewModel : ObservableObject
                 : "Spielzeit wird automatisch erfasst";
 
             var iconPaths = await ResolveIconPathsAsync(stats.RunningGames, stats.RecentGames);
-            UpdateActiveGame(stats.RunningGames, iconPaths);
+            await UpdateActiveGameAsync(stats.RunningGames, iconPaths);
             UpdateWeekChart(stats.CurrentWeekDays);
             UpdateRecentGames(stats.RecentGames, iconPaths);
         }
@@ -187,7 +204,7 @@ public sealed class DashboardViewModel : ObservableObject
         await RefreshAsync();
     }
 
-    private void UpdateActiveGame(
+    private async Task UpdateActiveGameAsync(
         IReadOnlyList<RunningGameInfo> runningGames,
         IReadOnlyDictionary<long, string?> iconPaths)
     {
@@ -205,6 +222,7 @@ public sealed class DashboardViewModel : ObservableObject
             AdditionalRunningGamesText = string.Empty;
             ActiveGameVisibility = Visibility.Collapsed;
             ActiveEmptyVisibility = Visibility.Visible;
+            ActiveDailyProgressVisibility = Visibility.Collapsed;
             return;
         }
 
@@ -219,6 +237,31 @@ public sealed class DashboardViewModel : ObservableObject
             : string.Empty;
         ActiveGameVisibility = Visibility.Visible;
         ActiveEmptyVisibility = Visibility.Collapsed;
+
+        await UpdateActiveDailyProgressAsync(activeGame.GameId);
+    }
+
+    private async Task UpdateActiveDailyProgressAsync(long activeGameId)
+    {
+        var activeGameEntity = await games.GetByIdAsync(activeGameId, CancellationToken.None);
+        if (activeGameEntity?.DailyPlaytimeLimitMinutes is not { } limit || limit <= 0)
+        {
+            ActiveDailyProgressVisibility = Visibility.Collapsed;
+            return;
+        }
+
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(clock.UtcNow, TimeZoneInfo.Local).Date);
+        var minutes = (await statistics.GetDurationForGameAndLocalRangeAsync(
+            activeGameId,
+            today,
+            today.AddDays(1),
+            TimeZoneInfo.Local,
+            CancellationToken.None)).TotalMinutes;
+
+        ActiveDailyProgressText = $"{minutes:0} / {limit} Min heute";
+        ActiveDailyProgressPercent = Math.Clamp(minutes / limit * 100, 0, 100);
+        ActiveDailyProgressColor = minutes >= limit ? ProgressLimitReachedColor : ProgressNormalColor;
+        ActiveDailyProgressVisibility = Visibility.Visible;
     }
 
     private void UpdateWeekChart(IReadOnlyList<DailyPlaytimeInfo> days)

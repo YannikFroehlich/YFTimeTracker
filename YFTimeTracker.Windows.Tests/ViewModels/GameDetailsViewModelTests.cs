@@ -1,3 +1,4 @@
+using Microsoft.UI.Xaml;
 using YFTimeTracker.App.Services;
 using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.Core.Abstractions;
@@ -106,6 +107,41 @@ public sealed class GameDetailsViewModelTests
         Assert.AreEqual(1, catalog.UpdateCallCount);
         Assert.IsNull(game.DailyPlaytimeLimitMinutes);
         Assert.AreEqual(120, game.WeeklyPlaytimeLimitMinutes);
+    }
+
+    [TestMethod]
+    public async Task Playtime_limit_progress_reflects_todays_and_this_weeks_sessions()
+    {
+        var now = DateTimeOffset.Parse("2026-08-31T12:00:00Z");
+        var game = CreateGame();
+        game.DailyPlaytimeLimitMinutes = 60;
+        game.WeeklyPlaytimeLimitMinutes = 120;
+        var todayStart = ToUtc(new DateTime(2026, 8, 31, 9, 0, 0));
+        var todayEnd = ToUtc(new DateTime(2026, 8, 31, 10, 30, 0));
+        var sessions = new FakeSessionRepository([CreateSession(1, game, todayStart, todayEnd)]);
+        var viewModel = CreateViewModel(game, sessions, now);
+
+        await viewModel.LoadAsync(game.Id);
+
+        Assert.AreEqual(Visibility.Visible, viewModel.DailyProgressVisibility);
+        Assert.AreEqual("90 / 60 Min heute", viewModel.DailyProgressText);
+        Assert.AreEqual(100, viewModel.DailyProgressPercent);
+        Assert.AreEqual(Visibility.Visible, viewModel.WeeklyProgressVisibility);
+        Assert.AreEqual("90 / 120 Min diese Woche", viewModel.WeeklyProgressText);
+    }
+
+    [TestMethod]
+    public async Task Playtime_limit_progress_is_hidden_when_no_limit_is_set()
+    {
+        var now = DateTimeOffset.Parse("2026-08-31T12:00:00Z");
+        var game = CreateGame();
+        var sessions = new FakeSessionRepository([]);
+        var viewModel = CreateViewModel(game, sessions, now);
+
+        await viewModel.LoadAsync(game.Id);
+
+        Assert.AreEqual(Visibility.Collapsed, viewModel.DailyProgressVisibility);
+        Assert.AreEqual(Visibility.Collapsed, viewModel.WeeklyProgressVisibility);
     }
 
     [TestMethod]
