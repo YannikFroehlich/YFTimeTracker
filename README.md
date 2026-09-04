@@ -29,6 +29,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Direkter Link zum Explorer-Ordner nach einem Export
 - Ersteinrichtungs-Assistent für Tracking, Launcher, Tray und Autostart
 - Tray-Betrieb, Tracking-Pause, optionaler Autostart und Einzelinstanz-Schutz
+- Optional minimierter Start direkt im Tray, sowohl beim manuellen Start als auch über den Windows-Autostart
 - Lokale Backups sowie Import und Export
 - Automatische Update-Prüfung für installierte Ausgaben
 - "Was ist neu"-Dialog mit den Änderungen der Version beim ersten Start nach einem Update

@@ -105,7 +105,7 @@ public sealed class WinUiStartupService(ILogger<WinUiStartupService> logger) : I
             return StartupState.Unavailable;
         }
 
-        key.SetValue(RegistryValueName, $"\"{executablePath}\" --minimized", RegistryValueKind.String);
+        key.SetValue(RegistryValueName, $"\"{executablePath}\"", RegistryValueKind.String);
         return StartupState.Enabled;
     }
 
