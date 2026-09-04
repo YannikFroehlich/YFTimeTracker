@@ -79,7 +79,7 @@ jobs:
 
           $notes = ($notesLines -join "`n").Trim()
           if ([string]::IsNullOrWhiteSpace($notes)) {
-            $notes = "_Kein Changelog-Eintrag fuer diese Version. Siehe [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)._"
+            $notes = "_Kein Changelog-Eintrag für diese Version. Siehe [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)._"
           }
 
           $notesPath = Join-Path $PWD "artifacts/release-notes.md"
