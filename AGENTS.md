@@ -13,6 +13,7 @@ YFTimeTracker ist eine deutschsprachige, lokale Windows-11-App zum automatischen
 - Entity Framework Core mit SQLite für lokale Daten
 - Velopack für Setup, MSI und automatische Updates
 - MSTest für automatisierte Tests
+- Paketversionen zentral in `Directory.Packages.props` verwalten, nicht in einzelnen `.csproj`-Dateien pinnen
 - Keine Cloud-Konten oder Web-APIs für die Spielerkennung
 - Keine Code-Signierung; Release-Artefakte bleiben unsigniert
 
@@ -26,6 +27,8 @@ YFTimeTracker ist eine deutschsprachige, lokale Windows-11-App zum automatischen
 
 Neue Logik gehört in die niedrigste sinnvolle Schicht. UI-Code darf keine Persistenz- oder Prozesslogik duplizieren.
 
+Alle Schichten werden zentral in `App.xaml.cs` (`OnLaunched`) verdrahtet, jede über ihre eigene `IServiceCollection`-Erweiterungsmethode. Neue Services dort registrieren, nicht ad hoc in `App.xaml.cs`.
+
 ## Arbeitsweise
 
 1. Vor Änderungen `git status --short --branch` prüfen und nicht zugehörige Nutzeränderungen erhalten.
@@ -33,7 +36,7 @@ Neue Logik gehört in die niedrigste sinnvolle Schicht. UI-Code darf keine Persi
 3. Dateien gezielt ändern; generierte Ordner wie `bin`, `obj` und `artifacts` nicht committen.
 4. Keine Commits, Pushes, Merges, Tags oder Releases ohne ausdrücklichen Auftrag des Benutzers ausführen.
 5. Bei ausdrücklichem Commit-Auftrag Conventional Commits verwenden, zum Beispiel `fix: ...` oder `feat: ...`.
-6. Dokumentation aktualisieren, wenn Bedienung, Datenformat, Installation oder Release-Ablauf geändert wird.
+6. Dokumentation aktualisieren, wenn Bedienung, Datenformat, Installation oder Release-Ablauf geändert wird; bei neuen, entfernten oder veränderten Nutzerfunktionen die Funktionen-Liste (`## Funktionen`) in `README.md` in derselben Änderung mitpflegen.
 
 ## Implementierungsregeln
 
@@ -44,7 +47,8 @@ Neue Logik gehört in die niedrigste sinnvolle Schicht. UI-Code darf keine Persi
 - Manuell registrierte Spiele müssen auch dann funktionieren, wenn Launcher-Daten fehlen oder beschädigt sind.
 - Mehrere Prozesse oder EXE-Dateien desselben Spiels dürfen nur eine laufende Session erzeugen.
 - Tracking-Pause darf weder Spiele importieren noch Sessions öffnen.
-- Geheimnisse, Zugriffstokens und persönliche Pfade dürfen nicht in Quellcode oder Repository gelangen.
+- Änderungen an `GameTrackingService` (Core) zusätzlich durch Tests in `GameTrackingServiceTests.cs` absichern statt sie nur isoliert nachzuvollziehen.
+- Geheimnisse, Zugriffstokens und persönliche Pfade dürfen nicht in Quellcode oder Repository gelangen. Kein GitHub-Token wird in die App eingebettet; das Auto-Update prüft ausschließlich den öffentlichen Stable-Release-Kanal und bietet nie Vorabversionen an.
 - Neue externe UI- oder Diagrammabhängigkeiten nur nach ausdrücklicher Entscheidung einführen.
 
 ## UI-Regeln
@@ -64,6 +68,8 @@ Nach Codeänderungen mindestens:
 dotnet build YFTimeTracker.slnx --no-restore
 dotnet test YFTimeTracker.slnx --no-build --no-restore
 ```
+
+`dotnet test` und `dotnet run` nicht in derselben Zeile verketten, sondern einzeln nacheinander ausführen.
 
 Falls Pakete fehlen oder Abhängigkeiten geändert wurden, vorher ausführen:
 
