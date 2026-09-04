@@ -130,3 +130,7 @@ Es wird kein GitHub-Token in Quellcode, Build oder Anwendung eingebettet. Vorabv
 ## Mitwirken und Support
 
 Hinweise zu Branches, Commits, Tests und Pull Requests stehen in [CONTRIBUTING.md](CONTRIBUTING.md). Fehlerberichte sollten die betroffene Version, die Schritte zur Reproduktion und – sofern sinnvoll – das unter **Einstellungen → Diagnose & Support** erzeugte Diagnose-ZIP enthalten.
+
+## Lizenz
+
+YFTimeTracker steht unter der [MIT-Lizenz](LICENSE).
