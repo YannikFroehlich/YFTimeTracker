@@ -1,6 +1,9 @@
 # YFTimeTracker
 
 [![CI](https://github.com/YannikFroehlich/YFTimeTracker/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/YannikFroehlich/YFTimeTracker/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/YannikFroehlich/YFTimeTracker?label=Release)](https://github.com/YannikFroehlich/YFTimeTracker/releases/latest)
+[![Lizenz](https://img.shields.io/github/license/YannikFroehlich/YFTimeTracker)](LICENSE)
+![Plattform](https://img.shields.io/badge/Plattform-Windows%2011%20x64-0078D6)
 
 <p align="center">
   <img src="YFTimeTracker.App/Assets/YFTimeTrackerLogo.png" alt="YFTimeTracker-Logo" width="180">
@@ -10,32 +13,59 @@ YFTimeTracker ist eine lokale Windows-11-App zum automatischen Erfassen und Ausw
 
 Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Konten, Cloud-Dienste und Launcher-Web-APIs sind für das Tracking nicht erforderlich.
 
+## Inhalt
+
+- [Funktionen](#funktionen)
+- [Installation](#installation)
+- [Lokale Daten und Datenschutz](#lokale-daten-und-datenschutz)
+- [Automatisches Tracking](#automatisches-tracking)
+- [Entwicklung](#entwicklung)
+- [Lokales Release-Paket](#lokales-release-paket)
+- [Branches und automatische Releases](#branches-und-automatische-releases)
+- [Automatische Updates](#automatische-updates)
+- [Mitwirken und Support](#mitwirken-und-support)
+- [Lizenz](#lizenz)
+
 ## Funktionen
+
+**Tracking und Erkennung**
 
 - Automatische Erkennung laufender Spiele und sekundengenaue Sessions
 - Mehrere EXE-Dateien und Prozesse pro Spiel ohne doppelte Sessions
 - Lokale Launcher-Erkennung für Steam, Epic Games, GOG, Xbox-/Microsoft-Store, Battle.net und Ubisoft Connect
 - Xbox-Erkennung über die lokale Windows-Paketverwaltung und `MicrosoftGame.config`, ohne Xbox-Anmeldung oder Web-API
-- Dashboard mit Live-Tracking, Tages-, Wochen- und Gesamtwerten
-- Helles und dunkles Design, umschaltbar in den Einstellungen
-- Globale Suche nach Spielen, EXE-Dateien, Sessions und App-Bereichen
-- Bibliothek mit Suche, Sortierung, Spieldetails und EXE-Verwaltung
-- Spiele direkt aus den Spieldetails heraus starten
 - Optionales Tages- und Wochenlimit pro Spiel mit Fortschrittsanzeige in Bibliothek, Spieldetails und Dashboard sowie einmaliger Windows-Benachrichtigung bei Erreichen
-- Lokale Spiel-Icons aus den registrierten EXE-Dateien mit datensparsamem Cache
-- Anlegen, Bearbeiten und Löschen manueller Sessions, inklusive CSV-Export der Sessions-Liste
+
+**Dashboard und Auswertung**
+
+- Dashboard mit Live-Tracking, Tages-, Wochen- und Gesamtwerten
+- Globale Suche nach Spielen, EXE-Dateien, Sessions und App-Bereichen
 - Statistiken für frei wählbare Zeiträume und einzelne Spiele mit CSV-Export
 - Jahresrückblick mit Monatsverlauf, Vorjahresvergleich, Rekorden, Top-Spielen und PNG-Export
+
+**Bibliothek und Sessions**
+
+- Bibliothek mit Suche, Sortierung, Spieldetails und EXE-Verwaltung
+- Spiele direkt aus den Spieldetails heraus starten
+- Lokale Spiel-Icons aus den registrierten EXE-Dateien mit datensparsamem Cache
+- Anlegen, Bearbeiten und Löschen manueller Sessions, inklusive CSV-Export der Sessions-Liste
 - Direkter Link zum Explorer-Ordner nach einem Export
+
+**Windows-Integration**
+
 - Ersteinrichtungs-Assistent für Tracking, Launcher, Tray und Autostart
 - Tray-Betrieb, Tracking-Pause, optionaler Autostart und Einzelinstanz-Schutz
 - Optional minimierter Start direkt im Tray, sowohl beim manuellen Start als auch über den Windows-Autostart
+- Helles und dunkles Design, umschaltbar in den Einstellungen
+- Lokales Profil mit editierbarem Anzeigename und Akzentfarbe (nur auf diesem Gerät gespeichert)
+- Benachrichtigungsverlauf (erreichte Zeitlimits, verfügbare Updates) über das Glocken-Icon im Header
+
+**Daten, Updates und Diagnose**
+
 - Lokale Backups sowie Import und Export
 - Automatische Update-Prüfung für installierte Ausgaben
 - "Was ist neu"-Dialog mit den Änderungen der Version beim ersten Start nach einem Update
 - Diagnoseansicht und Export eines datensparsamen Diagnose-ZIP
-- Lokales Profil mit editierbarem Anzeigename und Akzentfarbe (nur auf diesem Gerät gespeichert)
-- Benachrichtigungsverlauf (erreichte Zeitlimits, verfügbare Updates) über das Glocken-Icon im Header
 
 ## Installation
 
@@ -130,3 +160,7 @@ Es wird kein GitHub-Token in Quellcode, Build oder Anwendung eingebettet. Vorabv
 ## Mitwirken und Support
 
 Hinweise zu Branches, Commits, Tests und Pull Requests stehen in [CONTRIBUTING.md](CONTRIBUTING.md). Fehlerberichte sollten die betroffene Version, die Schritte zur Reproduktion und – sofern sinnvoll – das unter **Einstellungen → Diagnose & Support** erzeugte Diagnose-ZIP enthalten.
+
+## Lizenz
+
+YFTimeTracker steht unter der [MIT-Lizenz](LICENSE).
