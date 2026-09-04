@@ -54,6 +54,41 @@ jobs:
           "version=$version" >> $env:GITHUB_OUTPUT
           "sha=$sha" >> $env:GITHUB_OUTPUT
 
+      - name: Release-Notes aus CHANGELOG.md ermitteln
+        id: changelog
+        shell: pwsh
+        run: |
+          $version = "${{ steps.release.outputs.version }}"
+          $lines = Get-Content -LiteralPath "CHANGELOG.md" -Encoding utf8
+          $notesLines = New-Object System.Collections.Generic.List[string]
+          $capturing = $false
+          foreach ($line in $lines) {
+            if ($line -match '^##\s+') {
+              if ($capturing) {
+                break
+              }
+              if ($line -match "^##\s+$([regex]::Escape($version))(\s|$)") {
+                $capturing = $true
+              }
+              continue
+            }
+            if ($capturing) {
+              $notesLines.Add($line)
+            }
+          }
+
+          $notes = ($notesLines -join "`n").Trim()
+          if ([string]::IsNullOrWhiteSpace($notes)) {
+            $notes = "_Kein Changelog-Eintrag fuer diese Version. Siehe [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)._"
+          }
+
+          $notesPath = Join-Path $PWD "artifacts/release-notes.md"
+          New-Item -ItemType Directory -Force -Path (Split-Path $notesPath) | Out-Null
+          $utf8WithoutBom = [System.Text.UTF8Encoding]::new($false)
+          [System.IO.File]::WriteAllText($notesPath, $notes, $utf8WithoutBom)
+
+          "path=$notesPath" >> $env:GITHUB_OUTPUT
+
       - name: App testen und portables Release bauen
         shell: pwsh
         run: >-
@@ -159,6 +194,15 @@ jobs:
           --releaseName "YFTimeTracker v${{ steps.release.outputs.version }}"
           --tag "v${{ steps.release.outputs.version }}"
           --targetCommitish "${{ steps.release.outputs.sha }}"
+
+      - name: Release-Notes veroeffentlichen
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          gh release edit "v${{ steps.release.outputs.version }}"
+          --notes-file "${{ steps.changelog.outputs.path }}"
+          --repo "${{ github.repository }}"
 
       - name: Portables ZIP und Manifest hochladen
         shell: pwsh
