@@ -20,6 +20,8 @@ public interface IFirstRunSetupService
     Task<FirstRunSetupOptions> LoadOptionsAsync(CancellationToken cancellationToken);
 
     Task<StartupState> CompleteAsync(FirstRunSetupOptions options, CancellationToken cancellationToken);
+
+    Task DismissAsync(CancellationToken cancellationToken);
 }
 
 public sealed class FirstRunSetupService(
@@ -60,5 +62,10 @@ public sealed class FirstRunSetupService(
 
         await settings.SetAsync(AppSettingKeys.FirstRunSetupCompleted, bool.TrueString, cancellationToken);
         return startupState;
+    }
+
+    public Task DismissAsync(CancellationToken cancellationToken)
+    {
+        return settings.SetAsync(AppSettingKeys.FirstRunSetupCompleted, bool.TrueString, cancellationToken);
     }
 }

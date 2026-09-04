@@ -171,6 +171,14 @@
                         </Border>
 
                         <Border Style="{StaticResource YFSubtleCardStyle}">
+                            <ToggleSwitch
+                                Header="Minimiert starten"
+                                OffContent="Fenster anzeigen"
+                                OnContent="Direkt im Tray"
+                                IsOn="{Binding StartMinimized, Mode=TwoWay}" />
+                        </Border>
+
+                        <Border Style="{StaticResource YFSubtleCardStyle}">
                             <Grid>
                                 <ToggleSwitch
                                     Header="Mit Windows starten"

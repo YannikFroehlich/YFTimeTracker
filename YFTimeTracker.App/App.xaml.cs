@@ -6,6 +6,7 @@ using YFTimeTracker.App.Services;
 using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.App.Views;
 using YFTimeTracker.Core.Abstractions;
+using YFTimeTracker.Core.Models;
 using YFTimeTracker.Core.Services;
 using YFTimeTracker.Data;
 using YFTimeTracker.Windows;
@@ -110,7 +111,9 @@ public partial class App : Application
         var setupWasShown = await MainWindow.ShowFirstRunSetupIfRequiredAsync();
         await Services.GetRequiredService<IGameTrackingService>().StartAsync(CancellationToken.None);
 
-        var startMinimized = args.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        var startMinimizedSetting = await Services.GetRequiredService<ISettingsStore>()
+            .GetBoolAsync(AppSettingKeys.StartMinimized, false, CancellationToken.None);
+        var startMinimized = startMinimizedSetting || args.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .Contains("--minimized", StringComparer.OrdinalIgnoreCase);
         if (startMinimized && !setupWasShown)
         {

@@ -43,8 +43,17 @@ public sealed partial class FirstRunSetupDialog : ContentDialog
         StartupToggle.IsOn,
         StartupToggle.IsEnabled ? StartupState.Disabled : StartupState.Unavailable);
 
-    private void SkipButton_Click(object sender, RoutedEventArgs e)
+    private async void SkipButton_Click(object sender, RoutedEventArgs e)
     {
+        try
+        {
+            await setupService.DismissAsync(CancellationToken.None);
+        }
+        catch
+        {
+            // Persistence failure just means the wizard reappears on the next launch.
+        }
+
         Hide();
     }
 

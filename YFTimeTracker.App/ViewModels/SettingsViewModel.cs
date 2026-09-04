@@ -27,6 +27,7 @@ public sealed class SettingsViewModel : ObservableObject
     private bool launcherDiscoveryEnabled = true;
     private bool minimizeOnClose = true;
     private bool startWithWindows;
+    private bool startMinimized;
     private double trackingIntervalSeconds = 3;
     private double heartbeatIntervalSeconds = 30;
     private double backupRetentionDays = 14;
@@ -119,6 +120,12 @@ public sealed class SettingsViewModel : ObservableObject
     {
         get => startWithWindows;
         set => SetProperty(ref startWithWindows, value);
+    }
+
+    public bool StartMinimized
+    {
+        get => startMinimized;
+        set => SetProperty(ref startMinimized, value);
     }
 
     public double TrackingIntervalSeconds
@@ -286,6 +293,7 @@ public sealed class SettingsViewModel : ObservableObject
         TrackingEnabled = await settings.GetBoolAsync(AppSettingKeys.TrackingEnabled, true, CancellationToken.None);
         LauncherDiscoveryEnabled = await settings.GetBoolAsync(AppSettingKeys.LauncherDiscoveryEnabled, true, CancellationToken.None);
         MinimizeOnClose = await settings.GetBoolAsync(AppSettingKeys.MinimizeOnClose, true, CancellationToken.None);
+        StartMinimized = await settings.GetBoolAsync(AppSettingKeys.StartMinimized, false, CancellationToken.None);
         TrackingIntervalSeconds = await settings.GetIntAsync(AppSettingKeys.TrackingIntervalSeconds, 3, CancellationToken.None);
         HeartbeatIntervalSeconds = await settings.GetIntAsync(AppSettingKeys.HeartbeatIntervalSeconds, 30, CancellationToken.None);
         BackupRetentionDays = await settings.GetIntAsync(AppSettingKeys.BackupRetentionDays, 14, CancellationToken.None);
@@ -317,6 +325,7 @@ public sealed class SettingsViewModel : ObservableObject
         await settings.SetAsync(AppSettingKeys.TrackingEnabled, TrackingEnabled.ToString(), CancellationToken.None);
         await settings.SetAsync(AppSettingKeys.LauncherDiscoveryEnabled, LauncherDiscoveryEnabled.ToString(), CancellationToken.None);
         await settings.SetAsync(AppSettingKeys.MinimizeOnClose, MinimizeOnClose.ToString(), CancellationToken.None);
+        await settings.SetAsync(AppSettingKeys.StartMinimized, StartMinimized.ToString(), CancellationToken.None);
         await settings.SetAsync(AppSettingKeys.TrackingIntervalSeconds, Math.Clamp((int)TrackingIntervalSeconds, 1, 60).ToString(), CancellationToken.None);
         await settings.SetAsync(AppSettingKeys.HeartbeatIntervalSeconds, Math.Clamp((int)HeartbeatIntervalSeconds, 5, 300).ToString(), CancellationToken.None);
         await settings.SetAsync(AppSettingKeys.BackupRetentionDays, Math.Clamp((int)BackupRetentionDays, 1, 365).ToString(), CancellationToken.None);

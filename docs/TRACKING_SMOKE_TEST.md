@@ -60,7 +60,7 @@ Für Xbox-/Microsoft-Store-Spiele zusätzlich prüfen:
 ## App-Lifecycle
 
 1. **Einzelinstanz:** Bei laufender App `YFTimeTracker.App.exe` ein zweites Mal starten. Es darf kein zweiter Tracker entstehen; das vorhandene Fenster muss aktiviert werden.
-2. **Autostart:** Autostart in den Einstellungen aktivieren, ab- und wieder anmelden. Die App muss minimiert starten und im Tray weiterlaufen. Danach Autostart bei Bedarf wieder deaktivieren.
+2. **Autostart:** Autostart und "Minimiert starten" in den Einstellungen aktivieren, ab- und wieder anmelden. Die App muss minimiert starten und im Tray weiterlaufen. Danach prüfen, dass die App bei deaktiviertem "Minimiert starten" sowohl per Autostart als auch per Doppelklick auf die EXE mit sichtbarem Fenster startet. Anschließend Autostart bei Bedarf wieder deaktivieren.
 3. **Schließen im Tray:** Das Fenster schließen und über das Tray erneut öffnen. Dashboard, Trackingzustand und laufende Session müssen erhalten bleiben.
 4. **Update-Menü:** In einer installierten Ausgabe **Nach Updates suchen** im Tray auswählen. Der Status muss auch unter **Einstellungen → App-Updates** korrekt erscheinen.
 
