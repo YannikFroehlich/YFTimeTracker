@@ -6,6 +6,9 @@
     BorderBrush="{ThemeResource YFStrokeBrightBrush}"
     BorderThickness="1"
     CornerRadius="18">
+    <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMaxWidth">600</x:Double>
+    </ContentDialog.Resources>
     <Grid Width="500" MinHeight="500">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
