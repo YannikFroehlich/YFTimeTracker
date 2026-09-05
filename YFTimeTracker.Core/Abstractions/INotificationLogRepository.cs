@@ -11,4 +11,8 @@ public interface INotificationLogRepository
     Task<int> GetUnreadCountAsync(CancellationToken cancellationToken);
 
     Task MarkAllAsReadAsync(CancellationToken cancellationToken);
+
+    Task DeleteAsync(long id, CancellationToken cancellationToken);
+
+    Task ClearAllAsync(CancellationToken cancellationToken);
 }

@@ -257,7 +257,22 @@
                                 <Button.Flyout>
                                     <Flyout x:Name="NotificationsFlyout" Opening="NotificationsFlyout_Opening" Placement="Bottom">
                                         <StackPanel Width="300" Spacing="10">
-                                            <TextBlock FontSize="14" FontWeight="SemiBold" Text="Benachrichtigungen" />
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold" Text="Benachrichtigungen" />
+                                                <Button
+                                                    x:Name="ClearAllNotificationsButton"
+                                                    Grid.Column="1"
+                                                    Padding="10,4"
+                                                    Click="ClearAllNotifications_Click"
+                                                    Style="{StaticResource YFOutlineButtonStyle}"
+                                                    Visibility="Collapsed">
+                                                    <TextBlock FontSize="11" Text="Alle löschen" />
+                                                </Button>
+                                            </Grid>
                                             <TextBlock
                                                 x:Name="NotificationsEmptyText"
                                                 FontSize="11"
@@ -273,19 +288,41 @@
                                                 SelectionMode="None">
                                                 <ListView.ItemTemplate>
                                                     <DataTemplate x:DataType="viewModels:NotificationListItemViewModel">
-                                                        <StackPanel Margin="0,4" Spacing="2">
-                                                            <TextBlock
-                                                                FontSize="12"
-                                                                FontWeight="SemiBold"
-                                                                Text="{x:Bind Title}"
-                                                                TextTrimming="CharacterEllipsis" />
-                                                            <TextBlock
-                                                                FontSize="11"
-                                                                Foreground="{ThemeResource YFMutedBrush}"
-                                                                Text="{x:Bind Message}"
-                                                                TextWrapping="Wrap" />
-                                                            <TextBlock FontSize="9" Foreground="{ThemeResource YFMutedBrush}" Text="{x:Bind TimestampText}" />
-                                                        </StackPanel>
+                                                        <Grid ColumnSpacing="8">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <StackPanel Margin="0,4" Spacing="2">
+                                                                <TextBlock
+                                                                    FontSize="12"
+                                                                    FontWeight="SemiBold"
+                                                                    Text="{x:Bind Title}"
+                                                                    TextTrimming="CharacterEllipsis" />
+                                                                <TextBlock
+                                                                    FontSize="11"
+                                                                    Foreground="{ThemeResource YFMutedBrush}"
+                                                                    Text="{x:Bind Message}"
+                                                                    TextWrapping="Wrap" />
+                                                                <TextBlock FontSize="9" Foreground="{ThemeResource YFMutedBrush}" Text="{x:Bind TimestampText}" />
+                                                            </StackPanel>
+                                                            <Button
+                                                                Grid.Column="1"
+                                                                Width="26"
+                                                                Height="26"
+                                                                MinWidth="26"
+                                                                MinHeight="26"
+                                                                Padding="0"
+                                                                VerticalAlignment="Top"
+                                                                Background="Transparent"
+                                                                BorderThickness="0"
+                                                                Click="DeleteNotification_Click"
+                                                                PointerPressed="DeleteNotification_PointerPressed"
+                                                                Tag="{x:Bind Id}"
+                                                                ToolTipService.ToolTip="Benachrichtigung löschen">
+                                                                <FontIcon FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Glyph="&#xE711;" />
+                                                            </Button>
+                                                        </Grid>
                                                     </DataTemplate>
                                                 </ListView.ItemTemplate>
                                             </ListView>

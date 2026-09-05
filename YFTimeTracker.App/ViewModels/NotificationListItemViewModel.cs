@@ -4,6 +4,8 @@ namespace YFTimeTracker.App.ViewModels;
 
 public sealed class NotificationListItemViewModel
 {
+    public long Id { get; set; }
+
     public NotificationKind Kind { get; set; }
 
     public string Title { get; set; } = string.Empty;

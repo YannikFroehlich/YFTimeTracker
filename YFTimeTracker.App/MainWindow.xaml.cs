@@ -6,6 +6,7 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Serilog;
 using WinRT.Interop;
@@ -443,6 +444,7 @@ public sealed partial class MainWindow : Window
             var timestamp = TimeZoneInfo.ConvertTime(entry.CreatedAtUtc, TimeZoneInfo.Local);
             NotificationItems.Add(new NotificationListItemViewModel
             {
+                Id = entry.Id,
                 Kind = entry.Kind,
                 Title = entry.Title,
                 Message = entry.Message,
@@ -451,10 +453,48 @@ public sealed partial class MainWindow : Window
             });
         }
 
-        NotificationsEmptyText.Visibility = NotificationItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        UpdateNotificationsEmptyState();
 
         await notificationLog.MarkAllAsReadAsync(CancellationToken.None);
         NotificationBadge.Visibility = Visibility.Collapsed;
+    }
+
+    private void UpdateNotificationsEmptyState()
+    {
+        var hasItems = NotificationItems.Count > 0;
+        NotificationsEmptyText.Visibility = hasItems ? Visibility.Collapsed : Visibility.Visible;
+        ClearAllNotificationsButton.Visibility = hasItems ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void DeleteNotification_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        e.Handled = true;
+    }
+
+    private async void DeleteNotification_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: long id })
+        {
+            return;
+        }
+
+        await notificationLog.DeleteAsync(id, CancellationToken.None);
+        var item = NotificationItems.FirstOrDefault(entry => entry.Id == id);
+        if (item is not null)
+        {
+            NotificationItems.Remove(item);
+        }
+
+        UpdateNotificationsEmptyState();
+        await RefreshNotificationBadgeAsync();
+    }
+
+    private async void ClearAllNotifications_Click(object sender, RoutedEventArgs e)
+    {
+        await notificationLog.ClearAllAsync(CancellationToken.None);
+        NotificationItems.Clear();
+        UpdateNotificationsEmptyState();
+        await RefreshNotificationBadgeAsync();
     }
 
     private async void NotificationsList_ItemClick(object sender, ItemClickEventArgs e)

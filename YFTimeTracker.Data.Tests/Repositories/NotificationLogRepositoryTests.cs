@@ -103,4 +103,68 @@ public sealed class NotificationLogRepositoryTests
 
         Assert.AreEqual(0, await repository.GetUnreadCountAsync(CancellationToken.None));
     }
+
+    [TestMethod]
+    public async Task DeleteAsync_removes_only_the_matching_entry()
+    {
+        using var paths = new TempAppPathProvider();
+        var factory = new TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var repository = new NotificationLogRepository(factory);
+        var toDelete = await repository.AddAsync(new NotificationLogEntry
+        {
+            Kind = NotificationKind.UpdateAvailable,
+            Title = "Update verfügbar",
+            Message = "Test",
+            CreatedAtUtc = DateTimeOffset.Parse("2026-09-03T10:00:00Z")
+        }, CancellationToken.None);
+        await repository.AddAsync(new NotificationLogEntry
+        {
+            Kind = NotificationKind.PlaytimeLimitReached,
+            Title = "Tageslimit erreicht",
+            Message = "Test",
+            CreatedAtUtc = DateTimeOffset.Parse("2026-09-03T11:00:00Z")
+        }, CancellationToken.None);
+
+        await repository.DeleteAsync(toDelete.Id, CancellationToken.None);
+
+        var remaining = await repository.GetRecentAsync(10, CancellationToken.None);
+        Assert.HasCount(1, remaining);
+        Assert.AreEqual(NotificationKind.PlaytimeLimitReached, remaining[0].Kind);
+    }
+
+    [TestMethod]
+    public async Task ClearAllAsync_removes_every_entry()
+    {
+        using var paths = new TempAppPathProvider();
+        var factory = new TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var repository = new NotificationLogRepository(factory);
+        await repository.AddAsync(new NotificationLogEntry
+        {
+            Kind = NotificationKind.UpdateAvailable,
+            Title = "Update verfügbar",
+            Message = "Test",
+            CreatedAtUtc = DateTimeOffset.Parse("2026-09-03T10:00:00Z")
+        }, CancellationToken.None);
+        await repository.AddAsync(new NotificationLogEntry
+        {
+            Kind = NotificationKind.PlaytimeLimitReached,
+            Title = "Tageslimit erreicht",
+            Message = "Test",
+            CreatedAtUtc = DateTimeOffset.Parse("2026-09-03T11:00:00Z")
+        }, CancellationToken.None);
+
+        await repository.ClearAllAsync(CancellationToken.None);
+
+        Assert.IsEmpty(await repository.GetRecentAsync(10, CancellationToken.None));
+    }
 }

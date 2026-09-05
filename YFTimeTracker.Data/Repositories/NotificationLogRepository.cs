@@ -39,4 +39,18 @@ public sealed class NotificationLogRepository(IDbContextFactory<YFTimeTrackerDbC
             .Where(entry => !entry.IsRead)
             .ExecuteUpdateAsync(setters => setters.SetProperty(entry => entry.IsRead, true), cancellationToken);
     }
+
+    public async Task DeleteAsync(long id, CancellationToken cancellationToken)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        await context.NotificationLogEntries
+            .Where(entry => entry.Id == id)
+            .ExecuteDeleteAsync(cancellationToken);
+    }
+
+    public async Task ClearAllAsync(CancellationToken cancellationToken)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        await context.NotificationLogEntries.ExecuteDeleteAsync(cancellationToken);
+    }
 }
