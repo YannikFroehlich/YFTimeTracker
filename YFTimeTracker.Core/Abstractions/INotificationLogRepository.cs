@@ -10,6 +10,8 @@ public interface INotificationLogRepository
 
     Task<IReadOnlyList<NotificationLogEntry>> GetRecentAsync(int count, CancellationToken cancellationToken);
 
+    Task<bool> ExistsAsync(NotificationKind kind, string referenceKey, CancellationToken cancellationToken);
+
     Task<int> GetUnreadCountAsync(CancellationToken cancellationToken);
 
     Task MarkAllAsReadAsync(CancellationToken cancellationToken);

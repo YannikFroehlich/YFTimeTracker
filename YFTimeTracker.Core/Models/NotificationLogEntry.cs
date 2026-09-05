@@ -21,4 +21,10 @@ public sealed class NotificationLogEntry
     public bool IsRead { get; set; }
 
     public long? RelatedGameId { get; set; }
+
+    /// <summary>
+    /// Stabiler Schlüssel des auslösenden Ereignisses (zum Beispiel Spiel und Zeitraum eines
+    /// Limits). Verhindert, dass dieselbe Meldung nach einem App-Neustart erneut erscheint.
+    /// </summary>
+    public string? ReferenceKey { get; set; }
 }

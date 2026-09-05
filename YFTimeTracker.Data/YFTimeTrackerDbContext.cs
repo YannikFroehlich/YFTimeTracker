@@ -108,7 +108,10 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
             entity.Property(notification => notification.Title).HasMaxLength(160).IsRequired();
             entity.Property(notification => notification.Message).HasMaxLength(1024).IsRequired();
             entity.Property(notification => notification.CreatedAtUtc).HasConversion(DateTimeOffsetConverter).IsRequired();
+            entity.Property(notification => notification.ReferenceKey).HasMaxLength(160);
             entity.HasIndex(notification => notification.CreatedAtUtc);
+            entity.HasIndex(notification => new { notification.Kind, notification.ReferenceKey })
+                .HasFilter("ReferenceKey IS NOT NULL");
         });
     }
 }

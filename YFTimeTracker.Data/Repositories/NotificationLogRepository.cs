@@ -27,6 +27,16 @@ public sealed class NotificationLogRepository(IDbContextFactory<YFTimeTrackerDbC
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<bool> ExistsAsync(NotificationKind kind, string referenceKey, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(referenceKey);
+
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        return await context.NotificationLogEntries
+            .AsNoTracking()
+            .AnyAsync(entry => entry.Kind == kind && entry.ReferenceKey == referenceKey, cancellationToken);
+    }
+
     public async Task<int> GetUnreadCountAsync(CancellationToken cancellationToken)
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);

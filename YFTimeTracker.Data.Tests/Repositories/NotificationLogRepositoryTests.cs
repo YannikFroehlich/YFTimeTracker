@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using YFTimeTracker.Core.Models;
 using YFTimeTracker.Data.Repositories;
 
@@ -191,5 +193,89 @@ public sealed class NotificationLogRepositoryTests
         await repository.ClearAllAsync(CancellationToken.None);
 
         Assert.IsEmpty(await repository.GetRecentAsync(10, CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task ExistsAsync_finds_only_the_matching_kind_and_reference_key()
+    {
+        using var paths = new TempAppPathProvider();
+        var factory = new TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var repository = new NotificationLogRepository(factory);
+        await repository.AddAsync(new NotificationLogEntry
+        {
+            Kind = NotificationKind.PlaytimeLimitReached,
+            Title = "Tageslimit erreicht",
+            Message = "Test",
+            CreatedAtUtc = DateTimeOffset.Parse("2026-09-05T10:00:00Z"),
+            RelatedGameId = 7,
+            ReferenceKey = "playtime-limit:daily:7:2026-09-05"
+        }, CancellationToken.None);
+
+        Assert.IsTrue(await repository.ExistsAsync(
+            NotificationKind.PlaytimeLimitReached,
+            "playtime-limit:daily:7:2026-09-05",
+            CancellationToken.None));
+        Assert.IsFalse(await repository.ExistsAsync(
+            NotificationKind.PlaytimeLimitReached,
+            "playtime-limit:daily:7:2026-09-06",
+            CancellationToken.None));
+        Assert.IsFalse(await repository.ExistsAsync(
+            NotificationKind.UpdateAvailable,
+            "playtime-limit:daily:7:2026-09-05",
+            CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task Existing_database_keeps_its_notifications_when_the_reference_key_is_added()
+    {
+        using var paths = new TempAppPathProvider();
+        var factory = new TestDbContextFactory(paths.DatabasePath);
+
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.GetService<IMigrator>()
+                .MigrateAsync("20260903170000_AddNotificationLog", CancellationToken.None);
+            var kind = (int)NotificationKind.PlaytimeLimitReached;
+            var createdAtTicks = DateTimeOffset.Parse("2026-09-04T10:00:00Z").UtcTicks;
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                 INSERT INTO NotificationLogEntries (Kind, Title, Message, CreatedAtUtc, IsRead, RelatedGameId)
+                 VALUES ({kind}, {"Tageslimit erreicht"}, {"Vor der Migration gespeichert"}, {createdAtTicks}, 0, 7)
+                 """,
+                CancellationToken.None);
+        }
+
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var repository = new NotificationLogRepository(factory);
+        var entries = await repository.GetRecentAsync(10, CancellationToken.None);
+
+        Assert.HasCount(1, entries);
+        Assert.AreEqual("Vor der Migration gespeichert", entries[0].Message);
+        Assert.AreEqual(7, entries[0].RelatedGameId);
+        Assert.IsNull(entries[0].ReferenceKey);
+
+        await repository.AddAsync(new NotificationLogEntry
+        {
+            Kind = NotificationKind.PlaytimeLimitReached,
+            Title = "Tageslimit erreicht",
+            Message = "Nach der Migration gespeichert",
+            CreatedAtUtc = DateTimeOffset.Parse("2026-09-05T10:00:00Z"),
+            RelatedGameId = 7,
+            ReferenceKey = "playtime-limit:daily:7:2026-09-05"
+        }, CancellationToken.None);
+
+        Assert.IsTrue(await repository.ExistsAsync(
+            NotificationKind.PlaytimeLimitReached,
+            "playtime-limit:daily:7:2026-09-05",
+            CancellationToken.None));
     }
 }
