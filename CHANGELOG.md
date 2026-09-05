@@ -2,6 +2,9 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.0.4 – 2026-09-05
+- Verbessert: Geringerer Arbeitsspeicherverbrauch im Hintergrundbetrieb – Spiel-Icons werden jetzt in der tatsächlich benötigten Größe statt immer in voller Auflösung geladen, und Bibliotheks-, Sessions- sowie Statistikdaten bleiben nach dem Verlassen der jeweiligen Seite nicht mehr dauerhaft im Speicher.
+
 ## 1.0.0 – 2026-09-04
 - Neu: Option "Minimiert starten" in den Einstellungen – die App startet auf Wunsch direkt im Tray, sowohl beim manuellen Start als auch über den Windows-Autostart.
 - Verbessert: Der Einrichtungs-Assistent merkt sich jetzt, wenn er mit "Später" übersprungen wurde, und poppt danach nicht mehr bei jedem Start erneut auf.
