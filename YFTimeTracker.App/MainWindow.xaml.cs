@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
 using Serilog;
 using WinRT.Interop;
 using Windows.Graphics;
@@ -34,6 +35,7 @@ public sealed partial class MainWindow : Window
     private readonly AppWindow appWindow;
     private readonly SemaphoreSlim dialogLock = new(1, 1);
     private CancellationTokenSource? globalSearchCancellation;
+    private bool isHiddenToTray;
     private bool minimizeOnClose = true;
     private bool firstRunSetupActive;
     private bool changelogCheckStarted;
@@ -64,17 +66,19 @@ public sealed partial class MainWindow : Window
         RootGrid.ActualThemeChanged += (_, _) => ApplyTitleBarButtonColors();
         ApplyTitleBarButtonColors();
 
+        dashboardRefreshTimer.Tick += DashboardRefreshTimer_Tick;
+        ContentFrame.Navigated += ContentFrame_Navigated;
+
         Navigation.SelectedItem = Navigation.MenuItems[0];
         ContentFrame.Navigate(typeof(DashboardPage));
 
-        dashboardRefreshTimer.Tick += DashboardRefreshTimer_Tick;
-        dashboardRefreshTimer.Start();
         RootGrid.Loaded += async (_, _) =>
         {
             minimizeOnClose = await settingsStore.GetBoolAsync(AppSettingKeys.MinimizeOnClose, true, CancellationToken.None);
             var profileName = await settingsStore.GetAsync(AppSettingKeys.ProfileDisplayName, CancellationToken.None);
             var profileAccentColor = await settingsStore.GetAsync(AppSettingKeys.ProfileAccentColor, CancellationToken.None);
             ApplyProfileHeader(profileName, profileAccentColor);
+            UpdateDashboardRefreshTimer();
             await RefreshNotificationBadgeAsync();
             await dashboardViewModel.RefreshAsync();
         };
@@ -90,13 +94,7 @@ public sealed partial class MainWindow : Window
         {
             Navigation.SelectedItem = Navigation.MenuItems[0];
             Navigate(typeof(DashboardPage));
-            appWindow.Show();
-            Activate();
-            if (!dashboardRefreshTimer.IsEnabled)
-            {
-                dashboardRefreshTimer.Start();
-            }
-
+            ShowWindow();
             _ = ShowChangelogIfAvailableAsync();
         });
     }
@@ -107,8 +105,7 @@ public sealed partial class MainWindow : Window
         {
             Navigation.SelectedItem = Navigation.MenuItems[1];
             Navigate(typeof(GamesPage));
-            appWindow.Show();
-            Activate();
+            ShowWindow();
         });
     }
 
@@ -118,8 +115,7 @@ public sealed partial class MainWindow : Window
         {
             Navigation.SelectedItem = Navigation.MenuItems[1];
             ContentFrame.Navigate(typeof(GameDetailsPage), gameId);
-            appWindow.Show();
-            Activate();
+            ShowWindow();
         });
     }
 
@@ -129,20 +125,71 @@ public sealed partial class MainWindow : Window
         {
             Navigation.SelectedItem = Navigation.MenuItems[2];
             ContentFrame.Navigate(typeof(SessionsPage), sessionId);
-            appWindow.Show();
-            Activate();
+            ShowWindow();
         });
     }
 
     public void HideToTray()
     {
+        isHiddenToTray = true;
         appWindow.Hide();
-        dashboardRefreshTimer.Stop();
+        UpdateDashboardRefreshTimer();
     }
 
     public void SetMinimizeOnClose(bool value)
     {
         minimizeOnClose = value;
+    }
+
+    private void ShowWindow()
+    {
+        isHiddenToTray = false;
+        appWindow.Show();
+        Activate();
+        UpdateDashboardRefreshTimer();
+
+        // Das Fenster war womöglich länger im Tray; der aktuelle Stand wird sofort nachgezogen,
+        // statt bis zum nächsten Timer-Tick zu warten.
+        _ = RefreshNotificationBadgeAsync();
+        if (IsDashboardVisible())
+        {
+            _ = dashboardViewModel.RefreshAsync();
+        }
+    }
+
+    private void ContentFrame_Navigated(object sender, NavigationEventArgs e)
+    {
+        UpdateDashboardRefreshTimer(e.SourcePageType);
+    }
+
+    private bool IsDashboardVisible()
+    {
+        return !isHiddenToTray && ContentFrame.CurrentSourcePageType == typeof(DashboardPage);
+    }
+
+    private void UpdateDashboardRefreshTimer()
+    {
+        UpdateDashboardRefreshTimer(ContentFrame.CurrentSourcePageType);
+    }
+
+    private void UpdateDashboardRefreshTimer(Type? currentPageType)
+    {
+        // Die Dashboard-Daten kommen aus der Datenbank. Sie werden nur aktualisiert, solange das
+        // Dashboard auch wirklich zu sehen ist.
+        var shouldRefresh = !isHiddenToTray && currentPageType == typeof(DashboardPage);
+        if (shouldRefresh == dashboardRefreshTimer.IsEnabled)
+        {
+            return;
+        }
+
+        if (shouldRefresh)
+        {
+            dashboardRefreshTimer.Start();
+        }
+        else
+        {
+            dashboardRefreshTimer.Stop();
+        }
     }
 
     private void ThemeService_ThemeChanged(object? sender, ElementTheme theme)
@@ -426,8 +473,9 @@ public sealed partial class MainWindow : Window
 
     private async void DashboardRefreshTimer_Tick(object? sender, object e)
     {
+        // Das Glocken-Symbol wird über INotificationLogRepository.EntryAdded aktualisiert und
+        // braucht deshalb keine eigene Abfrage im Takt des Dashboards.
         await dashboardViewModel.RefreshAsync();
-        await RefreshNotificationBadgeAsync();
     }
 
     private void NotificationLog_EntryAdded(object? sender, EventArgs e)
