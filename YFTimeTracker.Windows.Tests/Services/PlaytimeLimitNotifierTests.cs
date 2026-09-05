@@ -78,6 +78,71 @@ public sealed class PlaytimeLimitNotifierTests
         Assert.AreEqual(2, log.Entries.Select(entry => entry.ReferenceKey).Distinct().Count());
     }
 
+    [TestMethod]
+    public async Task Playtime_is_queried_again_only_after_the_remaining_time_has_passed()
+    {
+        var game = CreateGame(dailyLimitMinutes: 60);
+        var statistics = new FakeStatisticsService(TimeSpan.FromMinutes(58));
+        var clock = new FakeClock(NowUtc);
+        var notifier = CreateNotifier(game, statistics, new FakeTrayService(), new FakeNotificationLog(), clock);
+
+        await notifier.CheckGameAsync(CreateRunningGame(game));
+        Assert.AreEqual(1, statistics.CallCount);
+
+        // Zwei Minuten fehlen zum Limit, vorher ist eine erneute Abfrage sinnlos.
+        await notifier.CheckGameAsync(CreateRunningGame(game));
+        clock.UtcNow = NowUtc.AddMinutes(1);
+        await notifier.CheckGameAsync(CreateRunningGame(game));
+        Assert.AreEqual(1, statistics.CallCount);
+
+        clock.UtcNow = NowUtc.AddMinutes(2);
+        await notifier.CheckGameAsync(CreateRunningGame(game));
+        Assert.AreEqual(2, statistics.CallCount);
+    }
+
+    [TestMethod]
+    public async Task Long_remaining_time_is_capped_so_later_changes_are_still_noticed()
+    {
+        var game = CreateGame(dailyLimitMinutes: 60);
+        var statistics = new FakeStatisticsService(TimeSpan.FromMinutes(20));
+        var clock = new FakeClock(NowUtc);
+        var notifier = CreateNotifier(game, statistics, new FakeTrayService(), new FakeNotificationLog(), clock);
+
+        await notifier.CheckGameAsync(CreateRunningGame(game));
+        Assert.AreEqual(1, statistics.CallCount);
+
+        clock.UtcNow = NowUtc.AddMinutes(4);
+        await notifier.CheckGameAsync(CreateRunningGame(game));
+        Assert.AreEqual(1, statistics.CallCount);
+
+        // Trotz 40 Minuten Restzeit wird spätestens nach der Obergrenze erneut nachgesehen.
+        clock.UtcNow = NowUtc.AddMinutes(6);
+        await notifier.CheckGameAsync(CreateRunningGame(game));
+        Assert.AreEqual(2, statistics.CallCount);
+    }
+
+    [TestMethod]
+    public async Task Limit_reached_during_the_waiting_time_is_reported_on_the_next_check()
+    {
+        var game = CreateGame(dailyLimitMinutes: 60);
+        var statistics = new FakeStatisticsService(TimeSpan.FromMinutes(58));
+        var clock = new FakeClock(NowUtc);
+        var tray = new FakeTrayService();
+        var log = new FakeNotificationLog();
+        var notifier = CreateNotifier(game, statistics, tray, log, clock);
+
+        await notifier.CheckGameAsync(CreateRunningGame(game));
+        Assert.IsEmpty(tray.Notifications);
+
+        clock.UtcNow = NowUtc.AddMinutes(2);
+        statistics.Duration = TimeSpan.FromMinutes(60);
+        await notifier.CheckGameAsync(CreateRunningGame(game));
+
+        Assert.HasCount(1, tray.Notifications);
+        Assert.AreEqual("Tageslimit erreicht", tray.Notifications[0].Title);
+        Assert.HasCount(1, log.Entries);
+    }
+
     private static string ExpectedDailyReferenceKey(long gameId)
     {
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(NowUtc, TimeZoneInfo.Local).Date);
@@ -90,13 +155,23 @@ public sealed class PlaytimeLimitNotifierTests
         FakeTrayService tray,
         FakeNotificationLog log)
     {
+        return CreateNotifier(game, new FakeStatisticsService(playedDuration), tray, log, new FakeClock(NowUtc));
+    }
+
+    private static PlaytimeLimitNotifier CreateNotifier(
+        Game game,
+        FakeStatisticsService statistics,
+        FakeTrayService tray,
+        FakeNotificationLog log,
+        FakeClock clock)
+    {
         return new PlaytimeLimitNotifier(
             new FakeTrackingService(),
             new FakeGameRepository(game),
-            new FakeStatisticsService(playedDuration),
+            statistics,
             tray,
             log,
-            new FakeClock(NowUtc),
+            clock,
             NullLogger<PlaytimeLimitNotifier>.Instance);
     }
 
@@ -185,6 +260,10 @@ public sealed class PlaytimeLimitNotifierTests
 
     private sealed class FakeStatisticsService(TimeSpan duration) : IPlaytimeStatisticsService
     {
+        public TimeSpan Duration { get; set; } = duration;
+
+        public int CallCount { get; private set; }
+
         public Task<DashboardStats> GetDashboardStatsAsync(TimeZoneInfo localTimeZone, CancellationToken cancellationToken)
             => throw new NotSupportedException();
 
@@ -198,7 +277,10 @@ public sealed class PlaytimeLimitNotifierTests
             => throw new NotSupportedException();
 
         public Task<TimeSpan> GetDurationForGameAndLocalRangeAsync(long gameId, DateOnly localStart, DateOnly localEndExclusive, TimeZoneInfo localTimeZone, CancellationToken cancellationToken)
-            => Task.FromResult(duration);
+        {
+            CallCount++;
+            return Task.FromResult(Duration);
+        }
 
         public Task<IReadOnlyList<DailyPlaytimeInfo>> GetActivityHeatmapAsync(int weekCount, TimeZoneInfo localTimeZone, CancellationToken cancellationToken)
             => throw new NotSupportedException();
@@ -261,6 +343,6 @@ public sealed class PlaytimeLimitNotifierTests
 
     private sealed class FakeClock(DateTimeOffset nowUtc) : IClock
     {
-        public DateTimeOffset UtcNow { get; } = nowUtc;
+        public DateTimeOffset UtcNow { get; set; } = nowUtc;
     }
 }

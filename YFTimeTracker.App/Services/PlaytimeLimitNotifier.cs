@@ -15,7 +15,12 @@ public sealed class PlaytimeLimitNotifier(
     IClock clock,
     ILogger<PlaytimeLimitNotifier> logger) : IPlaytimeLimitNotifier
 {
+    // Obergrenze für die errechnete Wartezeit. Sie fängt Fälle ab, in denen die Spielzeit nicht
+    // durch die laufende Session wächst, etwa wenn nachträglich eine Session von Hand ergänzt wird.
+    private static readonly TimeSpan MaximumCheckInterval = TimeSpan.FromMinutes(5);
+
     private readonly ConcurrentDictionary<string, byte> notifiedReferenceKeys = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, DateTimeOffset> nextCheckByReferenceKey = new(StringComparer.Ordinal);
     private DateOnly cachedDay;
     private bool initialized;
 
@@ -107,10 +112,24 @@ public sealed class PlaytimeLimitNotifier(
             return;
         }
 
+        var now = clock.UtcNow;
+        if (nextCheckByReferenceKey.TryGetValue(referenceKey, out var nextCheckAtUtc) && now < nextCheckAtUtc)
+        {
+            return;
+        }
+
         var duration = await statistics.GetDurationForGameAndLocalRangeAsync(
             game.Id, periodStart, periodEndExclusive, TimeZoneInfo.Local, CancellationToken.None);
         if (duration.TotalMinutes < limitMinutes)
         {
+            // Die Spielzeit wächst höchstens in Echtzeit, weil pro Spiel nur eine Session offen sein
+            // kann. Vor Ablauf der Restzeit ist das Limit deshalb nicht erreichbar und eine erneute
+            // Abfrage überflüssig.
+            var remaining = TimeSpan.FromMinutes(limitMinutes) - duration;
+            var delay = remaining < TimeSpan.Zero ? TimeSpan.Zero : remaining;
+            nextCheckByReferenceKey[referenceKey] = now + (delay > MaximumCheckInterval
+                ? MaximumCheckInterval
+                : delay);
             return;
         }
 
@@ -118,6 +137,8 @@ public sealed class PlaytimeLimitNotifier(
         {
             return;
         }
+
+        nextCheckByReferenceKey.TryRemove(referenceKey, out _);
 
         if (await notificationLog.ExistsAsync(
                 NotificationKind.PlaytimeLimitReached,
@@ -143,6 +164,7 @@ public sealed class PlaytimeLimitNotifier(
 
         cachedDay = today;
         notifiedReferenceKeys.Clear();
+        nextCheckByReferenceKey.Clear();
     }
 
     private async Task LogNotificationAsync(
