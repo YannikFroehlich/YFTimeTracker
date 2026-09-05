@@ -79,6 +79,17 @@ public sealed partial class GameIcon : UserControl
         }
     }
 
+    private int GetDecodePixelWidth()
+    {
+        var size = Math.Max(ActualWidth, ActualHeight);
+        if (size <= 0)
+        {
+            size = 96;
+        }
+
+        return (int)Math.Round(Math.Clamp(size, 32, 256));
+    }
+
     private async Task LoadIconAsync(string? iconPath)
     {
         var currentVersion = Interlocked.Increment(ref loadVersion);
@@ -95,7 +106,11 @@ public sealed partial class GameIcon : UserControl
         {
             var file = await StorageFile.GetFileFromPathAsync(iconPath);
             using var stream = await file.OpenReadAsync();
-            var image = new BitmapImage();
+            var image = new BitmapImage
+            {
+                DecodePixelType = DecodePixelType.Logical,
+                DecodePixelWidth = GetDecodePixelWidth(),
+            };
             await image.SetSourceAsync(stream);
             if (currentVersion != Volatile.Read(ref loadVersion)
                 || !string.Equals(IconPath, iconPath, StringComparison.OrdinalIgnoreCase))
