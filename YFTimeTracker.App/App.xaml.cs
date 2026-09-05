@@ -89,11 +89,11 @@ public partial class App : Application
                 services.AddTransient<SettingsPage>();
                 services.AddSingleton<DashboardViewModel>();
                 services.AddSingleton<GlobalSearchViewModel>();
-                services.AddSingleton<GamesViewModel>();
+                services.AddTransient<GamesViewModel>();
                 services.AddTransient<GameDetailsViewModel>();
-                services.AddSingleton<SessionsViewModel>();
-                services.AddSingleton<StatisticsViewModel>();
-                services.AddSingleton<YearReviewViewModel>();
+                services.AddTransient<SessionsViewModel>();
+                services.AddTransient<StatisticsViewModel>();
+                services.AddTransient<YearReviewViewModel>();
                 services.AddSingleton<SettingsViewModel>();
             })
             .Build();
