@@ -105,6 +105,31 @@ public sealed class NotificationLogRepositoryTests
     }
 
     [TestMethod]
+    public async Task AddAsync_raises_EntryAdded()
+    {
+        using var paths = new TempAppPathProvider();
+        var factory = new TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var repository = new NotificationLogRepository(factory);
+        var raised = 0;
+        repository.EntryAdded += (_, _) => raised++;
+
+        await repository.AddAsync(new NotificationLogEntry
+        {
+            Kind = NotificationKind.UpdateAvailable,
+            Title = "Update verfügbar",
+            Message = "Test",
+            CreatedAtUtc = DateTimeOffset.Parse("2026-09-03T10:00:00Z")
+        }, CancellationToken.None);
+
+        Assert.AreEqual(1, raised);
+    }
+
+    [TestMethod]
     public async Task DeleteAsync_removes_only_the_matching_entry()
     {
         using var paths = new TempAppPathProvider();

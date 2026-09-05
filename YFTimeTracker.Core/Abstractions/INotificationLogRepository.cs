@@ -4,6 +4,8 @@ namespace YFTimeTracker.Core.Abstractions;
 
 public interface INotificationLogRepository
 {
+    event EventHandler? EntryAdded;
+
     Task<NotificationLogEntry> AddAsync(NotificationLogEntry entry, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<NotificationLogEntry>> GetRecentAsync(int count, CancellationToken cancellationToken);

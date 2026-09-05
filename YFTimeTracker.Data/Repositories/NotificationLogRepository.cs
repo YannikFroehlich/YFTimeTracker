@@ -6,11 +6,14 @@ namespace YFTimeTracker.Data.Repositories;
 
 public sealed class NotificationLogRepository(IDbContextFactory<YFTimeTrackerDbContext> contextFactory) : INotificationLogRepository
 {
+    public event EventHandler? EntryAdded;
+
     public async Task<NotificationLogEntry> AddAsync(NotificationLogEntry entry, CancellationToken cancellationToken)
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         context.NotificationLogEntries.Add(entry);
         await context.SaveChangesAsync(cancellationToken);
+        EntryAdded?.Invoke(this, EventArgs.Empty);
         return entry;
     }
 

@@ -49,6 +49,7 @@ public sealed partial class MainWindow : Window
         settingsStore = App.Services.GetRequiredService<ISettingsStore>();
         appUpdateService = App.Services.GetRequiredService<IAppUpdateService>();
         notificationLog = App.Services.GetRequiredService<INotificationLogRepository>();
+        notificationLog.EntryAdded += NotificationLog_EntryAdded;
         firstRunSetupService = App.Services.GetRequiredService<IFirstRunSetupService>();
         trackingService = App.Services.GetRequiredService<IGameTrackingService>();
         themeService = App.Services.GetRequiredService<IThemeService>();
@@ -427,6 +428,11 @@ public sealed partial class MainWindow : Window
     {
         await dashboardViewModel.RefreshAsync();
         await RefreshNotificationBadgeAsync();
+    }
+
+    private void NotificationLog_EntryAdded(object? sender, EventArgs e)
+    {
+        DispatcherQueue.TryEnqueue(async () => await RefreshNotificationBadgeAsync());
     }
 
     private async Task RefreshNotificationBadgeAsync()
