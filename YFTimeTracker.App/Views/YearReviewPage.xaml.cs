@@ -52,6 +52,9 @@ public sealed partial class YearReviewPage : Page
 
         try
         {
+            ShareFooterPanel.Visibility = Visibility.Visible;
+            ShareFooterPanel.UpdateLayout();
+
             var bitmap = new RenderTargetBitmap();
             await bitmap.RenderAsync(ShareContent);
             var pixels = await bitmap.GetPixelsAsync();
@@ -80,6 +83,10 @@ public sealed partial class YearReviewPage : Page
         catch (Exception exception)
         {
             ViewModel.StatusMessage = $"Bild konnte nicht erstellt werden: {exception.Message}";
+        }
+        finally
+        {
+            ShareFooterPanel.Visibility = Visibility.Collapsed;
         }
     }
 

@@ -299,11 +299,12 @@ public sealed class StatisticsViewModel : ObservableObject
         };
         ChartMinimumWidth = Math.Max(560, report.Timeline.Count * (itemWidth + 8));
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(clock.UtcNow, TimeZoneInfo.Local).Date);
+        var orderedTimeline = report.Timeline.Reverse().ToList();
 
-        var linePoints = new List<Point>(report.Timeline.Count);
-        for (var index = 0; index < report.Timeline.Count; index++)
+        var linePoints = new List<Point>(orderedTimeline.Count);
+        for (var index = 0; index < orderedTimeline.Count; index++)
         {
-            var point = report.Timeline[index];
+            var point = orderedTimeline[index];
             var height = point.Duration <= TimeSpan.Zero
                 ? 4
                 : Math.Max(10, point.Duration.TotalHours / maximumHours * 152);

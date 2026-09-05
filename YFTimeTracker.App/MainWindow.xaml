@@ -244,68 +244,70 @@
                     </AutoSuggestBox>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16">
-                        <Button
-                            Width="42"
-                            Height="42"
-                            Padding="0"
-                            Background="{ThemeResource YFOutlineButtonBackgroundBrush}"
-                            BorderBrush="{ThemeResource YFStrokeBrush}"
-                            BorderThickness="1"
-                            CornerRadius="21"
-                            ToolTipService.ToolTip="Benachrichtigungen">
-                            <Button.Flyout>
-                                <Flyout x:Name="NotificationsFlyout" Opening="NotificationsFlyout_Opening" Placement="Bottom">
-                                    <StackPanel Width="300" Spacing="10">
-                                        <TextBlock FontSize="14" FontWeight="SemiBold" Text="Benachrichtigungen" />
-                                        <TextBlock
-                                            x:Name="NotificationsEmptyText"
-                                            FontSize="11"
-                                            Foreground="{ThemeResource YFMutedBrush}"
-                                            Text="Keine Benachrichtigungen"
-                                            Visibility="Collapsed" />
-                                        <ListView
-                                            x:Name="NotificationsList"
-                                            MaxHeight="320"
-                                            IsItemClickEnabled="True"
-                                            ItemClick="NotificationsList_ItemClick"
-                                            ItemsSource="{x:Bind NotificationItems}"
-                                            SelectionMode="None">
-                                            <ListView.ItemTemplate>
-                                                <DataTemplate x:DataType="viewModels:NotificationListItemViewModel">
-                                                    <StackPanel Margin="0,4" Spacing="2">
-                                                        <TextBlock
-                                                            FontSize="12"
-                                                            FontWeight="SemiBold"
-                                                            Text="{x:Bind Title}"
-                                                            TextTrimming="CharacterEllipsis" />
-                                                        <TextBlock
-                                                            FontSize="11"
-                                                            Foreground="{ThemeResource YFMutedBrush}"
-                                                            Text="{x:Bind Message}"
-                                                            TextWrapping="Wrap" />
-                                                        <TextBlock FontSize="9" Foreground="{ThemeResource YFMutedBrush}" Text="{x:Bind TimestampText}" />
-                                                    </StackPanel>
-                                                </DataTemplate>
-                                            </ListView.ItemTemplate>
-                                        </ListView>
-                                    </StackPanel>
-                                </Flyout>
-                            </Button.Flyout>
-                            <Grid Width="42" Height="42">
+                        <Grid Width="42" Height="42">
+                            <Button
+                                Width="42"
+                                Height="42"
+                                Padding="0"
+                                Background="{ThemeResource YFOutlineButtonBackgroundBrush}"
+                                BorderBrush="{ThemeResource YFStrokeBrush}"
+                                BorderThickness="1"
+                                CornerRadius="21"
+                                ToolTipService.ToolTip="Benachrichtigungen">
+                                <Button.Flyout>
+                                    <Flyout x:Name="NotificationsFlyout" Opening="NotificationsFlyout_Opening" Placement="Bottom">
+                                        <StackPanel Width="300" Spacing="10">
+                                            <TextBlock FontSize="14" FontWeight="SemiBold" Text="Benachrichtigungen" />
+                                            <TextBlock
+                                                x:Name="NotificationsEmptyText"
+                                                FontSize="11"
+                                                Foreground="{ThemeResource YFMutedBrush}"
+                                                Text="Keine Benachrichtigungen"
+                                                Visibility="Collapsed" />
+                                            <ListView
+                                                x:Name="NotificationsList"
+                                                MaxHeight="320"
+                                                IsItemClickEnabled="True"
+                                                ItemClick="NotificationsList_ItemClick"
+                                                ItemsSource="{x:Bind NotificationItems}"
+                                                SelectionMode="None">
+                                                <ListView.ItemTemplate>
+                                                    <DataTemplate x:DataType="viewModels:NotificationListItemViewModel">
+                                                        <StackPanel Margin="0,4" Spacing="2">
+                                                            <TextBlock
+                                                                FontSize="12"
+                                                                FontWeight="SemiBold"
+                                                                Text="{x:Bind Title}"
+                                                                TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock
+                                                                FontSize="11"
+                                                                Foreground="{ThemeResource YFMutedBrush}"
+                                                                Text="{x:Bind Message}"
+                                                                TextWrapping="Wrap" />
+                                                            <TextBlock FontSize="9" Foreground="{ThemeResource YFMutedBrush}" Text="{x:Bind TimestampText}" />
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ListView.ItemTemplate>
+                                            </ListView>
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
                                 <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Glyph="&#xE7ED;" />
-                                <Border
-                                    x:Name="NotificationBadge"
-                                    Width="18"
-                                    Height="18"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Top"
-                                    Background="{StaticResource YFPurpleBrush}"
-                                    CornerRadius="9"
-                                    Visibility="Collapsed">
-                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="9" FontWeight="Bold" Text="·" />
-                                </Border>
-                            </Grid>
-                        </Button>
+                            </Button>
+                            <Border
+                                x:Name="NotificationBadge"
+                                Width="14"
+                                Height="14"
+                                Margin="0,-2,-2,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Background="{StaticResource YFPurpleBrush}"
+                                BorderBrush="{ThemeResource YFOutlineButtonBackgroundBrush}"
+                                BorderThickness="2"
+                                CornerRadius="7"
+                                IsHitTestVisible="False"
+                                Visibility="Collapsed" />
+                        </Grid>
                         <Button
                             Padding="6,4,12,4"
                             Background="{ThemeResource YFOutlineButtonBackgroundBrush}"

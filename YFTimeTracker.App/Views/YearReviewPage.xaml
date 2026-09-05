@@ -175,7 +175,7 @@
                                     <TextBlock HorizontalAlignment="Right" Style="{StaticResource YFMutedTextStyle}" Text="{Binding ChartMaximumText}" />
                                 </Grid>
                                 <ScrollViewer Grid.Row="1" Margin="0,20,0,0" HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled" VerticalScrollBarVisibility="Disabled">
-                                    <ItemsControl ItemsSource="{Binding Months}">
+                                    <ItemsControl Margin="0,0,0,18" ItemsSource="{Binding Months}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <ItemsStackPanel Orientation="Horizontal" />
@@ -307,7 +307,7 @@
                         </StackPanel>
                     </Border>
 
-                    <StackPanel Grid.Row="4" Margin="0,2,0,0" HorizontalAlignment="Center" Orientation="Horizontal" Spacing="8" Visibility="{Binding DataVisibility}">
+                    <StackPanel x:Name="ShareFooterPanel" Grid.Row="4" Margin="0,2,0,0" HorizontalAlignment="Center" Orientation="Horizontal" Spacing="8" Visibility="Collapsed">
                         <Image Width="18" Height="18" Source="/Assets/YFTimeTrackerLogo.png" Stretch="Uniform" />
                         <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding ShareFooterText}" />
                     </StackPanel>
