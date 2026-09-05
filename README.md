@@ -99,7 +99,9 @@ Das Diagnose-ZIP enthält Systeminformationen und höchstens drei aktuelle Logda
 
 Manuell registrierte EXE-Pfade werden direkt erkannt. Zusätzlich aktualisiert YFTimeTracker den lokalen Launcher-Katalog beim Start und anschließend alle fünf Minuten. Ist bei einer Launcher-Installation keine eindeutige Startdatei bekannt, muss ein passender Prozess innerhalb des Installationsordners in zwei aufeinanderfolgenden Scans laufen. Hilfsprogramme wie Launcher, Uninstaller, Crash Reporter und Anti-Cheat-Installer werden ausgeschlossen.
 
-Mehrere Prozesse desselben Spiels werden zu einer Session zusammengefasst. Prozessneustarts erzeugen getrennte Sessions. Nach einem App-Absturz wird eine offene Session nur dann fortgesetzt, wenn das Spiel im selben Windows-Start weiterhin läuft; andernfalls endet sie am letzten gespeicherten Lebenszeichen. Das Abtrennen längerer Standby-Zeiten ist technisch nur nach bestem Ermessen möglich und hängt vom Windows-Energiesparmodus ab.
+Mehrere Prozesse desselben Spiels werden zu einer Session zusammengefasst. Prozessneustarts erzeugen getrennte Sessions. Nach einem App-Absturz wird eine offene Session nur dann fortgesetzt, wenn das Spiel im selben Windows-Start weiterhin läuft; andernfalls endet sie am letzten gespeicherten Lebenszeichen.
+
+Wechselt Windows in den Energiesparmodus, endet eine laufende Session zum gemeldeten Zeitpunkt des Wechsels, und nach dem Aufwachen beginnt für ein weiterhin laufendes Spiel eine neue Session. Meldet Windows den Wechsel nicht – das kommt bei modernem Standby (S0) vor –, greift weiterhin die Erkennung über die ausgefallenen Scans: Die Session endet dann beim letzten beobachteten Scan. Kurze Schlafphasen unterhalb dieser Schwelle können in diesem Fall noch als Spielzeit gezählt werden.
 
 Die manuellen Prüfschritte stehen im [Tracking-Smoke-Test](docs/TRACKING_SMOKE_TEST.md).
 

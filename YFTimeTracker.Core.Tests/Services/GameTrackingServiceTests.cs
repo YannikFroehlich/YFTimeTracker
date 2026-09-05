@@ -32,6 +32,7 @@ public sealed class GameTrackingServiceTests
             new FakeGameInstallationProvider(),
             new FakeBootSessionProvider("boot"),
             new InMemorySettingsStore(),
+            new FakeSuspendNotifier(),
             clock,
             NullLogger<GameTrackingService>.Instance);
 
@@ -672,6 +673,126 @@ public sealed class GameTrackingServiceTests
     }
 
     [TestMethod]
+    public async Task Suspending_the_system_closes_the_open_session_at_the_suspend_time()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-09-05T10:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var game = await AddManualGameAsync(games, "Test", clock.UtcNow, @"C:\Games\Test.exe");
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var suspendNotifier = new FakeSuspendNotifier();
+        var settings = new InMemorySettingsStore();
+        await settings.SetAsync(AppSettingKeys.TrackingIntervalSeconds, "60", CancellationToken.None);
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(@"C:\Games\Test.exe"),
+            new FakeGameInstallationProvider(),
+            clock,
+            settings: settings,
+            suspendNotifier: suspendNotifier);
+
+        await using (tracking)
+        {
+            await tracking.StartAsync(CancellationToken.None);
+            Assert.HasCount(1, await sessions.GetOpenSessionsAsync(CancellationToken.None));
+
+            clock.UtcNow = DateTimeOffset.Parse("2026-09-05T10:00:30Z");
+            suspendNotifier.RaiseSuspending();
+
+            Assert.IsEmpty(await sessions.GetOpenSessionsAsync(CancellationToken.None));
+            var stored = await sessions.GetSessionsForGameAsync(game.Id, CancellationToken.None);
+            Assert.HasCount(1, stored);
+            Assert.AreEqual(30, stored[0].DurationSeconds);
+        }
+    }
+
+    [TestMethod]
+    public async Task Short_suspension_below_the_gap_threshold_is_not_counted_as_playtime()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-09-05T10:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var game = await AddManualGameAsync(games, "Test", clock.UtcNow, @"C:\Games\Test.exe");
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var suspendNotifier = new FakeSuspendNotifier();
+        var settings = new InMemorySettingsStore();
+        await settings.SetAsync(AppSettingKeys.TrackingIntervalSeconds, "60", CancellationToken.None);
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(@"C:\Games\Test.exe"),
+            new FakeGameInstallationProvider(),
+            clock,
+            settings: settings,
+            suspendNotifier: suspendNotifier);
+
+        await using (tracking)
+        {
+            await tracking.StartAsync(CancellationToken.None);
+
+            clock.UtcNow = DateTimeOffset.Parse("2026-09-05T10:00:30Z");
+            suspendNotifier.RaiseSuspending();
+
+            // 30 Sekunden Schlaf liegen unter der Schwelle der Lückenerkennung und wären ohne das
+            // Energieereignis vollständig als Spielzeit gezählt worden.
+            clock.UtcNow = DateTimeOffset.Parse("2026-09-05T10:01:00Z");
+            await tracking.ScanOnceAsync(CancellationToken.None);
+
+            clock.UtcNow = DateTimeOffset.Parse("2026-09-05T10:02:00Z");
+            await tracking.StopAsync(CancellationToken.None);
+
+            var stored = (await sessions.GetSessionsForGameAsync(game.Id, CancellationToken.None))
+                .OrderBy(session => session.StartedAtUtc)
+                .ToArray();
+            Assert.HasCount(2, stored);
+            Assert.AreEqual(30, stored[0].DurationSeconds);
+            Assert.AreEqual(DateTimeOffset.Parse("2026-09-05T10:01:00Z"), stored[1].StartedAtUtc);
+            Assert.AreEqual(60, stored[1].DurationSeconds);
+        }
+    }
+
+    [TestMethod]
+    public async Task Resuming_the_system_starts_a_new_session_for_a_still_running_game()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-09-05T10:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var game = await AddManualGameAsync(games, "Test", clock.UtcNow, @"C:\Games\Test.exe");
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var suspendNotifier = new FakeSuspendNotifier();
+        var settings = new InMemorySettingsStore();
+        await settings.SetAsync(AppSettingKeys.TrackingIntervalSeconds, "60", CancellationToken.None);
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(@"C:\Games\Test.exe"),
+            new FakeGameInstallationProvider(),
+            clock,
+            settings: settings,
+            suspendNotifier: suspendNotifier);
+
+        await using (tracking)
+        {
+            await tracking.StartAsync(CancellationToken.None);
+            clock.UtcNow = DateTimeOffset.Parse("2026-09-05T10:00:30Z");
+            suspendNotifier.RaiseSuspending();
+            Assert.IsEmpty(await sessions.GetOpenSessionsAsync(CancellationToken.None));
+
+            clock.UtcNow = DateTimeOffset.Parse("2026-09-05T10:05:00Z");
+            suspendNotifier.RaiseResumed();
+
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var openSessions = await sessions.GetOpenSessionsAsync(CancellationToken.None);
+            while (openSessions.Count == 0 && !timeout.IsCancellationRequested)
+            {
+                await Task.Delay(25, CancellationToken.None);
+                openSessions = await sessions.GetOpenSessionsAsync(CancellationToken.None);
+            }
+
+            Assert.HasCount(1, openSessions);
+            Assert.AreEqual(DateTimeOffset.Parse("2026-09-05T10:05:00Z"), openSessions[0].StartedAtUtc);
+        }
+    }
+
+    [TestMethod]
     public async Task ScanOnceAsync_applies_a_changed_scan_interval()
     {
         var clock = new FakeClock(DateTimeOffset.Parse("2026-09-05T10:00:00Z"));
@@ -793,7 +914,8 @@ public sealed class GameTrackingServiceTests
         FakeGameInstallationProvider installations,
         FakeClock clock,
         FakeBootSessionProvider? bootSession = null,
-        InMemorySettingsStore? settings = null)
+        InMemorySettingsStore? settings = null,
+        FakeSuspendNotifier? suspendNotifier = null)
     {
         return new GameTrackingService(
             games,
@@ -802,6 +924,7 @@ public sealed class GameTrackingServiceTests
             installations,
             bootSession ?? new FakeBootSessionProvider("boot"),
             settings ?? new InMemorySettingsStore(),
+            suspendNotifier ?? new FakeSuspendNotifier(),
             clock,
             NullLogger<GameTrackingService>.Instance);
     }

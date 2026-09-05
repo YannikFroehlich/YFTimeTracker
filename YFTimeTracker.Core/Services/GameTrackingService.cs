@@ -11,11 +11,16 @@ public sealed class GameTrackingService(
     IGameInstallationProvider installationProvider,
     IBootSessionProvider bootSessionProvider,
     ISettingsStore settings,
+    ISystemSuspendNotifier suspendNotifier,
     IClock clock,
     ILogger<GameTrackingService> logger) : IGameTrackingService
 {
     private const int MinScanIntervalSeconds = 1;
     private const int MaxScanIntervalSeconds = 60;
+
+    // Windows wartet beim Aussetzen nur kurz auf die Anwendung. Kommt das Schließen der Sessions
+    // nicht rechtzeitig durch, greift beim nächsten Scan weiterhin die Lückenerkennung.
+    private static readonly TimeSpan SuspendHandlingTimeout = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan DefaultScanInterval = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan DefaultHeartbeatInterval = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan LauncherRefreshInterval = TimeSpan.FromMinutes(5);
@@ -69,11 +74,15 @@ public sealed class GameTrackingService(
             isPaused = !await settings.GetBoolAsync(AppSettingKeys.TrackingEnabled, true, cancellationToken);
             runCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             await RecoverOpenSessionsCoreAsync(cancellationToken);
+            suspendNotifier.Suspending += SuspendNotifier_Suspending;
+            suspendNotifier.Resumed += SuspendNotifier_Resumed;
             runTask = RunAsync(runCancellation.Token);
             await PublishStateAsync(true, cancellationToken);
         }
         catch
         {
+            suspendNotifier.Suspending -= SuspendNotifier_Suspending;
+            suspendNotifier.Resumed -= SuspendNotifier_Resumed;
             if (runCancellation is not null)
             {
                 await runCancellation.CancelAsync();
@@ -98,6 +107,8 @@ public sealed class GameTrackingService(
         await gate.WaitAsync(cancellationToken);
         try
         {
+            suspendNotifier.Suspending -= SuspendNotifier_Suspending;
+            suspendNotifier.Resumed -= SuspendNotifier_Resumed;
             cancellationToStop = runCancellation;
             taskToStop = runTask;
             runCancellation = null;
@@ -211,6 +222,59 @@ public sealed class GameTrackingService(
     {
         await StopAsync(CancellationToken.None);
         gate.Dispose();
+    }
+
+    private void SuspendNotifier_Suspending(object? sender, EventArgs e)
+    {
+        // Bewusst blockierend: Windows setzt aus, sobald die Behandlung zurückkehrt. Würde hier
+        // nur eine Aufgabe gestartet, käme das Schließen der Sessions womöglich nicht mehr durch.
+        using var timeout = new CancellationTokenSource(SuspendHandlingTimeout);
+        try
+        {
+            CloseOpenSessionsForSuspendAsync(timeout.Token).GetAwaiter().GetResult();
+        }
+        catch (OperationCanceledException)
+        {
+            logger.LogWarning(
+                "Could not close the open sessions before the system suspended; the tracking gap detection will handle them.");
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Handling the system suspension failed.");
+        }
+    }
+
+    private void SuspendNotifier_Resumed(object? sender, EventArgs e)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await ScanOnceAsync(CancellationToken.None);
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "The first scan after the system resumed failed.");
+            }
+        });
+    }
+
+    private async Task CloseOpenSessionsForSuspendAsync(CancellationToken cancellationToken)
+    {
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            var suspendedAtUtc = clock.UtcNow;
+            await CloseAllOpenSessionsAsync(suspendedAtUtc, cancellationToken);
+            discoveryCandidates.Clear();
+            lastSuccessfulScanAtUtc = suspendedAtUtc;
+            logger.LogInformation("Closed the open sessions at {SuspendedAtUtc} because the system suspends.", suspendedAtUtc);
+            await PublishStateAsync(runTask is not null, cancellationToken);
+        }
+        finally
+        {
+            gate.Release();
+        }
     }
 
     private async Task RunAsync(CancellationToken cancellationToken)

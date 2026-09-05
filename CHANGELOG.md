@@ -8,6 +8,7 @@
 - Verbessert: Laufende Spiele werden zuverlässiger erkannt. Die Prozesserkennung kommt jetzt auch an Programme heran, die mit erhöhten Rechten oder unter Anti-Cheat-Schutz laufen, und benötigt dabei weniger Rechenzeit.
 - Verbessert: Weniger Hintergrundlast – die Dashboard-Daten werden nur noch aktualisiert, solange das Dashboard auch wirklich sichtbar ist, statt durchgehend alle fünf Sekunden.
 - Verbessert: Die lokalen Logdateien bleiben deutlich kleiner, weil nicht mehr jede einzelne Datenbankabfrage protokolliert wird. Das verkleinert auch den Diagnosebericht.
+- Verbessert: Geht der PC in den Energiesparmodus, endet die laufende Session jetzt zum gemeldeten Zeitpunkt des Wechsels, statt erst über die ausgefallenen Scans geschätzt zu werden. Auch kurze Schlafphasen zählen dadurch nicht mehr als Spielzeit.
 
 ## 1.0.4 – 2026-09-05
 - Verbessert: Geringerer Arbeitsspeicherverbrauch im Hintergrundbetrieb – Spiel-Icons werden jetzt in der tatsächlich benötigten Größe statt immer in voller Auflösung geladen, und Bibliotheks-, Sessions- sowie Statistikdaten bleiben nach dem Verlassen der jeweiligen Seite nicht mehr dauerhaft im Speicher.

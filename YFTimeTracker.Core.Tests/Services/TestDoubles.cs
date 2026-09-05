@@ -35,6 +35,17 @@ internal sealed class FakeProcessSnapshotProvider : IProcessSnapshotProvider
     }
 }
 
+internal sealed class FakeSuspendNotifier : ISystemSuspendNotifier
+{
+    public event EventHandler? Suspending;
+
+    public event EventHandler? Resumed;
+
+    public void RaiseSuspending() => Suspending?.Invoke(this, EventArgs.Empty);
+
+    public void RaiseResumed() => Resumed?.Invoke(this, EventArgs.Empty);
+}
+
 internal sealed class FakeGameInstallationProvider : IGameInstallationProvider
 {
     public LauncherDiscoveryResult Result { get; set; } = LauncherDiscoveryResult.Empty;
