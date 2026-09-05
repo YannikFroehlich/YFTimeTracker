@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.UI.Xaml;
 using Serilog;
+using Serilog.Events;
 using YFTimeTracker.App.Services;
 using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.App.Views;
@@ -54,6 +55,10 @@ public partial class App : Application
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Information()
+            // EF Core protokolliert sonst jede einzelne SQL-Abfrage im Volltext, was die
+            // Logdateien binnen weniger Tage auf mehrere Dutzend Megabyte anwachsen lässt.
+            // Migrationsmeldungen bleiben erhalten, weil nur die Command-Kategorie angehoben wird.
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Warning)
             .WriteTo.File(
                 Path.Combine(pathProvider.LogDirectory, "yftimetracker-.log"),
                 rollingInterval: RollingInterval.Day,

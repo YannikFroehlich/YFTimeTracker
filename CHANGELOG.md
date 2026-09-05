@@ -7,6 +7,7 @@
 - Behoben: Ein erreichtes Tages- oder Wochenlimit wird pro Zeitraum wirklich nur einmal gemeldet. Nach einem Neustart der App erschien die Meldung bisher am selben Tag erneut.
 - Verbessert: Laufende Spiele werden zuverlässiger erkannt. Die Prozesserkennung kommt jetzt auch an Programme heran, die mit erhöhten Rechten oder unter Anti-Cheat-Schutz laufen, und benötigt dabei weniger Rechenzeit.
 - Verbessert: Weniger Hintergrundlast – die Dashboard-Daten werden nur noch aktualisiert, solange das Dashboard auch wirklich sichtbar ist, statt durchgehend alle fünf Sekunden.
+- Verbessert: Die lokalen Logdateien bleiben deutlich kleiner, weil nicht mehr jede einzelne Datenbankabfrage protokolliert wird. Das verkleinert auch den Diagnosebericht.
 
 ## 1.0.4 – 2026-09-05
 - Verbessert: Geringerer Arbeitsspeicherverbrauch im Hintergrundbetrieb – Spiel-Icons werden jetzt in der tatsächlich benötigten Größe statt immer in voller Auflösung geladen, und Bibliotheks-, Sessions- sowie Statistikdaten bleiben nach dem Verlassen der jeweiligen Seite nicht mehr dauerhaft im Speicher.
