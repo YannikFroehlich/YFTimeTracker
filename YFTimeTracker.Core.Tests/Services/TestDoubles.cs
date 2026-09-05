@@ -21,9 +21,14 @@ internal sealed class FakeProcessSnapshotProvider : IProcessSnapshotProvider
 
     public IReadOnlyList<RunningProcessInfo>? RunningProcesses { get; set; }
 
+    private int callCount;
+
+    public int CallCount => Volatile.Read(ref callCount);
+
     public Task<IReadOnlyList<RunningProcessInfo>> GetRunningProcessesAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        Interlocked.Increment(ref callCount);
         return Task.FromResult(RunningProcesses ?? RunningPathKeys
             .Select(path => new RunningProcessInfo(path, path))
             .ToArray());

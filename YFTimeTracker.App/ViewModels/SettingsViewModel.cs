@@ -342,6 +342,11 @@ public sealed class SettingsViewModel : ObservableObject
         {
             await trackingService.PauseAsync(CancellationToken.None);
         }
+        else
+        {
+            // Übernimmt ein geändertes Scan-Intervall sofort, statt bis zum nächsten Tick zu warten.
+            await trackingService.ScanOnceAsync(CancellationToken.None);
+        }
 
         StatusMessage = "Einstellungen gespeichert";
         App.MainWindow?.SetMinimizeOnClose(MinimizeOnClose);

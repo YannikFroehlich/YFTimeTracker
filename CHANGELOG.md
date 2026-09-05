@@ -2,6 +2,9 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.0.5 – 2026-09-05
+- Behoben: Ein geändertes Scan-Intervall wird jetzt sofort übernommen. Bisher lief das Tracking bis zum nächsten App-Start mit dem alten Intervall weiter.
+
 ## 1.0.4 – 2026-09-05
 - Verbessert: Geringerer Arbeitsspeicherverbrauch im Hintergrundbetrieb – Spiel-Icons werden jetzt in der tatsächlich benötigten Größe statt immer in voller Auflösung geladen, und Bibliotheks-, Sessions- sowie Statistikdaten bleiben nach dem Verlassen der jeweiligen Seite nicht mehr dauerhaft im Speicher.
 

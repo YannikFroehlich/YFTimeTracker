@@ -14,6 +14,8 @@ public sealed class GameTrackingService(
     IClock clock,
     ILogger<GameTrackingService> logger) : IGameTrackingService
 {
+    private const int MinScanIntervalSeconds = 1;
+    private const int MaxScanIntervalSeconds = 60;
     private static readonly TimeSpan DefaultScanInterval = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan DefaultHeartbeatInterval = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan LauncherRefreshInterval = TimeSpan.FromMinutes(5);
@@ -45,8 +47,12 @@ public sealed class GameTrackingService(
     private DateTimeOffset? lastSuccessfulScanAtUtc;
     private long scanNumber;
     private bool isPaused;
+    private long scanIntervalTicks = DefaultScanInterval.Ticks;
+    private PeriodicTimer? scanTimer;
 
     public TrackingState State { get; private set; } = TrackingState.Stopped;
+
+    public TimeSpan ScanInterval => new(Volatile.Read(ref scanIntervalTicks));
 
     public event EventHandler<TrackingState>? StateChanged;
 
@@ -184,7 +190,11 @@ public sealed class GameTrackingService(
         await gate.WaitAsync(cancellationToken);
         try
         {
-            if (!isPaused)
+            if (isPaused)
+            {
+                await RefreshScanIntervalAsync(cancellationToken);
+            }
+            else
             {
                 await ScanOnceCoreAsync(cancellationToken);
             }
@@ -205,27 +215,67 @@ public sealed class GameTrackingService(
 
     private async Task RunAsync(CancellationToken cancellationToken)
     {
+        var interval = await RefreshScanIntervalAsync(cancellationToken);
+
+        using var timer = new PeriodicTimer(interval);
+        Volatile.Write(ref scanTimer, timer);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                try
+                {
+                    await ScanOnceAsync(cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception exception)
+                {
+                    logger.LogError(exception, "Tracking scan failed.");
+                }
+            }
+        }
+        finally
+        {
+            Volatile.Write(ref scanTimer, null);
+        }
+    }
+
+    private async Task<TimeSpan> RefreshScanIntervalAsync(CancellationToken cancellationToken)
+    {
         var intervalSeconds = await settings.GetIntAsync(
             AppSettingKeys.TrackingIntervalSeconds,
             Convert.ToInt32(DefaultScanInterval.TotalSeconds),
             cancellationToken);
-        var interval = TimeSpan.FromSeconds(Math.Clamp(intervalSeconds, 1, 60));
+        var interval = TimeSpan.FromSeconds(
+            Math.Clamp(intervalSeconds, MinScanIntervalSeconds, MaxScanIntervalSeconds));
 
-        using var timer = new PeriodicTimer(interval);
-        while (await timer.WaitForNextTickAsync(cancellationToken))
+        if (Interlocked.Exchange(ref scanIntervalTicks, interval.Ticks) != interval.Ticks)
         {
-            try
-            {
-                await ScanOnceAsync(cancellationToken);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception exception)
-            {
-                logger.LogError(exception, "Tracking scan failed.");
-            }
+            ApplyScanInterval(interval);
+        }
+
+        return interval;
+    }
+
+    private void ApplyScanInterval(TimeSpan interval)
+    {
+        if (Volatile.Read(ref scanTimer) is not { } timer)
+        {
+            return;
+        }
+
+        try
+        {
+            timer.Period = interval;
+            logger.LogInformation(
+                "Applied the new tracking scan interval of {IntervalSeconds} seconds.",
+                interval.TotalSeconds);
+        }
+        catch (ObjectDisposedException)
+        {
         }
     }
 
@@ -306,11 +356,8 @@ public sealed class GameTrackingService(
         var runningProcesses = await processSnapshotProvider.GetRunningProcessesAsync(cancellationToken);
         var runningPathKeys = runningProcesses.Select(process => process.ExecutablePathKey).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var sessionStartOverrides = new Dictionary<long, DateTimeOffset>();
-        var scanIntervalSeconds = await settings.GetIntAsync(
-            AppSettingKeys.TrackingIntervalSeconds,
-            Convert.ToInt32(DefaultScanInterval.TotalSeconds),
-            cancellationToken);
-        var suspendGapThreshold = TimeSpan.FromSeconds(Math.Max(120, Math.Clamp(scanIntervalSeconds, 1, 60) * 3));
+        var scanInterval = await RefreshScanIntervalAsync(cancellationToken);
+        var suspendGapThreshold = TimeSpan.FromSeconds(Math.Max(120, scanInterval.TotalSeconds * 3));
         var hasUnobservedGap = previousSuccessfulScanAtUtc is { } previousScan
             && now - previousScan > suspendGapThreshold;
 

@@ -671,6 +671,121 @@ public sealed class GameTrackingServiceTests
         Assert.AreEqual(0, storedDuplicate.DurationSeconds);
     }
 
+    [TestMethod]
+    public async Task ScanOnceAsync_applies_a_changed_scan_interval()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-09-05T10:00:00Z"));
+        var settings = new InMemorySettingsStore();
+        await settings.SetAsync(AppSettingKeys.TrackingIntervalSeconds, "3", CancellationToken.None);
+        var tracking = CreateTracking(
+            new InMemoryGameRepository(),
+            new InMemoryGameSessionRepository(_ => null),
+            new FakeProcessSnapshotProvider(),
+            new FakeGameInstallationProvider(),
+            clock,
+            settings: settings);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+        Assert.AreEqual(TimeSpan.FromSeconds(3), tracking.ScanInterval);
+
+        await settings.SetAsync(AppSettingKeys.TrackingIntervalSeconds, "12", CancellationToken.None);
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        Assert.AreEqual(TimeSpan.FromSeconds(12), tracking.ScanInterval);
+    }
+
+    [TestMethod]
+    public async Task Running_tracking_loop_scans_again_with_a_shortened_interval()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-09-05T10:00:00Z"));
+        var settings = new InMemorySettingsStore();
+        await settings.SetAsync(AppSettingKeys.TrackingIntervalSeconds, "60", CancellationToken.None);
+        var processSnapshot = new FakeProcessSnapshotProvider();
+        var tracking = CreateTracking(
+            new InMemoryGameRepository(),
+            new InMemoryGameSessionRepository(_ => null),
+            processSnapshot,
+            new FakeGameInstallationProvider(),
+            clock,
+            settings: settings);
+
+        await using (tracking)
+        {
+            await tracking.StartAsync(CancellationToken.None);
+            Assert.AreEqual(TimeSpan.FromSeconds(60), tracking.ScanInterval);
+
+            await settings.SetAsync(AppSettingKeys.TrackingIntervalSeconds, "1", CancellationToken.None);
+            await tracking.ScanOnceAsync(CancellationToken.None);
+            Assert.AreEqual(TimeSpan.FromSeconds(1), tracking.ScanInterval);
+
+            // Ohne die Übernahme in den laufenden Timer käme der nächste Scan erst nach 60 Sekunden.
+            var scansSoFar = processSnapshot.CallCount;
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            while (processSnapshot.CallCount == scansSoFar && !timeout.IsCancellationRequested)
+            {
+                await Task.Delay(50, CancellationToken.None);
+            }
+
+            Assert.IsGreaterThan(
+                scansSoFar,
+                processSnapshot.CallCount,
+                "Der laufende Tracking-Timer hat das verkürzte Scan-Intervall nicht übernommen.");
+        }
+    }
+
+    [TestMethod]
+    public async Task ScanOnceAsync_clamps_the_scan_interval_to_the_supported_range()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-09-05T10:00:00Z"));
+        var settings = new InMemorySettingsStore();
+        var tracking = CreateTracking(
+            new InMemoryGameRepository(),
+            new InMemoryGameSessionRepository(_ => null),
+            new FakeProcessSnapshotProvider(),
+            new FakeGameInstallationProvider(),
+            clock,
+            settings: settings);
+
+        await settings.SetAsync(AppSettingKeys.TrackingIntervalSeconds, "999", CancellationToken.None);
+        await tracking.ScanOnceAsync(CancellationToken.None);
+        Assert.AreEqual(TimeSpan.FromSeconds(60), tracking.ScanInterval);
+
+        await settings.SetAsync(AppSettingKeys.TrackingIntervalSeconds, "0", CancellationToken.None);
+        await tracking.ScanOnceAsync(CancellationToken.None);
+        Assert.AreEqual(TimeSpan.FromSeconds(1), tracking.ScanInterval);
+    }
+
+    [TestMethod]
+    public async Task Paused_scan_applies_a_changed_scan_interval_without_opening_sessions()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-09-05T10:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var game = await games.AddAsync(new Game
+        {
+            Name = "Test",
+            ExecutablePath = @"C:\Games\Test.exe",
+            ExecutablePathKey = @"C:\GAMES\TEST.EXE",
+            ExecutableName = "Test.exe",
+            AddedAtUtc = clock.UtcNow
+        }, CancellationToken.None);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var settings = new InMemorySettingsStore();
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(@"C:\Games\Test.exe"),
+            new FakeGameInstallationProvider(),
+            clock,
+            settings: settings);
+
+        await tracking.PauseAsync(CancellationToken.None);
+        await settings.SetAsync(AppSettingKeys.TrackingIntervalSeconds, "20", CancellationToken.None);
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        Assert.AreEqual(TimeSpan.FromSeconds(20), tracking.ScanInterval);
+        Assert.IsEmpty(await sessions.GetOpenSessionsAsync(CancellationToken.None));
+    }
+
     private static GameTrackingService CreateTracking(
         InMemoryGameRepository games,
         InMemoryGameSessionRepository sessions,
