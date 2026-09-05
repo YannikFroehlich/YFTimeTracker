@@ -2,7 +2,7 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
-## 1.0.5 – 2026-09-05
+## 1.1.2 – 2026-09-05
 - Behoben: Ein geändertes Scan-Intervall wird jetzt sofort übernommen. Bisher lief das Tracking bis zum nächsten App-Start mit dem alten Intervall weiter.
 - Behoben: Ein erreichtes Tages- oder Wochenlimit wird pro Zeitraum wirklich nur einmal gemeldet. Nach einem Neustart der App erschien die Meldung bisher am selben Tag erneut.
 - Verbessert: Laufende Spiele werden zuverlässiger erkannt. Die Prozesserkennung kommt jetzt auch an Programme heran, die mit erhöhten Rechten oder unter Anti-Cheat-Schutz laufen, und benötigt dabei weniger Rechenzeit.
