@@ -2,6 +2,9 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.1.3 – 2026-09-06
+- Behoben: Über die Xbox-App installierte Spiele (z. B. Forza Horizon 6) werden jetzt wieder erkannt. Ihr Paketordner unter WindowsApps ist nur eine Verknüpfung auf den echten Installationsordner (etwa C:\XboxGames), und laufende Spiele ließen sich deshalb keinem erkannten Spiel zuordnen.
+
 ## 1.1.2 – 2026-09-05
 - Behoben: Ein geändertes Scan-Intervall wird jetzt sofort übernommen. Bisher lief das Tracking bis zum nächsten App-Start mit dem alten Intervall weiter.
 - Behoben: Ein erreichtes Tages- oder Wochenlimit wird pro Zeitraum wirklich nur einmal gemeldet. Nach einem Neustart der App erschien die Meldung bisher am selben Tag erneut.

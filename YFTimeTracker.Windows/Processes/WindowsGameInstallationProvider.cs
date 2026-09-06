@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
@@ -22,18 +22,28 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
 
     private readonly ILogger<WindowsGameInstallationProvider> logger;
     private readonly IXboxPackageCatalog xboxPackages;
+    private readonly IDirectoryLinkResolver directoryLinks;
 
     public WindowsGameInstallationProvider(ILogger<WindowsGameInstallationProvider> logger)
-        : this(logger, new WindowsXboxPackageCatalog())
+        : this(logger, new WindowsXboxPackageCatalog(), new WindowsDirectoryLinkResolver())
     {
     }
 
     internal WindowsGameInstallationProvider(
         ILogger<WindowsGameInstallationProvider> logger,
         IXboxPackageCatalog xboxPackages)
+        : this(logger, xboxPackages, new WindowsDirectoryLinkResolver())
+    {
+    }
+
+    internal WindowsGameInstallationProvider(
+        ILogger<WindowsGameInstallationProvider> logger,
+        IXboxPackageCatalog xboxPackages,
+        IDirectoryLinkResolver directoryLinks)
     {
         this.logger = logger;
         this.xboxPackages = xboxPackages;
+        this.directoryLinks = directoryLinks;
     }
 
     public Task<LauncherDiscoveryResult> DiscoverAsync(CancellationToken cancellationToken)
@@ -309,12 +319,18 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
                         continue;
                     }
 
-                    var installDirectory = Path.GetDirectoryName(configPath)!;
-                    var launchPaths = manifest.LaunchExecutables
-                        .Select(path => ResolveXboxLaunchPath(installDirectory, path))
-                        .Where(path => path is not null)
-                        .Select(path => path!)
-                        .ToArray();
+                    var packageDirectory = Path.GetDirectoryName(configPath)!;
+
+                    // Spiele der Xbox-App liegen unter <Laufwerk>:\XboxGames; der Paketordner in
+                    // WindowsApps ist nur eine Junction dorthin. Laufende Prozesse melden immer den
+                    // aufgelösten Zielpfad, deshalb muss die Installation darunter registriert werden.
+                    var installDirectory = directoryLinks.ResolveFinalTarget(packageDirectory);
+                    var launchPaths = ResolveXboxLaunchPaths(installDirectory, manifest.LaunchExecutables);
+                    if (!string.Equals(installDirectory, packageDirectory, StringComparison.OrdinalIgnoreCase))
+                    {
+                        launchPaths = [.. launchPaths, .. ResolveXboxLaunchPaths(packageDirectory, manifest.LaunchExecutables)];
+                    }
+
                     if (launchPaths.Length == 0)
                     {
                         continue;
@@ -353,6 +369,15 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
         {
             yield return contentConfig;
         }
+    }
+
+    private static string[] ResolveXboxLaunchPaths(string installDirectory, IEnumerable<string> relativePaths)
+    {
+        return relativePaths
+            .Select(path => ResolveXboxLaunchPath(installDirectory, path))
+            .Where(path => path is not null)
+            .Select(path => path!)
+            .ToArray();
     }
 
     private static string? ResolveXboxLaunchPath(string installDirectory, string relativePath)

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging.Abstractions;
+﻿using Microsoft.Extensions.Logging.Abstractions;
 using YFTimeTracker.Core.Models;
 using YFTimeTracker.Windows.Processes;
 
@@ -46,6 +46,43 @@ public sealed class WindowsGameInstallationProviderTests
     }
 
     [TestMethod]
+    public async Task Xbox_package_directory_that_is_a_junction_is_registered_under_its_link_target()
+    {
+        using var packageDirectory = new TemporaryDirectory();
+        using var contentDirectory = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(packageDirectory.Path, "MicrosoftGame.config"), """
+            <Game configVersion="1">
+              <Identity Name="Contoso.NeonGame" Publisher="CN=Contoso" Version="1.0.0.0" />
+              <ExecutableList>
+                <Executable Name="NeonGame.exe" Id="Game" TargetDeviceFamily="PC" />
+              </ExecutableList>
+              <ShellVisuals DefaultDisplayName="Neon Game" />
+            </Game>
+            """);
+
+        var catalog = new FakeXboxPackageCatalog(
+        [
+            new XboxPackageInfo("Contoso.NeonGame", "Contoso.NeonGame_123", "Neon Game", packageDirectory.Path)
+        ]);
+        var provider = new WindowsGameInstallationProvider(
+            NullLogger<WindowsGameInstallationProvider>.Instance,
+            catalog,
+            new FakeDirectoryLinkResolver(packageDirectory.Path, contentDirectory.Path));
+
+        var result = await provider.DiscoverAsync(CancellationToken.None);
+
+        var game = result.Games.Single(game => game.Source == GameSource.Xbox);
+        Assert.AreEqual(Path.GetFullPath(contentDirectory.Path), game.InstallDirectory);
+        CollectionAssert.AreEquivalent(
+            new[]
+            {
+                Path.GetFullPath(Path.Combine(contentDirectory.Path, "NeonGame.exe")),
+                Path.GetFullPath(Path.Combine(packageDirectory.Path, "NeonGame.exe"))
+            },
+            game.LaunchExecutablePaths.ToArray());
+    }
+
+    [TestMethod]
     public async Task Broken_xbox_manifest_does_not_block_launcher_status_or_other_sources()
     {
         using var directory = new TemporaryDirectory();
@@ -75,6 +112,12 @@ public sealed class WindowsGameInstallationProviderTests
         var result = await provider.DiscoverAsync(CancellationToken.None);
 
         Assert.AreEqual(LauncherAvailability.Error, result.Sources[GameSource.Xbox]);
+    }
+
+    private sealed class FakeDirectoryLinkResolver(string linkDirectory, string targetDirectory) : IDirectoryLinkResolver
+    {
+        public string ResolveFinalTarget(string directory) =>
+            string.Equals(directory, linkDirectory, StringComparison.OrdinalIgnoreCase) ? targetDirectory : directory;
     }
 
     private sealed class FakeXboxPackageCatalog : IXboxPackageCatalog
