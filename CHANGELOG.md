@@ -4,6 +4,7 @@
 
 ## 1.1.3 – 2026-09-06
 - Behoben: Über die Xbox-App installierte Spiele (z. B. Forza Horizon 6) werden jetzt wieder erkannt. Ihr Paketordner unter WindowsApps ist nur eine Verknüpfung auf den echten Installationsordner (etwa C:\XboxGames), und laufende Spiele ließen sich deshalb keinem erkannten Spiel zuordnen.
+- Verbessert: Scan-Intervall und Heartbeat in den Einstellungen haben ein Info-Symbol, das beim Daraufzeigen erklärt, was der jeweilige Wert bewirkt.
 
 ## 1.1.2 – 2026-09-05
 - Behoben: Ein geändertes Scan-Intervall wird jetzt sofort übernommen. Bisher lief das Tracking bis zum nächsten App-Start mit dem alten Intervall weiter.
