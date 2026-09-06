@@ -128,19 +128,44 @@ jobs:
 
       - name: Setup und MSI erstellen
         shell: pwsh
-        run: >-
-          vpk pack
-          --packId YFTimeTracker
-          --packVersion "${{ steps.release.outputs.version }}"
-          --packDir "artifacts/release/YFTimeTracker-v${{ steps.release.outputs.version }}-win-x64"
-          --mainExe YFTimeTracker.App.exe
-          --packTitle YFTimeTracker
-          --packAuthors YannikFroehlich
-          --icon YFTimeTracker.App/Assets/YFTimeTracker.ico
-          --outputDir artifacts/velopack
-          --msi
-          --instLocation Either
-          --shortcuts StartMenuRoot
+        run: |
+          # vpk entpackt seine WiX-Vorlagen nach %TEMP%\velopack. Kommt dabei eine Datei nicht an,
+          # bricht der MSI-Bau mit "Could not find file ... .wxs" ab, obwohl an Quellstand und
+          # Aufruf nichts falsch ist. Deshalb wird der Schritt mit geleertem Zwischenspeicher
+          # wiederholt; der Ausgabeordner bleibt stehen, damit der geladene Vorgaengerrelease
+          # fuer die Delta-Pakete erhalten bleibt.
+          $attempts = 3
+
+          for ($attempt = 1; $attempt -le $attempts; $attempt++) {
+            $scratchDirectory = Join-Path $env:TEMP "velopack"
+            if (Test-Path $scratchDirectory) {
+              Remove-Item $scratchDirectory -Recurse -Force -ErrorAction SilentlyContinue
+            }
+
+            vpk pack `
+              --packId YFTimeTracker `
+              --packVersion "${{ steps.release.outputs.version }}" `
+              --packDir "artifacts/release/YFTimeTracker-v${{ steps.release.outputs.version }}-win-x64" `
+              --mainExe YFTimeTracker.App.exe `
+              --packTitle YFTimeTracker `
+              --packAuthors YannikFroehlich `
+              --icon YFTimeTracker.App/Assets/YFTimeTracker.ico `
+              --outputDir artifacts/velopack `
+              --msi `
+              --instLocation Either `
+              --shortcuts StartMenuRoot
+
+            if ($LASTEXITCODE -eq 0) {
+              exit 0
+            }
+
+            Write-Host "::warning::vpk pack ist in Versuch $attempt von $attempts mit Exitcode $LASTEXITCODE fehlgeschlagen."
+            if ($attempt -lt $attempts) {
+              Start-Sleep -Seconds (15 * $attempt)
+            }
+          }
+
+          throw "vpk pack ist in $attempts Versuchen fehlgeschlagen."
 
       - name: Velopack-Paket pruefen
         shell: pwsh
