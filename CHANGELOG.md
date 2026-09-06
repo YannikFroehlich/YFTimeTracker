@@ -2,6 +2,9 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.1.4 – 2026-09-06
+- Behoben: Steam-Spiele werden jetzt auch erkannt, wenn sie aus einem einzeln heruntergeladenen Depot laufen (Ordner `steamapps\content\app_<AppId>`, etwa für eine ältere Spielversion). Bisher wurde nur der reguläre Installationsordner unter `steamapps\common` berücksichtigt, sodass solche Starts keine Session öffneten. Die Spielzeit landet beim selben Spieleintrag wie die regulär installierte Version.
+
 ## 1.1.3 – 2026-09-06
 - Behoben: Über die Xbox-App installierte Spiele (z. B. Forza Horizon 6) werden jetzt wieder erkannt. Ihr Paketordner unter WindowsApps ist nur eine Verknüpfung auf den echten Installationsordner (etwa C:\XboxGames), und laufende Spiele ließen sich deshalb keinem erkannten Spiel zuordnen.
 - Verbessert: Scan-Intervall und Heartbeat in den Einstellungen haben ein Info-Symbol, das beim Daraufzeigen erklärt, was der jeweilige Wert bewirkt.

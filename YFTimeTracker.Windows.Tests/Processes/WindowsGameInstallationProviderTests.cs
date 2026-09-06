@@ -8,6 +8,70 @@ namespace YFTimeTracker.Windows.Tests.Processes;
 public sealed class WindowsGameInstallationProviderTests
 {
     [TestMethod]
+    public async Task Steam_app_is_discovered_in_its_common_folder_and_in_a_separately_downloaded_depot()
+    {
+        using var steamRoot = new TemporaryDirectory();
+        var steamApps = Path.Combine(steamRoot.Path, "steamapps");
+        Directory.CreateDirectory(Path.Combine(steamApps, "common", "BeamNG.drive"));
+        Directory.CreateDirectory(Path.Combine(steamApps, "content", "app_284160", "depot_284161"));
+        await File.WriteAllTextAsync(Path.Combine(steamApps, "appmanifest_284160.acf"), """
+            "AppState"
+            {
+            	"appid"		"284160"
+            	"name"		"BeamNG.drive"
+            	"installdir"		"BeamNG.drive"
+            }
+            """);
+
+        var provider = new WindowsGameInstallationProvider(
+            NullLogger<WindowsGameInstallationProvider>.Instance,
+            new FakeXboxPackageCatalog([]),
+            new FakeDirectoryLinkResolver(string.Empty, string.Empty),
+            () => steamRoot.Path);
+
+        var result = await provider.DiscoverAsync(CancellationToken.None);
+
+        var directories = result.Games
+            .Where(game => game.Source == GameSource.Steam && game.ExternalGameId == "284160")
+            .Select(game => game.InstallDirectory)
+            .ToArray();
+        CollectionAssert.AreEquivalent(
+            new[]
+            {
+                Path.GetFullPath(Path.Combine(steamApps, "common", "BeamNG.drive")),
+                Path.GetFullPath(Path.Combine(steamApps, "content", "app_284160"))
+            },
+            directories);
+    }
+
+    [TestMethod]
+    public async Task Steam_app_without_a_downloaded_depot_is_discovered_only_once()
+    {
+        using var steamRoot = new TemporaryDirectory();
+        var steamApps = Path.Combine(steamRoot.Path, "steamapps");
+        Directory.CreateDirectory(Path.Combine(steamApps, "common", "NeonGame"));
+        await File.WriteAllTextAsync(Path.Combine(steamApps, "appmanifest_42.acf"), """
+            "AppState"
+            {
+            	"appid"		"42"
+            	"name"		"Neon Game"
+            	"installdir"		"NeonGame"
+            }
+            """);
+
+        var provider = new WindowsGameInstallationProvider(
+            NullLogger<WindowsGameInstallationProvider>.Instance,
+            new FakeXboxPackageCatalog([]),
+            new FakeDirectoryLinkResolver(string.Empty, string.Empty),
+            () => steamRoot.Path);
+
+        var result = await provider.DiscoverAsync(CancellationToken.None);
+
+        var game = result.Games.Single(game => game.Source == GameSource.Steam);
+        Assert.AreEqual(Path.GetFullPath(Path.Combine(steamApps, "common", "NeonGame")), game.InstallDirectory);
+    }
+
+    [TestMethod]
     public async Task Xbox_package_with_game_config_is_discovered_from_effective_location()
     {
         using var directory = new TemporaryDirectory();
@@ -67,7 +131,8 @@ public sealed class WindowsGameInstallationProviderTests
         var provider = new WindowsGameInstallationProvider(
             NullLogger<WindowsGameInstallationProvider>.Instance,
             catalog,
-            new FakeDirectoryLinkResolver(packageDirectory.Path, contentDirectory.Path));
+            new FakeDirectoryLinkResolver(packageDirectory.Path, contentDirectory.Path),
+            () => null);
 
         var result = await provider.DiscoverAsync(CancellationToken.None);
 

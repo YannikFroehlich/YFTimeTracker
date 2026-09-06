@@ -23,27 +23,30 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
     private readonly ILogger<WindowsGameInstallationProvider> logger;
     private readonly IXboxPackageCatalog xboxPackages;
     private readonly IDirectoryLinkResolver directoryLinks;
+    private readonly Func<string?> steamRootLocator;
 
     public WindowsGameInstallationProvider(ILogger<WindowsGameInstallationProvider> logger)
-        : this(logger, new WindowsXboxPackageCatalog(), new WindowsDirectoryLinkResolver())
+        : this(logger, new WindowsXboxPackageCatalog(), new WindowsDirectoryLinkResolver(), LocateSteamRoot)
     {
     }
 
     internal WindowsGameInstallationProvider(
         ILogger<WindowsGameInstallationProvider> logger,
         IXboxPackageCatalog xboxPackages)
-        : this(logger, xboxPackages, new WindowsDirectoryLinkResolver())
+        : this(logger, xboxPackages, new WindowsDirectoryLinkResolver(), LocateSteamRoot)
     {
     }
 
     internal WindowsGameInstallationProvider(
         ILogger<WindowsGameInstallationProvider> logger,
         IXboxPackageCatalog xboxPackages,
-        IDirectoryLinkResolver directoryLinks)
+        IDirectoryLinkResolver directoryLinks,
+        Func<string?> steamRootLocator)
     {
         this.logger = logger;
         this.xboxPackages = xboxPackages;
         this.directoryLinks = directoryLinks;
+        this.steamRootLocator = steamRootLocator;
     }
 
     public Task<LauncherDiscoveryResult> DiscoverAsync(CancellationToken cancellationToken)
@@ -58,8 +61,13 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
         DiscoverSafely(GameSource.BattleNet, () => DiscoverBattleNet(games, cancellationToken), sources);
         DiscoverSafely(GameSource.Ubisoft, () => DiscoverUbisoft(games, cancellationToken), sources);
 
+        // Ein Spiel kann in mehreren Ordnern liegen (etwa zusätzlich als einzeln geladenes
+        // Steam-Depot); die Einträge teilen sich dieselbe ExternalGameId und landen daher später
+        // auch in einem gemeinsamen Spieleintrag.
         var distinctGames = games
-            .GroupBy(game => (game.Source, game.ExternalGameId), new SourceIdComparer())
+            .GroupBy(
+                game => (game.Source, game.ExternalGameId, game.InstallDirectoryKey),
+                new SourceInstallationComparer())
             .Select(group => group.First())
             .ToArray();
 
@@ -82,10 +90,13 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
         }
     }
 
-    private static bool DiscoverSteam(ICollection<GameInstallationInfo> games, CancellationToken cancellationToken)
+    private static string? LocateSteamRoot() =>
+        ReadRegistryString(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Valve\Steam", "SteamPath")
+        ?? ReadRegistryString(RegistryHive.LocalMachine, RegistryView.Registry32, @"Software\Valve\Steam", "InstallPath");
+
+    private bool DiscoverSteam(ICollection<GameInstallationInfo> games, CancellationToken cancellationToken)
     {
-        var steamRoot = ReadRegistryString(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Valve\Steam", "SteamPath")
-            ?? ReadRegistryString(RegistryHive.LocalMachine, RegistryView.Registry32, @"Software\Valve\Steam", "InstallPath");
+        var steamRoot = steamRootLocator();
         if (string.IsNullOrWhiteSpace(steamRoot) || !Directory.Exists(steamRoot))
         {
             return false;
@@ -124,6 +135,11 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
                 }
 
                 AddInstallation(games, GameSource.Steam, manifest.AppId, manifest.Name, Path.Combine(steamApps, "common", manifest.InstallDirectoryName), []);
+
+                // Einzeln heruntergeladene Depots (etwa eine ältere Spielversion) landen nicht in
+                // "common", sondern unter "content\app_<AppId>". Der Ordnername nennt die AppId,
+                // die Dateien darin gehören also zweifelsfrei zu diesem Spiel.
+                AddInstallation(games, GameSource.Steam, manifest.AppId, manifest.Name, Path.Combine(steamApps, "content", $"app_{manifest.AppId}"), []);
             }
         }
 
@@ -445,12 +461,20 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
         return key?.GetValue(valueName) as string;
     }
 
-    private sealed class SourceIdComparer : IEqualityComparer<(GameSource Source, string ExternalGameId)>
+    private sealed class SourceInstallationComparer
+        : IEqualityComparer<(GameSource Source, string ExternalGameId, string InstallDirectoryKey)>
     {
-        public bool Equals((GameSource Source, string ExternalGameId) x, (GameSource Source, string ExternalGameId) y) =>
-            x.Source == y.Source && string.Equals(x.ExternalGameId, y.ExternalGameId, StringComparison.OrdinalIgnoreCase);
+        public bool Equals(
+            (GameSource Source, string ExternalGameId, string InstallDirectoryKey) x,
+            (GameSource Source, string ExternalGameId, string InstallDirectoryKey) y) =>
+            x.Source == y.Source
+            && string.Equals(x.ExternalGameId, y.ExternalGameId, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(x.InstallDirectoryKey, y.InstallDirectoryKey, StringComparison.OrdinalIgnoreCase);
 
-        public int GetHashCode((GameSource Source, string ExternalGameId) value) =>
-            HashCode.Combine(value.Source, StringComparer.OrdinalIgnoreCase.GetHashCode(value.ExternalGameId));
+        public int GetHashCode((GameSource Source, string ExternalGameId, string InstallDirectoryKey) value) =>
+            HashCode.Combine(
+                value.Source,
+                StringComparer.OrdinalIgnoreCase.GetHashCode(value.ExternalGameId),
+                StringComparer.OrdinalIgnoreCase.GetHashCode(value.InstallDirectoryKey));
     }
 }
