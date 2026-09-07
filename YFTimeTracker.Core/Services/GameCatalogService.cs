@@ -15,8 +15,7 @@ public sealed class GameCatalogService(
 
     public async Task<Game> AddGameAsync(string executablePath, string? displayName, CancellationToken cancellationToken)
     {
-        var normalizedPath = ExecutablePathNormalizer.NormalizePath(executablePath);
-        EnsureExecutableExtension(normalizedPath);
+        var normalizedPath = NormalizeUserExecutablePath(executablePath);
 
         var key = ExecutablePathNormalizer.CreateKey(normalizedPath);
         if (await games.GetByExecutablePathKeyAsync(key, cancellationToken) is not null)
@@ -60,13 +59,15 @@ public sealed class GameCatalogService(
         int? weeklyPlaytimeLimitMinutes,
         CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            throw new YFTimeTrackerException("Bitte gib einen Anzeigenamen an.");
+        }
 
         var game = await games.GetByIdAsync(gameId, cancellationToken)
             ?? throw new YFTimeTrackerException("Das Spiel wurde nicht gefunden.");
 
-        var normalizedPath = ExecutablePathNormalizer.NormalizePath(executablePath);
-        EnsureExecutableExtension(normalizedPath);
+        var normalizedPath = NormalizeUserExecutablePath(executablePath);
 
         var key = ExecutablePathNormalizer.CreateKey(normalizedPath);
         var duplicate = await games.GetByExecutablePathKeyAsync(key, cancellationToken);
@@ -94,11 +95,31 @@ public sealed class GameCatalogService(
         return games.DeleteAsync(gameId, cancellationToken);
     }
 
-    private static void EnsureExecutableExtension(string executablePath)
+    // Hier laufen die Nutzereingaben aus Bibliothek und Spieldetails zusammen. Die Framework-
+    // Wächter (ArgumentException) würden englische Meldungen samt Parameternamen in die
+    // Statuszeile schreiben, deshalb wird jede Eingabe vorher auf Deutsch geprüft.
+    private static string NormalizeUserExecutablePath(string? executablePath)
     {
-        if (!string.Equals(Path.GetExtension(executablePath), ".exe", StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrWhiteSpace(executablePath))
         {
             throw new YFTimeTrackerException("Bitte wähle eine .exe-Datei aus.");
         }
+
+        string normalizedPath;
+        try
+        {
+            normalizedPath = ExecutablePathNormalizer.NormalizePath(executablePath);
+        }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            throw new YFTimeTrackerException("Der Pfad zur EXE-Datei ist ungültig.", exception);
+        }
+
+        if (!string.Equals(Path.GetExtension(normalizedPath), ".exe", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new YFTimeTrackerException("Bitte wähle eine .exe-Datei aus.");
+        }
+
+        return normalizedPath;
     }
 }
