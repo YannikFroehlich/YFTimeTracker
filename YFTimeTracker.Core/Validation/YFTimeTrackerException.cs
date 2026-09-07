@@ -6,4 +6,9 @@ public sealed class YFTimeTrackerException : Exception
         : base(message)
     {
     }
+
+    public YFTimeTrackerException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
 }

@@ -24,6 +24,69 @@ public sealed partial class SettingsPage : Page
         UpdateLayout(e.NewSize.Width);
     }
 
+    private async void ImportBackup_Click(object sender, RoutedEventArgs e)
+    {
+        var viewModel = (SettingsViewModel)DataContext;
+        var archivePath = await viewModel.PickImportArchiveAsync();
+        if (archivePath is null || SettingsRoot.XamlRoot is null)
+        {
+            return;
+        }
+
+        // Der Import tauscht die komplette Datenbank aus. Ohne Rückfrage wäre ein Fehlgriff im
+        // Dateidialog nicht mehr rückholbar, deshalb wird die gewählte Datei hier benannt.
+        var confirmed = await ConfirmAsync(
+            "Sicherung importieren?",
+            $"„{Path.GetFileName(archivePath)}“ ersetzt alle Spiele, Sessions und Einstellungen auf diesem Gerät. "
+                + "Der aktuelle Stand wird vorher automatisch als Sicherung abgelegt.",
+            "Importieren");
+
+        if (confirmed)
+        {
+            await viewModel.ImportAsync(archivePath);
+        }
+    }
+
+    private async void RestoreBackup_Click(object sender, RoutedEventArgs e)
+    {
+        var viewModel = (SettingsViewModel)DataContext;
+        if (viewModel.SelectedBackup is not { } backup || SettingsRoot.XamlRoot is null)
+        {
+            return;
+        }
+
+        var confirmed = await ConfirmAsync(
+            "Sicherung wiederherstellen?",
+            $"Der Stand vom {backup.CreatedText} ersetzt alle Spiele, Sessions und Einstellungen auf diesem Gerät. "
+                + "Der aktuelle Stand wird vorher automatisch als Sicherung abgelegt.",
+            "Wiederherstellen");
+
+        if (confirmed)
+        {
+            await viewModel.RestoreSelectedBackupAsync();
+        }
+    }
+
+    private async Task<bool> ConfirmAsync(string title, string message, string primaryButtonText)
+    {
+        var dialog = new ContentDialog
+        {
+            XamlRoot = SettingsRoot.XamlRoot,
+            Title = title,
+            Content = new TextBlock
+            {
+                MaxWidth = 470,
+                Text = message,
+                TextWrapping = TextWrapping.Wrap
+            },
+            PrimaryButtonText = primaryButtonText,
+            CloseButtonText = "Abbrechen",
+            DefaultButton = ContentDialogButton.Close
+        };
+
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
+    }
+
     private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)
     {
         if (App.MainWindow is { } mainWindow)

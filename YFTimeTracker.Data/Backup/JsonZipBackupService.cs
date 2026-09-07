@@ -16,6 +16,12 @@ public sealed class JsonZipBackupService(
 {
     private const string ExportVersion = "2";
     private const string DataEntryName = "yftimetracker-data.json";
+    private const string DailyBackupPrefix = "auto-";
+    private const string SafetyBackupPrefix = "pre-migration-";
+
+    // Sicherheitsnetz gegen eine zu knappe Aufbewahrungsdauer: von jeder Art bleiben immer die
+    // neuesten Sicherungen erhalten, auch wenn sie älter als die eingestellte Frist sind.
+    private const int MinimumKeptBackupsPerKind = 3;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true
@@ -30,7 +36,9 @@ public sealed class JsonZipBackupService(
 
         Directory.CreateDirectory(appPathProvider.BackupDirectory);
         var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
-        var backupPath = Path.Combine(appPathProvider.BackupDirectory, $"auto-{today:yyyyMMdd}.db");
+        var backupPath = Path.Combine(
+            appPathProvider.BackupDirectory,
+            $"{DailyBackupPrefix}{today:yyyyMMdd}.db");
         if (File.Exists(backupPath))
         {
             return null;
@@ -52,7 +60,9 @@ public sealed class JsonZipBackupService(
         }
 
         Directory.CreateDirectory(appPathProvider.BackupDirectory);
-        var backupPath = Path.Combine(appPathProvider.BackupDirectory, $"pre-migration-{clock.UtcNow:yyyyMMddHHmmss}.db");
+        var backupPath = Path.Combine(
+            appPathProvider.BackupDirectory,
+            $"{SafetyBackupPrefix}{clock.UtcNow:yyyyMMddHHmmss}.db");
 
         SqliteConnection.ClearAllPools();
         File.Copy(appPathProvider.DatabasePath, backupPath, overwrite: false);
@@ -69,14 +79,100 @@ public sealed class JsonZipBackupService(
             return;
         }
 
-        foreach (var file in Directory.EnumerateFiles(appPathProvider.BackupDirectory, "*.db"))
+        // Tägliche Sicherungen und Sicherheitskopien vor zerstörenden Aktionen werden getrennt
+        // gezählt. Sonst könnten drei junge Tagessicherungen die einzige Kopie vor einem Import
+        // verdrängen – also genau die Datei, die man danach zum Zurückholen braucht.
+        var groupedBackups = Directory.EnumerateFiles(appPathProvider.BackupDirectory, "*.db")
+            .Select(path => new FileInfo(path))
+            .GroupBy(file => file.Name.StartsWith(SafetyBackupPrefix, StringComparison.OrdinalIgnoreCase));
+
+        foreach (var group in groupedBackups)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var created = File.GetCreationTimeUtc(file);
-            if (created < cutoff.UtcDateTime)
+            var prunable = group
+                .OrderByDescending(file => file.CreationTimeUtc)
+                .Skip(MinimumKeptBackupsPerKind)
+                .Where(file => file.CreationTimeUtc < cutoff.UtcDateTime);
+
+            foreach (var file in prunable)
             {
-                File.Delete(file);
+                cancellationToken.ThrowIfCancellationRequested();
+                file.Delete();
             }
+        }
+    }
+
+    public IReadOnlyList<BackupInfo> GetBackups()
+    {
+        if (!Directory.Exists(appPathProvider.BackupDirectory))
+        {
+            return [];
+        }
+
+        return Directory.EnumerateFiles(appPathProvider.BackupDirectory, "*.db")
+            .Select(path => new FileInfo(path))
+            .OrderByDescending(file => file.CreationTimeUtc)
+            .Select(file => new BackupInfo(
+                file.FullName,
+                file.Name,
+                new DateTimeOffset(file.CreationTimeUtc, TimeSpan.Zero),
+                file.Length,
+                file.Name.StartsWith(SafetyBackupPrefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+    }
+
+    public async Task<RestoreResult> RestoreAsync(string backupPath, CancellationToken cancellationToken)
+    {
+        if (!File.Exists(backupPath))
+        {
+            throw new YFTimeTrackerException("Die Sicherung wurde nicht gefunden.");
+        }
+
+        Directory.CreateDirectory(appPathProvider.DataDirectory);
+        var stagedDatabase = Path.Combine(appPathProvider.DataDirectory, $"restore-{Guid.NewGuid():N}.db");
+
+        try
+        {
+            // Erst auf einer Kopie prüfen und migrieren. Eine beschädigte Sicherung oder eine aus
+            // einer älteren Version darf die laufende Datenbank nicht halb überschreiben.
+            File.Copy(backupPath, stagedDatabase, overwrite: true);
+            await EnsureRestorableAsync(stagedDatabase, cancellationToken);
+
+            var safetyBackupPath = await CreatePreMigrationBackupAsync(cancellationToken);
+            SqliteConnection.ClearAllPools();
+            File.Move(stagedDatabase, appPathProvider.DatabasePath, overwrite: true);
+            return new RestoreResult(backupPath, safetyBackupPath);
+        }
+        finally
+        {
+            if (File.Exists(stagedDatabase))
+            {
+                File.Delete(stagedDatabase);
+            }
+        }
+    }
+
+    private static async Task EnsureRestorableAsync(string databasePath, CancellationToken cancellationToken)
+    {
+        var options = new DbContextOptionsBuilder<YFTimeTrackerDbContext>()
+            .UseSqlite($"Data Source={databasePath}")
+            .Options;
+
+        try
+        {
+            await using var context = new YFTimeTrackerDbContext(options);
+            await context.Database.MigrateAsync(cancellationToken);
+            await context.Games.AsNoTracking().Take(1).ToListAsync(cancellationToken);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            throw new YFTimeTrackerException(
+                "Diese Sicherung konnte nicht gelesen werden und wurde nicht wiederhergestellt.",
+                exception);
+        }
+        finally
+        {
+            // Ohne das Schließen der Verbindungen bleibt die geprüfte Datei gesperrt.
+            SqliteConnection.ClearAllPools();
         }
     }
 
@@ -117,7 +213,7 @@ public sealed class JsonZipBackupService(
         using (var archive = ZipFile.OpenRead(archivePath))
         {
             var dataEntry = archive.GetEntry(DataEntryName)
-                ?? throw new YFTimeTrackerException("Das Archiv enthaelt keine YFTimeTracker-Daten.");
+                ?? throw new YFTimeTrackerException("Das Archiv enthält keine YFTimeTracker-Daten.");
 
             await using var entryStream = dataEntry.Open();
             using var json = await JsonDocument.ParseAsync(entryStream, cancellationToken: cancellationToken);
@@ -178,12 +274,12 @@ public sealed class JsonZipBackupService(
     {
         if (!string.Equals(document.Manifest.AppName, "YFTimeTracker", StringComparison.Ordinal))
         {
-            throw new YFTimeTrackerException("Das Archiv gehoert nicht zu YFTimeTracker.");
+            throw new YFTimeTrackerException("Das Archiv gehört nicht zu YFTimeTracker.");
         }
 
         if (!string.Equals(document.Manifest.ExportVersion, ExportVersion, StringComparison.Ordinal))
         {
-            throw new YFTimeTrackerException("Diese Export-Version wird nicht unterstuetzt.");
+            throw new YFTimeTrackerException("Diese Export-Version wird nicht unterstützt.");
         }
 
         var gameIds = document.Games.Select(game => game.Id).ToHashSet();
@@ -193,7 +289,7 @@ public sealed class JsonZipBackupService(
             if (string.IsNullOrWhiteSpace(game.Name) ||
                 (game.ExternalGameId is not null && !externalIds.Add($"{game.Source}:{game.ExternalGameId}")))
             {
-                throw new YFTimeTrackerException("Das Archiv enthaelt ungueltige oder doppelte Spiele.");
+                throw new YFTimeTrackerException("Das Archiv enthält ungültige oder doppelte Spiele.");
             }
         }
 
@@ -224,7 +320,7 @@ public sealed class JsonZipBackupService(
                 session.EndedAtUtc < session.StartedAtUtc ||
                 (session.EndedAtUtc is null && !openSessionGameIds.Add(session.GameId)))
             {
-                throw new YFTimeTrackerException("Das Archiv enthaelt ungueltige Sessions.");
+                throw new YFTimeTrackerException("Das Archiv enthält ungültige Sessions.");
             }
         }
     }

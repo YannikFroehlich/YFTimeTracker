@@ -40,6 +40,38 @@ public sealed class SettingsViewModelTests
         Assert.IsTrue(tracking.State.IsPaused);
     }
 
+    [TestMethod]
+    public async Task Failed_restore_restores_previously_running_tracking()
+    {
+        var tracking = new FakeTrackingService(isPaused: false);
+
+        await Assert.ThrowsAsync<YFTimeTrackerException>(() => SettingsViewModel.RestoreBackupAsync(
+            new FailingBackupService(),
+            tracking,
+            @"C:\Backups\auto-20260907.db",
+            CancellationToken.None));
+
+        Assert.AreEqual(1, tracking.PauseCount);
+        Assert.AreEqual(1, tracking.ResumeCount);
+        Assert.IsFalse(tracking.State.IsPaused);
+    }
+
+    [TestMethod]
+    public async Task Failed_restore_keeps_previously_paused_tracking_paused()
+    {
+        var tracking = new FakeTrackingService(isPaused: true);
+
+        await Assert.ThrowsAsync<YFTimeTrackerException>(() => SettingsViewModel.RestoreBackupAsync(
+            new FailingBackupService(),
+            tracking,
+            @"C:\Backups\auto-20260907.db",
+            CancellationToken.None));
+
+        Assert.AreEqual(1, tracking.PauseCount);
+        Assert.AreEqual(0, tracking.ResumeCount);
+        Assert.IsTrue(tracking.State.IsPaused);
+    }
+
     private sealed class FakeTrackingService(bool isPaused) : IGameTrackingService
     {
         public TrackingState State { get; private set; } = new(true, isPaused, []);
@@ -84,6 +116,11 @@ public sealed class SettingsViewModelTests
         public Task<string?> CreatePreMigrationBackupAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task PruneBackupsAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public IReadOnlyList<BackupInfo> GetBackups() => [];
+
+        public Task<RestoreResult> RestoreAsync(string backupPath, CancellationToken cancellationToken) =>
+            throw new YFTimeTrackerException("Sicherung konnte nicht gelesen werden.");
 
         public Task<ExportResult> ExportAsync(string archivePath, CancellationToken cancellationToken) => throw new NotSupportedException();
 

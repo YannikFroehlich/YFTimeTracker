@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
@@ -53,6 +54,7 @@ public sealed class SettingsViewModel : ObservableObject
     private string diagnosticsLogDirectory = "Logordner wird geladen …";
     private bool isExportFolderAvailable;
     private ThemeOption selectedTheme;
+    private BackupListItemViewModel? selectedBackup;
 
     public SettingsViewModel(
         ISettingsStore settings,
@@ -89,7 +91,6 @@ public sealed class SettingsViewModel : ObservableObject
         LoadCommand = new AsyncRelayCommand(LoadAsync);
         SaveCommand = new AsyncRelayCommand(SaveAsync);
         ExportCommand = new AsyncRelayCommand(ExportAsync);
-        ImportCommand = new AsyncRelayCommand(ImportAsync);
         OpenLogDirectoryCommand = new RelayCommand(OpenLogDirectory);
         ExportDiagnosticsCommand = new AsyncRelayCommand(ExportDiagnosticsAsync);
         OpenExportFolderCommand = new RelayCommand(OpenExportFolder);
@@ -278,7 +279,25 @@ public sealed class SettingsViewModel : ObservableObject
 
     public IAsyncRelayCommand ExportCommand { get; }
 
-    public IAsyncRelayCommand ImportCommand { get; }
+    public ObservableCollection<BackupListItemViewModel> Backups { get; } = [];
+
+    public BackupListItemViewModel? SelectedBackup
+    {
+        get => selectedBackup;
+        set
+        {
+            if (SetProperty(ref selectedBackup, value))
+            {
+                OnPropertyChanged(nameof(CanRestoreSelectedBackup));
+            }
+        }
+    }
+
+    public bool CanRestoreSelectedBackup => selectedBackup is not null;
+
+    public Visibility BackupsVisibility => Backups.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+
+    public Visibility BackupsEmptyVisibility => Backups.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
     public IRelayCommand OpenLogDirectoryCommand { get; }
 
@@ -298,6 +317,7 @@ public sealed class SettingsViewModel : ObservableObject
         HeartbeatIntervalSeconds = await settings.GetIntAsync(AppSettingKeys.HeartbeatIntervalSeconds, 30, CancellationToken.None);
         BackupRetentionDays = await settings.GetIntAsync(AppSettingKeys.BackupRetentionDays, 14, CancellationToken.None);
         SelectedTheme = ThemeOptions.FirstOrDefault(option => option.Value == themeService.CurrentPreference) ?? ThemeOptions[2];
+        RefreshBackups();
 
         var state = await startupService.GetStateAsync(CancellationToken.None);
         StartWithWindows = state == StartupState.Enabled;
@@ -365,23 +385,91 @@ public sealed class SettingsViewModel : ObservableObject
         SetExportedFile(path);
     }
 
-    private async Task ImportAsync()
+    public Task<string?> PickImportArchiveAsync()
     {
-        var path = await filePicker.PickImportArchiveAsync(CancellationToken.None);
-        if (path is null)
-        {
-            return;
-        }
+        return filePicker.PickImportArchiveAsync(CancellationToken.None);
+    }
 
+    public async Task ImportAsync(string archivePath)
+    {
         try
         {
-            var result = await ImportBackupAsync(backupService, trackingService, path, CancellationToken.None);
+            var result = await ImportBackupAsync(backupService, trackingService, archivePath, CancellationToken.None);
             StatusMessage = $"Import abgeschlossen: {result.GameCount} Spiele, {result.SessionCount} Sessions";
         }
         catch (YFTimeTrackerException ex)
         {
             StatusMessage = ex.Message;
         }
+        finally
+        {
+            // Der Import legt vorher eine Sicherheitskopie an; die soll sofort in der Liste stehen.
+            RefreshBackups();
+        }
+    }
+
+    public async Task RestoreSelectedBackupAsync()
+    {
+        if (SelectedBackup is not { } backup)
+        {
+            StatusMessage = "Bitte zuerst eine Sicherung auswählen.";
+            return;
+        }
+
+        try
+        {
+            await RestoreBackupAsync(backupService, trackingService, backup.FilePath, CancellationToken.None);
+            StatusMessage = $"Sicherung vom {backup.CreatedText} wiederhergestellt";
+            await LoadAsync();
+        }
+        catch (YFTimeTrackerException ex)
+        {
+            StatusMessage = ex.Message;
+            RefreshBackups();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Wiederherstellen fehlgeschlagen: {ex.Message}";
+            RefreshBackups();
+        }
+    }
+
+    internal static async Task<RestoreResult> RestoreBackupAsync(
+        IBackupService backupService,
+        IGameTrackingService trackingService,
+        string backupPath,
+        CancellationToken cancellationToken)
+    {
+        var wasPaused = trackingService.State.IsPaused;
+        try
+        {
+            // Wie beim Import: das Tracking darf die Datenbank nicht offen halten, wenn sie
+            // ausgetauscht wird, und eine laufende Session gehört nicht in den neuen Stand.
+            await trackingService.PauseAsync(cancellationToken);
+            return await backupService.RestoreAsync(backupPath, cancellationToken);
+        }
+        finally
+        {
+            if (!wasPaused)
+            {
+                await trackingService.ResumeAsync(CancellationToken.None);
+            }
+        }
+    }
+
+    private void RefreshBackups()
+    {
+        var previousPath = SelectedBackup?.FilePath;
+        Backups.Clear();
+        foreach (var backup in backupService.GetBackups())
+        {
+            Backups.Add(new BackupListItemViewModel(backup));
+        }
+
+        SelectedBackup = Backups.FirstOrDefault(item =>
+            string.Equals(item.FilePath, previousPath, StringComparison.OrdinalIgnoreCase));
+        OnPropertyChanged(nameof(BackupsVisibility));
+        OnPropertyChanged(nameof(BackupsEmptyVisibility));
     }
 
     internal static async Task<ImportResult> ImportBackupAsync(
