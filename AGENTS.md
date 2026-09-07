@@ -42,11 +42,13 @@ Alle Schichten werden zentral in `App.xaml.cs` (`OnLaunched`) verdrahtet, jede �
 
 - Bestehende Funktionen und persistierte Nutzerdaten müssen erhalten bleiben.
 - Schemaänderungen benötigen eine EF-Core-Migration und Tests mit einer bestehenden Datenbank.
+- Migrationen werden mit `dotnet ef migrations add <Name> --project YFTimeTracker.Data --startup-project YFTimeTracker.Data` erzeugt, nicht per Hand geschrieben. Sonst veraltet `YFTimeTrackerDbContextModelSnapshot.cs`, und die nächste generierte Migration enthält das komplette Schema statt der eigentlichen Änderung. `SchemaConsistencyTests` prüft, dass Migrationen und DbContext-Modell dasselbe Schema erzeugen.
 - Änderungen an Exporten müssen Version-1-Importe weiterhin unterstützen, sofern kein ausdrücklich dokumentierter Breaking Change beschlossen wurde.
 - Vor Datenbankmigrationen darf der vorhandene automatische Backup-Ablauf nicht umgangen werden.
 - Manuell registrierte Spiele müssen auch dann funktionieren, wenn Launcher-Daten fehlen oder beschädigt sind.
 - Mehrere Prozesse oder EXE-Dateien desselben Spiels dürfen nur eine laufende Session erzeugen.
 - Tracking-Pause darf weder Spiele importieren noch Sessions öffnen.
+- Keine Idle- oder AFK-Erkennung – dauerhaft und ohne Rückfrage. Spielzeit wird ausschließlich an der Laufzeit der erkannten Prozesse gemessen; Leerlauf innerhalb eines laufenden Spiels zählt bewusst als Spielzeit. Ein Spiel, das über Nacht im Pausenmenü stehen bleibt, wird also voll gezählt und ist kein Fehler. Eine Auswertung von Tastatur- oder Mauseingaben (etwa `GetLastInputInfo`) wird weder eingebaut noch vorgeschlagen. Das ist eine feste Produktentscheidung, keine offene Lücke.
 - Änderungen an `GameTrackingService` (Core) zusätzlich durch Tests in `GameTrackingServiceTests.cs` absichern statt sie nur isoliert nachzuvollziehen.
 - Geheimnisse, Zugriffstokens und persönliche Pfade dürfen nicht in Quellcode oder Repository gelangen. Kein GitHub-Token wird in die App eingebettet; das Auto-Update prüft ausschließlich den öffentlichen Stable-Release-Kanal und bietet nie Vorabversionen an.
 - Neue externe UI- oder Diagrammabhängigkeiten nur nach ausdrücklicher Entscheidung einführen.

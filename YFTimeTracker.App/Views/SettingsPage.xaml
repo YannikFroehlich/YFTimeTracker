@@ -274,15 +274,74 @@
                                         <TextBlock Text="Daten exportieren" />
                                     </StackPanel>
                                 </Button>
-                                <Button HorizontalAlignment="Stretch" Command="{Binding ImportCommand}" Style="{StaticResource YFOutlineButtonStyle}">
+                                <Button HorizontalAlignment="Stretch" Click="ImportBackup_Click" Style="{StaticResource YFOutlineButtonStyle}">
                                     <StackPanel Orientation="Horizontal" Spacing="9">
                                         <FontIcon FontSize="14" Glyph="&#xE8B5;" />
                                         <TextBlock Text="Sicherung importieren" />
                                     </StackPanel>
                                 </Button>
-                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Exporte enthalten Spiele, Sessions und Einstellungen in einem ZIP-Archiv." TextWrapping="Wrap" />
+                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Exporte enthalten Spiele, Sessions und Einstellungen in einem ZIP-Archiv. Ein Import ersetzt alle lokalen Daten." TextWrapping="Wrap" />
                             </StackPanel>
                         </Grid>
+
+                        <Border Height="1" Background="{ThemeResource YFStrokeBrush}" />
+
+                        <StackPanel Spacing="10">
+                            <StackPanel Spacing="4">
+                                <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="LOKALE SICHERUNGEN" />
+                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="YFTimeTracker sichert die Datenbank automatisch beim ersten Start des Tages und vor jeder Änderung am Datenbestand." TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <TextBlock
+                                Style="{StaticResource YFMutedTextStyle}"
+                                Text="Noch keine Sicherungen vorhanden."
+                                Visibility="{Binding BackupsEmptyVisibility}" />
+
+                            <ListView
+                                x:Name="BackupList"
+                                MaxHeight="212"
+                                ItemsSource="{Binding Backups}"
+                                SelectedItem="{Binding SelectedBackup, Mode=TwoWay}"
+                                SelectionMode="Single"
+                                Visibility="{Binding BackupsVisibility}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Padding="0,7" ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="3">
+                                                <TextBlock Text="{Binding Summary}" />
+                                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding FileName}" />
+                                            </StackPanel>
+                                            <Border
+                                                Grid.Column="1"
+                                                Padding="8,3"
+                                                VerticalAlignment="Center"
+                                                Background="{ThemeResource YFSurfaceBrush}"
+                                                CornerRadius="6">
+                                                <TextBlock
+                                                    FontSize="10"
+                                                    FontWeight="SemiBold"
+                                                    Style="{StaticResource YFMutedTextStyle}"
+                                                    Text="{Binding KindLabel}" />
+                                            </Border>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+
+                            <Button
+                                Click="RestoreBackup_Click"
+                                IsEnabled="{Binding CanRestoreSelectedBackup}"
+                                Style="{StaticResource YFOutlineButtonStyle}">
+                                <StackPanel Orientation="Horizontal" Spacing="9">
+                                    <FontIcon FontSize="14" Glyph="&#xE777;" />
+                                    <TextBlock Text="Ausgewählte Sicherung wiederherstellen" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

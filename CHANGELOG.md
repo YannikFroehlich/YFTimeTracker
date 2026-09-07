@@ -2,6 +2,18 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.2.0 – 2026-09-07
+- Neu: Übersicht der lokalen Sicherungen unter **Einstellungen → Daten & Sicherungen**. Die automatisch angelegten Sicherungen sind dort mit Datum, Größe und Art aufgeführt und lassen sich direkt wiederherstellen – vorher war der Ordner nur über den Explorer erreichbar.
+- Behoben: Das Löschen eines Spiels fragt jetzt nach und nennt vorher, wie viele Sessions und wie viel Spielzeit dabei verloren gehen. Bisher löschte ein einzelner Klick das Spiel samt gesamter Spielzeit sofort, während für eine einzelne Session längst nachgefragt wurde.
+- Behoben: Der Import einer Sicherung fragt jetzt nach und benennt die gewählte Datei. Bisher ersetzte die Auswahl im Dateidialog den kompletten lokalen Datenbestand ohne Rückfrage.
+- Behoben: Eine zu kurz eingestellte Aufbewahrungsdauer räumt nicht mehr alle Sicherungen weg. Von den täglichen Sicherungen und von den Sicherheitskopien vor Änderungen am Datenbestand bleiben jeweils die drei neuesten erhalten, auch wenn sie älter als die eingestellte Frist sind.
+- Behoben: Fehlermeldungen beim Import verwenden wieder korrekte Umlaute.
+- Behoben: Beim Anlegen oder Umbenennen eines Spiels erscheinen jetzt deutsche Hinweise, wenn der EXE-Pfad oder der Anzeigename fehlt. Bisher stand dort eine englische Systemmeldung mit internem Parameternamen.
+- Behoben: Lange Statusmeldungen in der Bibliothek werden nicht mehr von der Spielanzahl und dem Aktualisieren-Symbol überlagert.
+
+## 1.1.5 – 2026-09-07
+- Verbessert: Wartungsupdate ohne Änderungen an der Bedienung. Interne Abhängigkeiten wurden aktualisiert, und die interne Beschreibung des Datenbankschemas wurde korrigiert – damit passen künftige Updates die lokale Datenbank zuverlässig an, ohne dass Einträge verloren gehen.
+
 ## 1.1.4 – 2026-09-06
 - Behoben: Steam-Spiele werden jetzt auch erkannt, wenn sie aus einem einzeln heruntergeladenen Depot laufen (Ordner `steamapps\content\app_<AppId>`, etwa für eine ältere Spielversion). Bisher wurde nur der reguläre Installationsordner unter `steamapps\common` berücksichtigt, sodass solche Starts keine Session öffneten. Die Spielzeit landet beim selben Spieleintrag wie die regulär installierte Version.
 

@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using YFTimeTracker.Core.Models;
+using YFTimeTracker.Core.Validation;
 using YFTimeTracker.Data.Backup;
 using YFTimeTracker.Data.Repositories;
 using TestRepositories = YFTimeTracker.Data.Tests.Repositories;
@@ -107,5 +108,124 @@ public sealed class JsonZipBackupServiceTests
         var imported = (await new GameRepository(factory).GetAllAsync(CancellationToken.None)).Single();
         Assert.AreEqual(GameSource.Manual, imported.Source);
         Assert.AreEqual(@"C:\GAMES\LEGACY.EXE", imported.PrimaryExecutable?.ExecutablePathKey);
+    }
+
+    [TestMethod]
+    public async Task Prune_keeps_the_newest_backups_of_each_kind_beyond_the_retention_period()
+    {
+        using var paths = new TestRepositories.TempAppPathProvider();
+        var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var clock = new TestRepositories.TestClock(DateTimeOffset.Parse("2026-09-07T12:00:00Z"));
+        var settings = new SettingsStore(factory, clock);
+        await settings.SetAsync(AppSettingKeys.BackupRetentionDays, "1", CancellationToken.None);
+
+        // Alle Sicherungen sind deutlich älter als die Aufbewahrungsfrist von einem Tag.
+        var dailyBackups = CreateAgedBackups(paths.BackupDirectory, "auto-", 4, clock.UtcNow.AddDays(-30));
+        var safetyBackups = CreateAgedBackups(paths.BackupDirectory, "pre-migration-", 2, clock.UtcNow.AddDays(-40));
+
+        var backup = new JsonZipBackupService(factory, paths, clock, settings);
+        await backup.PruneBackupsAsync(CancellationToken.None);
+
+        var remaining = Directory.GetFiles(paths.BackupDirectory, "*.db")
+            .Select(Path.GetFileName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // Von den täglichen Sicherungen bleiben die drei neuesten, die älteste fällt weg.
+        Assert.HasCount(5, remaining);
+        Assert.IsFalse(remaining.Contains(Path.GetFileName(dailyBackups[0])));
+        foreach (var kept in dailyBackups.Skip(1).Concat(safetyBackups))
+        {
+            Assert.IsTrue(remaining.Contains(Path.GetFileName(kept)), $"{kept} sollte erhalten bleiben.");
+        }
+    }
+
+    [TestMethod]
+    public async Task Restore_brings_back_the_saved_state_and_keeps_a_safety_copy()
+    {
+        using var paths = new TestRepositories.TempAppPathProvider();
+        var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var clock = new TestRepositories.TestClock(DateTimeOffset.Parse("2026-09-07T12:00:00Z"));
+        var settings = new SettingsStore(factory, clock);
+        var repository = new GameRepository(factory);
+        var game = await repository.AddAsync(new Game
+        {
+            Name = "Alpha",
+            Source = GameSource.Manual,
+            ExecutablePath = @"C:\Games\Alpha.exe",
+            ExecutablePathKey = @"C:\GAMES\ALPHA.EXE",
+            ExecutableName = "Alpha.exe",
+            AddedAtUtc = clock.UtcNow
+        }, CancellationToken.None);
+
+        var backup = new JsonZipBackupService(factory, paths, clock, settings);
+        var backupPath = await backup.CreateDailyBackupAsync(CancellationToken.None);
+        Assert.IsNotNull(backupPath);
+
+        await repository.DeleteAsync(game.Id, CancellationToken.None);
+        Assert.IsEmpty(await repository.GetAllAsync(CancellationToken.None));
+
+        var result = await backup.RestoreAsync(backupPath, CancellationToken.None);
+
+        Assert.AreEqual("Alpha", (await repository.GetAllAsync(CancellationToken.None)).Single().Name);
+        Assert.IsNotNull(result.SafetyBackupPath);
+        Assert.IsTrue(File.Exists(result.SafetyBackupPath), "Vor dem Wiederherstellen fehlt die Sicherheitskopie.");
+    }
+
+    [TestMethod]
+    public async Task Restore_rejects_an_unreadable_file_and_leaves_the_database_untouched()
+    {
+        using var paths = new TestRepositories.TempAppPathProvider();
+        var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var clock = new TestRepositories.TestClock(DateTimeOffset.Parse("2026-09-07T12:00:00Z"));
+        var settings = new SettingsStore(factory, clock);
+        var repository = new GameRepository(factory);
+        await repository.AddAsync(new Game
+        {
+            Name = "Alpha",
+            Source = GameSource.Manual,
+            ExecutablePath = @"C:\Games\Alpha.exe",
+            ExecutablePathKey = @"C:\GAMES\ALPHA.EXE",
+            ExecutableName = "Alpha.exe",
+            AddedAtUtc = clock.UtcNow
+        }, CancellationToken.None);
+
+        var brokenBackup = Path.Combine(paths.BackupDirectory, "auto-20260101.db");
+        await File.WriteAllTextAsync(brokenBackup, "Das ist keine SQLite-Datenbank.");
+
+        var backup = new JsonZipBackupService(factory, paths, clock, settings);
+
+        await Assert.ThrowsAsync<YFTimeTrackerException>(
+            () => backup.RestoreAsync(brokenBackup, CancellationToken.None));
+
+        Assert.AreEqual("Alpha", (await repository.GetAllAsync(CancellationToken.None)).Single().Name);
+    }
+
+    private static string[] CreateAgedBackups(string directory, string prefix, int count, DateTimeOffset oldestCreatedAt)
+    {
+        var paths = new List<string>();
+        for (var index = 0; index < count; index++)
+        {
+            var path = Path.Combine(directory, $"{prefix}{index:00}.db");
+            File.WriteAllText(path, "backup");
+            File.SetCreationTimeUtc(path, oldestCreatedAt.AddHours(index).UtcDateTime);
+            paths.Add(path);
+        }
+
+        return [.. paths];
     }
 }

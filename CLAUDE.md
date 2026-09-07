@@ -77,6 +77,7 @@ When changing this file, prefer adding to `YFTimeTracker.Core.Tests/Services/Gam
 
 - `IAppPathProvider` (Windows layer) resolves `%LocalAppData%\YFTimeTracker` and its subfolders (db, `Backups`, `Exports`, `Logs`); the SQLite connection string is built from it in `DataServiceCollectionExtensions`.
 - EF Core migrations live in `YFTimeTracker.Data/Migrations`; `DesignTimeDbContextFactory` supplies a design-time context pointed at the real local-appdata db path for `dotnet ef` tooling. Schema changes require a migration plus tests against an existing (pre-migration) database — persisted user data must survive upgrades.
+- Generate migrations with `dotnet ef migrations add <Name> --project YFTimeTracker.Data --startup-project YFTimeTracker.Data` instead of writing them by hand. A hand-written migration leaves `YFTimeTrackerDbContextModelSnapshot.cs` stale, and EF then diffs the next migration against the wrong baseline. `SchemaConsistencyTests` guards this: it fails as soon as the migrations and the `DbContext` model stop producing the same schema.
 - Backup/export format is versioned JSON inside a ZIP (`YFTimeTracker.Data/Backup/JsonZipBackupService.cs` + `BackupDocument`). Changes to the export format must keep reading version-1 exports unless a breaking change is explicitly agreed.
 - The automatic backup flow must not be bypassed ahead of a database migration.
 
@@ -89,6 +90,7 @@ When changing this file, prefer adding to `YFTimeTracker.Core.Tests/Services/Gam
 - Manually registered games (`GameSource.Manual`) must keep working even when launcher data is missing or corrupt.
 - Multiple processes or executables belonging to one game must never produce more than one concurrent open session.
 - Tracking pause must not import games or open new sessions.
+- No idle/AFK detection — permanently, and don't ask again. Playtime is measured purely from the runtime of the detected processes; idle time inside a running game counts as playtime by design. A game left sitting in its pause menu overnight is counted in full and is *not* a bug. Never add or propose keyboard/mouse input monitoring (e.g. `GetLastInputInfo`) to trim it. This is a settled product decision, not an open gap.
 - No secrets, access tokens, or personal file paths in source or commits. No GitHub token is ever embedded in the app; auto-update only checks the public stable release channel and never offers prereleases.
 - Release artifacts are intentionally unsigned; code signing is out of scope for this project.
 - When a change adds, removes, or materially changes a user-facing feature (new launcher support, export formats, theme options, etc.), update the `README.md` feature list (`## Funktionen`) in the same change so it doesn't drift from what the app actually does.

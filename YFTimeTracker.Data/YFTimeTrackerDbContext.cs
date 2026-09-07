@@ -63,7 +63,7 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
                 .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(executable => executable.ExecutablePathKey).IsUnique();
             entity.HasIndex(executable => executable.GameId);
-            entity.HasIndex(executable => executable.GameId)
+            entity.HasIndex(executable => executable.GameId, "IX_GameExecutables_GameId_Primary")
                 .IsUnique()
                 .HasDatabaseName("IX_GameExecutables_GameId_Primary")
                 .HasFilter("IsPrimary = 1");
@@ -85,7 +85,7 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
             entity.HasIndex(session => session.GameId);
             entity.HasIndex(session => session.StartedAtUtc);
             entity.HasIndex(session => session.EndedAtUtc);
-            entity.HasIndex(session => session.GameId)
+            entity.HasIndex(session => session.GameId, "IX_GameSessions_GameId_Open")
                 .IsUnique()
                 .HasDatabaseName("IX_GameSessions_GameId_Open")
                 .HasFilter("EndedAtUtc IS NULL");

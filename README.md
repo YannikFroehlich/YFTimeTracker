@@ -62,7 +62,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 
 **Daten, Updates und Diagnose**
 
-- Lokale Backups sowie Import und Export
+- Lokale Backups sowie Import und Export, mit Übersicht der vorhandenen Sicherungen und Wiederherstellung direkt in den Einstellungen
 - Automatische Update-Prüfung für installierte Ausgaben
 - "Was ist neu"-Dialog mit den Änderungen der Version beim ersten Start nach einem Update
 - Diagnoseansicht und Export eines datensparsamen Diagnose-ZIP
@@ -88,7 +88,7 @@ Alle dauerhaften Daten liegen unter `%LocalAppData%\YFTimeTracker`:
 | Pfad | Inhalt |
 | --- | --- |
 | `yftimetracker.db` | Spiele, EXE-Zuordnungen, Sessions und Einstellungen |
-| `Backups` | automatische und manuelle Sicherungen |
+| `Backups` | automatische Sicherungen (täglich und vor Änderungen am Datenbestand), in den Einstellungen auflist- und wiederherstellbar |
 | `Exports` | vom Benutzer erstellte Exporte |
 | `GameIcons` | lokal aus Spiel-EXE-Dateien extrahierte Icon-Kopien |
 | `Logs` | lokale Diagnoseprotokolle |

@@ -10,6 +10,10 @@ public interface IBackupService
 
     Task PruneBackupsAsync(CancellationToken cancellationToken);
 
+    IReadOnlyList<BackupInfo> GetBackups();
+
+    Task<RestoreResult> RestoreAsync(string backupPath, CancellationToken cancellationToken);
+
     Task<ExportResult> ExportAsync(string archivePath, CancellationToken cancellationToken);
 
     Task<ImportResult> ImportAsync(string archivePath, CancellationToken cancellationToken);
