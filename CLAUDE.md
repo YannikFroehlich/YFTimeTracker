@@ -77,6 +77,7 @@ When changing this file, prefer adding to `YFTimeTracker.Core.Tests/Services/Gam
 
 - `IAppPathProvider` (Windows layer) resolves `%LocalAppData%\YFTimeTracker` and its subfolders (db, `Backups`, `Exports`, `Logs`); the SQLite connection string is built from it in `DataServiceCollectionExtensions`.
 - EF Core migrations live in `YFTimeTracker.Data/Migrations`; `DesignTimeDbContextFactory` supplies a design-time context pointed at the real local-appdata db path for `dotnet ef` tooling. Schema changes require a migration plus tests against an existing (pre-migration) database — persisted user data must survive upgrades.
+- Generate migrations with `dotnet ef migrations add <Name> --project YFTimeTracker.Data --startup-project YFTimeTracker.Data` instead of writing them by hand. A hand-written migration leaves `YFTimeTrackerDbContextModelSnapshot.cs` stale, and EF then diffs the next migration against the wrong baseline. `SchemaConsistencyTests` guards this: it fails as soon as the migrations and the `DbContext` model stop producing the same schema.
 - Backup/export format is versioned JSON inside a ZIP (`YFTimeTracker.Data/Backup/JsonZipBackupService.cs` + `BackupDocument`). Changes to the export format must keep reading version-1 exports unless a breaking change is explicitly agreed.
 - The automatic backup flow must not be bypassed ahead of a database migration.
 

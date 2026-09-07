@@ -42,6 +42,7 @@ Alle Schichten werden zentral in `App.xaml.cs` (`OnLaunched`) verdrahtet, jede �
 
 - Bestehende Funktionen und persistierte Nutzerdaten müssen erhalten bleiben.
 - Schemaänderungen benötigen eine EF-Core-Migration und Tests mit einer bestehenden Datenbank.
+- Migrationen werden mit `dotnet ef migrations add <Name> --project YFTimeTracker.Data --startup-project YFTimeTracker.Data` erzeugt, nicht per Hand geschrieben. Sonst veraltet `YFTimeTrackerDbContextModelSnapshot.cs`, und die nächste generierte Migration enthält das komplette Schema statt der eigentlichen Änderung. `SchemaConsistencyTests` prüft, dass Migrationen und DbContext-Modell dasselbe Schema erzeugen.
 - Änderungen an Exporten müssen Version-1-Importe weiterhin unterstützen, sofern kein ausdrücklich dokumentierter Breaking Change beschlossen wurde.
 - Vor Datenbankmigrationen darf der vorhandene automatische Backup-Ablauf nicht umgangen werden.
 - Manuell registrierte Spiele müssen auch dann funktionieren, wenn Launcher-Daten fehlen oder beschädigt sind.
