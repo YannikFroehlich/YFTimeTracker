@@ -241,7 +241,7 @@
 
                         <StackPanel Orientation="Horizontal" Spacing="9">
                             <Button Command="{Binding AddOrUpdateGameCommand}" Style="{StaticResource YFAccentButtonStyle}" Content="Spiel speichern" />
-                            <Button Command="{Binding DeleteSelectedGameCommand}" Style="{StaticResource YFDangerButtonStyle}" Content="Spiel löschen" />
+                            <Button Click="DeleteGame_Click" Style="{StaticResource YFDangerButtonStyle}" Content="Spiel löschen" />
                             <Button Command="{Binding NewGameCommand}" Style="{StaticResource YFOutlineButtonStyle}" Content="Eingaben leeren" />
                         </StackPanel>
 

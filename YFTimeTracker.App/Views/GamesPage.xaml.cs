@@ -40,6 +40,41 @@ public sealed partial class GamesPage : Page
         UpdateLayout(e.NewSize.Width);
     }
 
+    private async void DeleteGame_Click(object sender, RoutedEventArgs e)
+    {
+        var game = ViewModel.SelectedGame;
+        if (game is null || LibraryRoot.XamlRoot is null)
+        {
+            return;
+        }
+
+        // Das Löschen nimmt die Sessions des Spiels mit (Cascade in der Datenbank), deshalb
+        // nennt der Dialog den Umfang, bevor die Spielzeit unwiederbringlich weg ist.
+        var scope = game.SessionCount == 0
+            ? "Für dieses Spiel ist keine Spielzeit erfasst."
+            : $"Dabei werden {game.SessionCount} Session(s) mit insgesamt {game.TotalPlaytime} Spielzeit dauerhaft gelöscht.";
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = LibraryRoot.XamlRoot,
+            Title = $"{game.Name} löschen?",
+            Content = new TextBlock
+            {
+                MaxWidth = 430,
+                Text = $"{scope} Das lässt sich nur über eine Sicherung zurückholen.",
+                TextWrapping = TextWrapping.Wrap
+            },
+            PrimaryButtonText = "Löschen",
+            CloseButtonText = "Abbrechen",
+            DefaultButton = ContentDialogButton.Close
+        };
+
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        {
+            await ViewModel.DeleteSelectedGameCommand.ExecuteAsync(null);
+        }
+    }
+
     private void OpenGameDetails_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: long gameId })
