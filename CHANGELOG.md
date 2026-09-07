@@ -2,6 +2,9 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.1.5 – 2026-09-07
+- Verbessert: Wartungsupdate ohne Änderungen an der Bedienung. Interne Abhängigkeiten wurden aktualisiert, und die interne Beschreibung des Datenbankschemas wurde korrigiert – damit passen künftige Updates die lokale Datenbank zuverlässig an, ohne dass Einträge verloren gehen.
+
 ## 1.1.4 – 2026-09-06
 - Behoben: Steam-Spiele werden jetzt auch erkannt, wenn sie aus einem einzeln heruntergeladenen Depot laufen (Ordner `steamapps\content\app_<AppId>`, etwa für eine ältere Spielversion). Bisher wurde nur der reguläre Installationsordner unter `steamapps\common` berücksichtigt, sodass solche Starts keine Session öffneten. Die Spielzeit landet beim selben Spieleintrag wie die regulär installierte Version.
 
