@@ -18,4 +18,6 @@ public static class AppSettingKeys
     public const string ProfileAccentColor = "profile.accentColor";
     public const string GlobalSearchRecentQueries = "ui.globalSearchRecentQueries";
     public const string LastLoggedUpdateVersion = "updates.lastLoggedVersion";
+    public const string UpdateRemindVersion = "updates.remindVersion";
+    public const string UpdateRemindAfterUtc = "updates.remindAfterUtc";
 }

@@ -279,6 +279,7 @@ public sealed class TrayService : ITrayService
             AppUpdateStage.ReadyToInstall => new TrayUpdateMenuPresentation(
                 $"Neue Version {state.AvailableVersion ?? "verfügbar"} installieren",
                 true),
+            AppUpdateStage.Failed => new TrayUpdateMenuPresentation("Update fehlgeschlagen – erneut versuchen", true),
             _ => new TrayUpdateMenuPresentation("Nach Updates suchen", state.CanCheckForUpdates)
         };
     }

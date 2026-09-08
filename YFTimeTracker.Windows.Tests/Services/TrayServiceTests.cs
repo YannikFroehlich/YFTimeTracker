@@ -63,6 +63,17 @@ public sealed class TrayServiceTests
         Assert.IsFalse(presentation.IsEnabled);
     }
 
+    [TestMethod]
+    public void Update_menu_offers_retry_after_failure()
+    {
+        var state = CreateState(AppUpdateStage.Failed);
+
+        var presentation = TrayService.CreateUpdateMenuPresentation(state);
+
+        Assert.AreEqual("Update fehlgeschlagen – erneut versuchen", presentation.Text);
+        Assert.IsTrue(presentation.IsEnabled);
+    }
+
     private static AppUpdateState CreateState(AppUpdateStage stage)
     {
         return new AppUpdateState(stage, "0.4.0", string.Empty);

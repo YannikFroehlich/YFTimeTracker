@@ -1,3 +1,4 @@
+using System.Net.Sockets;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 using Velopack;
@@ -139,7 +140,7 @@ public sealed class VelopackAppUpdateService : IAppUpdateService, IDisposable
             SetState(State with
             {
                 Stage = AppUpdateStage.Failed,
-                Message = "Update-Prüfung fehlgeschlagen. Bitte Internetverbindung prüfen."
+                Message = DescribeFailure(exception, "Update-Prüfung fehlgeschlagen.")
             });
         }
         finally
@@ -197,7 +198,7 @@ public sealed class VelopackAppUpdateService : IAppUpdateService, IDisposable
             SetState(State with
             {
                 Stage = AppUpdateStage.Failed,
-                Message = "Update konnte nicht heruntergeladen werden. Bitte später erneut versuchen.",
+                Message = DescribeFailure(exception, "Update konnte nicht heruntergeladen werden."),
                 DownloadProgress = 0
             });
             throw;
@@ -223,11 +224,36 @@ public sealed class VelopackAppUpdateService : IAppUpdateService, IDisposable
             Message = "Update wird beim Neustart installiert."
         });
 
-        updateManager.WaitExitThenApplyUpdates(
-            downloadedUpdate,
-            silent: false,
-            restart: true,
-            restartArgs: Array.Empty<string>());
+        try
+        {
+            updateManager.WaitExitThenApplyUpdates(
+                downloadedUpdate,
+                silent: false,
+                restart: true,
+                restartArgs: Array.Empty<string>());
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Scheduling the update installation failed.");
+            SetState(State with
+            {
+                Stage = AppUpdateStage.Failed,
+                Message = DescribeFailure(exception, "Die Installation konnte nicht vorbereitet werden.")
+            });
+            throw;
+        }
+    }
+
+    internal static string DescribeFailure(Exception exception, string baseMessage)
+    {
+        return exception switch
+        {
+            HttpRequestException or SocketException or TimeoutException =>
+                $"{baseMessage} Keine Verbindung zu GitHub möglich – bitte Internetverbindung und Firewall prüfen.",
+            UnauthorizedAccessException or IOException =>
+                $"{baseMessage} Der Update-Ordner konnte nicht beschrieben werden – bitte Antivirus-Ausnahme prüfen oder YFTimeTracker als Administrator starten.",
+            _ => $"{baseMessage} Bitte später erneut versuchen."
+        };
     }
 
     public void Dispose()

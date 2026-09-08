@@ -157,7 +157,7 @@ Ein Release enthält Setup, MSI, Velopack-Pakete, portables ZIP, SHA-256-Prüfsu
 
 ## Automatische Updates
 
-Installierte Setup- und MSI-Ausgaben prüfen beim Start den stabilen öffentlichen GitHub-Release-Kanal. Eine manuelle Prüfung ist unter **Einstellungen → App-Updates** und im Tray-Menü möglich. Verfügbare Updates werden erst nach Bestätigung heruntergeladen, zeigen ihren Fortschritt an und werden nach einem kontrollierten Neustart installiert.
+Installierte Setup- und MSI-Ausgaben prüfen beim Start den stabilen öffentlichen GitHub-Release-Kanal. Eine manuelle Prüfung ist unter **Einstellungen → App-Updates** und im Tray-Menü möglich. Der Update-Dialog zeigt die Versionshinweise des neuen Releases; „Später erinnern“ verschiebt die automatische Erinnerung um 24 Stunden. Verfügbare Updates werden erst nach Bestätigung heruntergeladen, zeigen ihren Fortschritt an und werden nach einem kontrollierten Neustart installiert. Schlägt ein Update fehl, nennt die Meldung die wahrscheinliche Ursache (z. B. fehlende Internetverbindung oder ein blockierter Update-Ordner).
 
 Es wird kein GitHub-Token in Quellcode, Build oder Anwendung eingebettet. Vorabversionen werden nicht automatisch angeboten.
 

@@ -2,6 +2,10 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.5.0 – 2026-09-08
+- Neu: Der Update-Dialog zeigt jetzt die Versionshinweise des neuen Releases an, bevor installiert wird. „Später erinnern“ verschiebt die automatische Erinnerung um 24 Stunden statt beim nächsten Start erneut zu erscheinen.
+- Verbessert: Fehlgeschlagene Updates nennen jetzt die wahrscheinliche Ursache (keine Internetverbindung, blockierter Update-Ordner) statt einer allgemeinen Fehlermeldung – auch im Tray-Menü sichtbar.
+
 ## 1.4.0 – 2026-09-08
 - Neu: Das Tray-Symbol zeigt jetzt den Tracking-Zustand an – unterschiedliche Icons für „Tracking aktiv“, „pausiert“ und „Spiel läuft“. Die Kurzinfo beim Überfahren mit der Maus nennt zusätzlich die aktuelle Spielzeit der laufenden Session.
 

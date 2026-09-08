@@ -34,6 +34,7 @@ public sealed partial class MainWindow : Window
     private readonly IThemeService themeService;
     private readonly AppWindow appWindow;
     private readonly SemaphoreSlim dialogLock = new(1, 1);
+    private static readonly TimeSpan UpdateReminderDelay = TimeSpan.FromHours(24);
     private CancellationTokenSource? globalSearchCancellation;
     private bool globalSearchUiReady;
     private bool isHiddenToTray;
@@ -389,11 +390,34 @@ public sealed partial class MainWindow : Window
             {
                 await appUpdateService.CheckForUpdatesAsync(CancellationToken.None);
             }
+
+            var state = appUpdateService.State;
+            if (state.HasAvailableUpdate && await ShouldPromptForUpdateAsync(state))
+            {
+                await PromptForAvailableUpdateAsync();
+            }
         }
         catch (Exception)
         {
             // Update errors are exposed in the settings and must never interrupt app startup.
         }
+    }
+
+    private async Task<bool> ShouldPromptForUpdateAsync(AppUpdateState state)
+    {
+        var remindVersion = await settingsStore.GetAsync(AppSettingKeys.UpdateRemindVersion, CancellationToken.None);
+        if (!string.Equals(remindVersion, state.AvailableVersion, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        var remindAfterRaw = await settingsStore.GetAsync(AppSettingKeys.UpdateRemindAfterUtc, CancellationToken.None);
+        if (!DateTimeOffset.TryParse(remindAfterRaw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var remindAfter))
+        {
+            return true;
+        }
+
+        return DateTimeOffset.UtcNow >= remindAfter;
     }
 
     public async Task CheckForUpdatesManuallyAsync()
@@ -429,25 +453,56 @@ public sealed partial class MainWindow : Window
             var isReady = state.Stage == AppUpdateStage.ReadyToInstall;
             var version = state.AvailableVersion ?? "neu";
             var sizeText = FormatDownloadSize(state.DownloadSize);
+            var content = new StackPanel { Spacing = 12 };
+            content.Children.Add(new TextBlock
+            {
+                MaxWidth = 470,
+                Text = isReady
+                    ? "Das Update wurde bereits heruntergeladen. YFTimeTracker beendet offene Sessions sauber und startet nach der Installation neu."
+                    : $"Das Update{sizeText} wird aus dem öffentlichen GitHub-Release geladen. Danach beendet YFTimeTracker offene Sessions sauber und startet mit der neuen Version neu.",
+                TextWrapping = TextWrapping.Wrap
+            });
+
+            var releaseNotes = ChangelogParser.ParseBullets(state.ReleaseNotes);
+            if (releaseNotes.Count > 0)
+            {
+                content.Children.Add(new TextBlock { Text = "Versionshinweise", Style = (Style)Application.Current.Resources["YFMutedTextStyle"] });
+                var notesPanel = new StackPanel { Spacing = 8 };
+                foreach (var row in BulletList.BuildRows(releaseNotes))
+                {
+                    notesPanel.Children.Add(row);
+                }
+
+                content.Children.Add(new ScrollViewer
+                {
+                    MaxHeight = 220,
+                    MaxWidth = 470,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    Content = notesPanel
+                });
+            }
+
             var dialog = new ContentDialog
             {
                 XamlRoot = RootGrid.XamlRoot,
                 Title = $"YFTimeTracker {version} ist verfügbar",
-                Content = new TextBlock
-                {
-                    MaxWidth = 470,
-                    Text = isReady
-                        ? "Das Update wurde bereits heruntergeladen. YFTimeTracker beendet offene Sessions sauber und startet nach der Installation neu."
-                        : $"Das Update{sizeText} wird aus dem öffentlichen GitHub-Release geladen. Danach beendet YFTimeTracker offene Sessions sauber und startet mit der neuen Version neu.",
-                    TextWrapping = TextWrapping.Wrap
-                },
+                Content = content,
                 PrimaryButtonText = isReady ? "Neu starten & installieren" : "Herunterladen & installieren",
-                CloseButtonText = "Später",
+                CloseButtonText = "Später erinnern",
                 DefaultButton = ContentDialogButton.Primary
             };
 
             if (await dialog.ShowAsync() != ContentDialogResult.Primary)
             {
+                if (state.AvailableVersion is not null)
+                {
+                    await settingsStore.SetAsync(AppSettingKeys.UpdateRemindVersion, state.AvailableVersion, CancellationToken.None);
+                    await settingsStore.SetAsync(
+                        AppSettingKeys.UpdateRemindAfterUtc,
+                        DateTimeOffset.UtcNow.Add(UpdateReminderDelay).ToString("o", CultureInfo.InvariantCulture),
+                        CancellationToken.None);
+                }
+
                 return;
             }
 
@@ -463,9 +518,7 @@ public sealed partial class MainWindow : Window
             }
             catch (Exception)
             {
-                await ShowUpdateMessageCoreAsync(
-                    "Update konnte nicht gestartet werden",
-                    "Die Installation konnte nicht vorbereitet werden. Bitte YFTimeTracker neu starten und erneut versuchen.");
+                await ShowUpdateMessageCoreAsync("Update konnte nicht gestartet werden", appUpdateService.State.Message);
             }
         }
         finally
