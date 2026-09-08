@@ -35,6 +35,7 @@ public sealed partial class MainWindow : Window
     private readonly AppWindow appWindow;
     private readonly SemaphoreSlim dialogLock = new(1, 1);
     private CancellationTokenSource? globalSearchCancellation;
+    private bool globalSearchUiReady;
     private bool isHiddenToTray;
     private bool minimizeOnClose = true;
     private bool firstRunSetupActive;
@@ -47,6 +48,8 @@ public sealed partial class MainWindow : Window
     {
         GlobalSearchViewModel = App.Services.GetRequiredService<GlobalSearchViewModel>();
         InitializeComponent();
+        globalSearchUiReady = true;
+        UpdateGlobalSearchFilterState();
         dashboardViewModel = App.Services.GetRequiredService<DashboardViewModel>();
         settingsStore = App.Services.GetRequiredService<ISettingsStore>();
         appUpdateService = App.Services.GetRequiredService<IAppUpdateService>();
@@ -579,23 +582,135 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        globalSearchCancellation?.Cancel();
-        globalSearchCancellation?.Dispose();
-        globalSearchCancellation = new CancellationTokenSource();
-        var cancellationToken = globalSearchCancellation.Token;
+        await RefreshGlobalSearchAsync(useDebounce: true);
+    }
 
-        if (sender.Text.Trim().Length < 2)
+    private async void GlobalSearchBox_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (!string.IsNullOrWhiteSpace(GlobalSearchBox.Text))
         {
-            GlobalSearchViewModel.Clear();
-            sender.IsSuggestionListOpen = false;
             return;
         }
 
         try
         {
-            await Task.Delay(180, cancellationToken);
-            await GlobalSearchViewModel.SearchAsync(sender.Text, cancellationToken);
-            sender.IsSuggestionListOpen = GlobalSearchViewModel.Results.Count > 0;
+            await GlobalSearchViewModel.ShowRecentSearchesAsync(CancellationToken.None);
+            GlobalSearchBox.IsSuggestionListOpen = GlobalSearchViewModel.Results.Count > 0;
+        }
+        catch (Exception exception)
+        {
+            Log.Warning(exception, "Loading recent global searches failed.");
+        }
+    }
+
+    private async void GlobalSearchBox_QuerySubmitted(
+        AutoSuggestBox sender,
+        AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        var result = args.ChosenSuggestion as GlobalSearchResultViewModel
+            ?? GlobalSearchViewModel.Results.FirstOrDefault();
+        try
+        {
+            if (result is null)
+            {
+                await GlobalSearchViewModel.RememberSearchAsync(sender.Text, CancellationToken.None);
+                return;
+            }
+
+            await ActivateGlobalSearchResultAsync(result);
+        }
+        catch (Exception exception)
+        {
+            Log.Warning(exception, "Opening a global search result failed.");
+        }
+    }
+
+    private async void GlobalSearchResult_Tapped(
+        object sender,
+        Microsoft.UI.Xaml.Input.TappedRoutedEventArgs args)
+    {
+        if (sender is FrameworkElement { Tag: GlobalSearchResultViewModel result })
+        {
+            args.Handled = true;
+            try
+            {
+                await ActivateGlobalSearchResultAsync(result);
+            }
+            catch (Exception exception)
+            {
+                Log.Warning(exception, "Opening a global search result failed.");
+            }
+        }
+    }
+
+    private void GlobalSearchShortcut_Invoked(
+        KeyboardAccelerator sender,
+        KeyboardAcceleratorInvokedEventArgs args)
+    {
+        GlobalSearchBox.Focus(FocusState.Keyboard);
+        args.Handled = true;
+    }
+
+    private async void GlobalSearchFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!globalSearchUiReady)
+        {
+            return;
+        }
+
+        UpdateGlobalSearchFilterState();
+        if (GlobalSearchBox.Text.Trim().Length >= 2)
+        {
+            await RefreshGlobalSearchAsync(useDebounce: false);
+        }
+    }
+
+    private async void ClearGlobalSearchHistory_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await GlobalSearchViewModel.ClearRecentSearchesAsync(CancellationToken.None);
+            if (string.IsNullOrWhiteSpace(GlobalSearchBox.Text))
+            {
+                GlobalSearchViewModel.Clear();
+                GlobalSearchBox.IsSuggestionListOpen = false;
+            }
+            GlobalSearchFilterFlyout.Hide();
+        }
+        catch (Exception exception)
+        {
+            Log.Warning(exception, "Clearing recent global searches failed.");
+        }
+    }
+
+    private async Task RefreshGlobalSearchAsync(bool useDebounce)
+    {
+        globalSearchCancellation?.Cancel();
+        globalSearchCancellation?.Dispose();
+        globalSearchCancellation = new CancellationTokenSource();
+        var cancellationToken = globalSearchCancellation.Token;
+        var query = GlobalSearchBox.Text.Trim();
+
+        if (query.Length < 2)
+        {
+            GlobalSearchViewModel.Clear();
+            GlobalSearchBox.IsSuggestionListOpen = false;
+            return;
+        }
+
+        try
+        {
+            if (useDebounce)
+            {
+                await Task.Delay(180, cancellationToken);
+            }
+
+            await GlobalSearchViewModel.SearchAsync(
+                query,
+                GetGlobalSearchSourceFilter(),
+                GetGlobalSearchSessionAgeFilter(),
+                cancellationToken);
+            GlobalSearchBox.IsSuggestionListOpen = GlobalSearchViewModel.Results.Count > 0;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -603,42 +718,47 @@ public sealed partial class MainWindow : Window
         catch (Exception exception)
         {
             GlobalSearchViewModel.Clear();
-            sender.IsSuggestionListOpen = false;
+            GlobalSearchBox.IsSuggestionListOpen = false;
             Log.Warning(exception, "Global search failed.");
         }
     }
 
-    private void GlobalSearchBox_SuggestionChosen(
-        AutoSuggestBox sender,
-        AutoSuggestBoxSuggestionChosenEventArgs args)
+    private async Task ActivateGlobalSearchResultAsync(GlobalSearchResultViewModel result)
     {
-        if (args.SelectedItem is GlobalSearchResultViewModel result)
+        if (result.Kind == GlobalSearchResultKind.RecentSearch && result.SearchText is { } recentQuery)
         {
-            sender.Text = result.Title;
+            GlobalSearchBox.Text = recentQuery;
+            await RefreshGlobalSearchAsync(useDebounce: false);
+            GlobalSearchBox.Focus(FocusState.Keyboard);
+            return;
         }
+
+        await GlobalSearchViewModel.RememberSearchAsync(GlobalSearchBox.Text, CancellationToken.None);
+        OpenGlobalSearchResult(result);
     }
 
-    private void GlobalSearchBox_QuerySubmitted(
-        AutoSuggestBox sender,
-        AutoSuggestBoxQuerySubmittedEventArgs args)
+    private GameSource? GetGlobalSearchSourceFilter()
     {
-        var result = args.ChosenSuggestion as GlobalSearchResultViewModel
-            ?? GlobalSearchViewModel.Results.FirstOrDefault();
-        if (result is not null)
-        {
-            OpenGlobalSearchResult(result);
-        }
+        var tag = (GlobalSearchSourceFilter.SelectedItem as ComboBoxItem)?.Tag as string;
+        return Enum.TryParse<GameSource>(tag, ignoreCase: true, out var source) ? source : null;
     }
 
-    private void GlobalSearchResult_Tapped(
-        object sender,
-        Microsoft.UI.Xaml.Input.TappedRoutedEventArgs args)
+    private TimeSpan? GetGlobalSearchSessionAgeFilter()
     {
-        if (sender is FrameworkElement { Tag: GlobalSearchResultViewModel result })
-        {
-            OpenGlobalSearchResult(result);
-            args.Handled = true;
-        }
+        var tag = (GlobalSearchTimeFilter.SelectedItem as ComboBoxItem)?.Tag as string;
+        return int.TryParse(tag, CultureInfo.InvariantCulture, out var days)
+            ? TimeSpan.FromDays(days)
+            : null;
+    }
+
+    private void UpdateGlobalSearchFilterState()
+    {
+        var filterCount = (GetGlobalSearchSourceFilter() is null ? 0 : 1)
+            + (GetGlobalSearchSessionAgeFilter() is null ? 0 : 1);
+        GlobalSearchFilterIndicator.Visibility = filterCount == 0 ? Visibility.Collapsed : Visibility.Visible;
+        ToolTipService.SetToolTip(
+            GlobalSearchFilterButton,
+            filterCount == 0 ? "Suche filtern" : $"Suche filtern · {filterCount} aktiv");
     }
 
     private void OpenGlobalSearchResult(GlobalSearchResultViewModel result)

@@ -1,17 +1,32 @@
 using System.Collections.ObjectModel;
+using System.Text.Json;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
+using YFTimeTracker.Core.Services;
 
 namespace YFTimeTracker.App.ViewModels;
 
 public sealed class GlobalSearchViewModel(
     IGlobalSearchRepository searchRepository,
     IClock clock,
-    IGameIconService? gameIcons = null)
+    IGameIconService? gameIcons = null,
+    ISettingsStore? settings = null)
 {
+    private const int MaximumRecentQueries = 6;
+    private List<string>? recentQueries;
+
     public ObservableCollection<GlobalSearchResultViewModel> Results { get; } = [];
 
-    public async Task SearchAsync(string? searchText, CancellationToken cancellationToken)
+    public Task SearchAsync(string? searchText, CancellationToken cancellationToken)
+    {
+        return SearchAsync(searchText, null, null, cancellationToken);
+    }
+
+    public async Task SearchAsync(
+        string? searchText,
+        GameSource? source,
+        TimeSpan? sessionAge,
+        CancellationToken cancellationToken)
     {
         var query = searchText?.Trim() ?? string.Empty;
         if (query.Length < 2)
@@ -21,7 +36,10 @@ public sealed class GlobalSearchViewModel(
         }
 
         var searchResults = await searchRepository.SearchAsync(
-            query,
+            new GlobalSearchQuery(
+                query,
+                source,
+                sessionAge is { } age ? clock.UtcNow - age : null),
             gameCount: 5,
             sessionCount: 5,
             cancellationToken);
@@ -59,6 +77,60 @@ public sealed class GlobalSearchViewModel(
 
         AddNavigationResults(items, query);
         ReplaceResults(items);
+    }
+
+    public async Task ShowRecentSearchesAsync(CancellationToken cancellationToken)
+    {
+        var queries = await GetRecentQueriesAsync(cancellationToken);
+        ReplaceResults(queries
+            .Select(query => new GlobalSearchResultViewModel(
+                GlobalSearchResultKind.RecentSearch,
+                query,
+                "Zuletzt gesucht",
+                "\uE823",
+                null,
+                null,
+                SearchText: query))
+            .ToList());
+    }
+
+    public async Task RememberSearchAsync(string? searchText, CancellationToken cancellationToken)
+    {
+        var query = searchText?.Trim() ?? string.Empty;
+        if (query.Length < 2)
+        {
+            return;
+        }
+
+        var queries = await GetRecentQueriesAsync(cancellationToken);
+        queries.RemoveAll(item => string.Equals(item, query, StringComparison.CurrentCultureIgnoreCase));
+        queries.Insert(0, query);
+        if (queries.Count > MaximumRecentQueries)
+        {
+            queries.RemoveRange(MaximumRecentQueries, queries.Count - MaximumRecentQueries);
+        }
+
+        if (settings is not null)
+        {
+            await settings.SetAsync(
+                AppSettingKeys.GlobalSearchRecentQueries,
+                JsonSerializer.Serialize(queries),
+                cancellationToken);
+        }
+    }
+
+    public async Task ClearRecentSearchesAsync(CancellationToken cancellationToken)
+    {
+        var queries = await GetRecentQueriesAsync(cancellationToken);
+        queries.Clear();
+        if (settings is not null)
+        {
+            await settings.SetAsync(
+                AppSettingKeys.GlobalSearchRecentQueries,
+                "[]",
+                cancellationToken);
+        }
+
     }
 
     public void Clear()
@@ -116,8 +188,42 @@ public sealed class GlobalSearchViewModel(
     private static bool Matches(string query, params string[] candidates)
     {
         return candidates.Any(candidate =>
-            candidate.Contains(query, StringComparison.CurrentCultureIgnoreCase)
-            || query.Contains(candidate, StringComparison.CurrentCultureIgnoreCase));
+            query.Contains(candidate, StringComparison.CurrentCultureIgnoreCase)
+            || FuzzySearchMatcher.GetScore(query, candidate) is not null);
+    }
+
+    private async Task<List<string>> GetRecentQueriesAsync(CancellationToken cancellationToken)
+    {
+        if (recentQueries is not null)
+        {
+            return recentQueries;
+        }
+
+        if (settings is null)
+        {
+            recentQueries = [];
+            return recentQueries;
+        }
+
+        var serialized = await settings.GetAsync(AppSettingKeys.GlobalSearchRecentQueries, cancellationToken);
+        try
+        {
+            recentQueries = string.IsNullOrWhiteSpace(serialized)
+                ? []
+                : JsonSerializer.Deserialize<List<string>>(serialized) ?? [];
+        }
+        catch (JsonException)
+        {
+            recentQueries = [];
+        }
+
+        recentQueries = recentQueries
+            .Select(query => query.Trim())
+            .Where(query => query.Length >= 2)
+            .Distinct(StringComparer.CurrentCultureIgnoreCase)
+            .Take(MaximumRecentQueries)
+            .ToList();
+        return recentQueries;
     }
 
     private void ReplaceResults(IReadOnlyList<GlobalSearchResultViewModel> items)
@@ -146,6 +252,7 @@ public sealed class GlobalSearchViewModel(
 
 public enum GlobalSearchResultKind
 {
+    RecentSearch,
     Game,
     Session,
     Library,
@@ -161,7 +268,8 @@ public sealed record GlobalSearchResultViewModel(
     string Glyph,
     long? GameId,
     long? SessionId,
-    string? IconPath = null)
+    string? IconPath = null,
+    string? SearchText = null)
 {
     public string IconText => GameId is null ? Glyph : GetInitials(Title);
 

@@ -39,7 +39,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 **Dashboard und Auswertung**
 
 - Dashboard mit Live-Tracking, Tages-, Wochen- und Gesamtwerten
-- Globale Suche nach Spielen, EXE-Dateien, Sessions und App-Bereichen
+- Typfehlertolerante globale Suche nach Spielen, EXE-Dateien, Sessions und App-Bereichen mit Launcher- und Zeitraumfilter, lokalem Suchverlauf und `Strg+K`-Schnellzugriff
 - Statistiken für frei wählbare Zeiträume und einzelne Spiele mit CSV-Export
 - Jahresrückblick mit Monatsverlauf, Vorjahresvergleich, Rekorden, Top-Spielen und PNG-Export
 
