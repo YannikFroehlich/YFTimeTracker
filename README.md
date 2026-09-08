@@ -39,22 +39,24 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 **Dashboard und Auswertung**
 
 - Dashboard mit Live-Tracking, Tages-, Wochen- und Gesamtwerten
-- Globale Suche nach Spielen, EXE-Dateien, Sessions und App-Bereichen
+- Typfehlertolerante globale Suche nach Spielen, EXE-Dateien, Sessions und App-Bereichen mit Launcher- und Zeitraumfilter, lokalem Suchverlauf und `Strg+K`-Schnellzugriff
 - Statistiken für frei wählbare Zeiträume und einzelne Spiele mit CSV-Export
 - Jahresrückblick mit Monatsverlauf, Vorjahresvergleich, Rekorden, Top-Spielen und PNG-Export
 
 **Bibliothek und Sessions**
 
 - Bibliothek mit Suche, Sortierung, Spieldetails und EXE-Verwaltung
+- Doppelte Einträge desselben Spiels zusammenführen, ohne Spielzeit zu verlieren
 - Spiele direkt aus den Spieldetails heraus starten
 - Lokale Spiel-Icons aus den registrierten EXE-Dateien mit datensparsamem Cache
-- Anlegen, Bearbeiten und Löschen manueller Sessions, inklusive CSV-Export der Sessions-Liste
+- Anlegen, Bearbeiten und Löschen manueller Sessions sowie Umhängen einer Session auf ein anderes Spiel, inklusive CSV-Export der Sessions-Liste
 - Direkter Link zum Explorer-Ordner nach einem Export
 
 **Windows-Integration**
 
 - Ersteinrichtungs-Assistent für Tracking, Launcher, Tray und Autostart
 - Tray-Betrieb, Tracking-Pause, optionaler Autostart und Einzelinstanz-Schutz
+- Eigenes Tray-Symbol je Zustand (aktiv, pausiert, Spiel läuft) und die aktuelle Sessiondauer in der Tray-Kurzinfo
 - Optional minimierter Start direkt im Tray, sowohl beim manuellen Start als auch über den Windows-Autostart
 - Helles und dunkles Design, umschaltbar in den Einstellungen
 - Lokales Profil mit editierbarem Anzeigename und Akzentfarbe (nur auf diesem Gerät gespeichert)
@@ -155,7 +157,7 @@ Ein Release enthält Setup, MSI, Velopack-Pakete, portables ZIP, SHA-256-Prüfsu
 
 ## Automatische Updates
 
-Installierte Setup- und MSI-Ausgaben prüfen beim Start den stabilen öffentlichen GitHub-Release-Kanal. Eine manuelle Prüfung ist unter **Einstellungen → App-Updates** und im Tray-Menü möglich. Verfügbare Updates werden erst nach Bestätigung heruntergeladen, zeigen ihren Fortschritt an und werden nach einem kontrollierten Neustart installiert.
+Installierte Setup- und MSI-Ausgaben prüfen beim Start den stabilen öffentlichen GitHub-Release-Kanal. Eine manuelle Prüfung ist unter **Einstellungen → App-Updates** und im Tray-Menü möglich. Der Update-Dialog zeigt die Versionshinweise des neuen Releases; „Später erinnern“ verschiebt die automatische Erinnerung um 24 Stunden. Verfügbare Updates werden erst nach Bestätigung heruntergeladen, zeigen ihren Fortschritt an und werden nach einem kontrollierten Neustart installiert. Schlägt ein Update fehl, nennt die Meldung die wahrscheinliche Ursache (z. B. fehlende Internetverbindung oder ein blockierter Update-Ordner).
 
 Es wird kein GitHub-Token in Quellcode, Build oder Anwendung eingebettet. Vorabversionen werden nicht automatisch angeboten.
 

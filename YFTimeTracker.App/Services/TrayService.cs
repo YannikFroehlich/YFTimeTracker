@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using WinRT.Interop;
+using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
 
@@ -38,8 +39,7 @@ public sealed class TrayService : ITrayService
     private MainWindow? mainWindow;
     private IntPtr hwnd;
     private IntPtr originalWndProc;
-    private IntPtr iconHandle;
-    private bool ownsIconHandle;
+    private readonly Dictionary<TrayIconKind, (IntPtr Handle, bool Owned)> icons = new();
     private TrackingState state = TrackingState.Stopped;
     private AppUpdateState updateState;
     private bool iconAdded;
@@ -59,13 +59,9 @@ public sealed class TrayService : ITrayService
         mainWindow = window;
         hwnd = WindowNative.GetWindowHandle(window);
         originalWndProc = SetWindowLongPtr(hwnd, GwlpWndProc, Marshal.GetFunctionPointerForDelegate(wndProcDelegate));
-        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "YFTimeTracker.ico");
-        iconHandle = LoadImage(IntPtr.Zero, iconPath, ImageIcon, 16, 16, LrLoadFromFile);
-        ownsIconHandle = iconHandle != IntPtr.Zero;
-        if (!ownsIconHandle)
-        {
-            iconHandle = LoadIcon(IntPtr.Zero, new IntPtr(32512));
-        }
+        icons[TrayIconKind.Active] = LoadTrayIcon("YFTimeTracker.ico");
+        icons[TrayIconKind.Paused] = LoadTrayIcon("YFTimeTracker-Paused.ico");
+        icons[TrayIconKind.Running] = LoadTrayIcon("YFTimeTracker-Running.ico");
 
         trackingService.StateChanged += TrackingService_StateChanged;
         updateService.StateChanged += UpdateService_StateChanged;
@@ -92,12 +88,27 @@ public sealed class TrayService : ITrayService
             SetWindowLongPtr(hwnd, GwlpWndProc, originalWndProc);
         }
 
-        if (ownsIconHandle && iconHandle != IntPtr.Zero)
+        foreach (var (handle, owned) in icons.Values)
         {
-            DestroyIcon(iconHandle);
-            iconHandle = IntPtr.Zero;
-            ownsIconHandle = false;
+            if (owned && handle != IntPtr.Zero)
+            {
+                DestroyIcon(handle);
+            }
         }
+
+        icons.Clear();
+    }
+
+    private static (IntPtr Handle, bool Owned) LoadTrayIcon(string fileName)
+    {
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", fileName);
+        var handle = LoadImage(IntPtr.Zero, iconPath, ImageIcon, 16, 16, LrLoadFromFile);
+        if (handle != IntPtr.Zero)
+        {
+            return (handle, true);
+        }
+
+        return (LoadIcon(IntPtr.Zero, new IntPtr(32512)), false);
     }
 
     private IntPtr WndProc(IntPtr windowHandle, uint message, IntPtr wParam, IntPtr lParam)
@@ -216,13 +227,23 @@ public sealed class TrayService : ITrayService
             uID = IconId,
             uFlags = NifMessage | NifIcon | NifTip,
             uCallbackMessage = CallbackMessage,
-            hIcon = iconHandle,
+            hIcon = icons[SelectIconKind(state)].Handle,
             szTip = TrimForTray(CreateTrayToolTip()),
             szInfo = string.Empty,
             szInfoTitle = string.Empty
         };
 
         Shell_NotifyIcon(message, ref data);
+    }
+
+    internal static TrayIconKind SelectIconKind(TrackingState state)
+    {
+        if (state.IsPaused)
+        {
+            return TrayIconKind.Paused;
+        }
+
+        return state.RunningGames.Count == 0 ? TrayIconKind.Active : TrayIconKind.Running;
     }
 
     private string CreateActiveGameText()
@@ -234,7 +255,8 @@ public sealed class TrayService : ITrayService
 
         return state.RunningGames.Count == 0
             ? "YFTimeTracker - kein aktives Spiel"
-            : "YFTimeTracker - " + string.Join(", ", state.RunningGames.Select(game => game.Name));
+            : "YFTimeTracker - " + string.Join(", ", state.RunningGames.Select(
+                game => $"{game.Name} ({TimeFormatter.Format(game.Duration)})"));
     }
 
     private string CreateTrayToolTip()
@@ -257,6 +279,7 @@ public sealed class TrayService : ITrayService
             AppUpdateStage.ReadyToInstall => new TrayUpdateMenuPresentation(
                 $"Neue Version {state.AvailableVersion ?? "verfügbar"} installieren",
                 true),
+            AppUpdateStage.Failed => new TrayUpdateMenuPresentation("Update fehlgeschlagen – erneut versuchen", true),
             _ => new TrayUpdateMenuPresentation("Nach Updates suchen", state.CanCheckForUpdates)
         };
     }
@@ -387,3 +410,10 @@ public sealed class TrayService : ITrayService
 }
 
 internal sealed record TrayUpdateMenuPresentation(string Text, bool IsEnabled);
+
+internal enum TrayIconKind
+{
+    Active,
+    Paused,
+    Running
+}

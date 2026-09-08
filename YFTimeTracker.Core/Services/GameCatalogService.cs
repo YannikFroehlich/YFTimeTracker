@@ -6,6 +6,7 @@ namespace YFTimeTracker.Core.Services;
 
 public sealed class GameCatalogService(
     IGameRepository games,
+    IGameSessionRepository sessions,
     IClock clock) : IGameCatalogService
 {
     public Task<IReadOnlyList<Game>> GetGamesAsync(CancellationToken cancellationToken)
@@ -88,6 +89,40 @@ public sealed class GameCatalogService(
             IsPrimary = true,
             AddedAtUtc = clock.UtcNow
         }, cancellationToken);
+    }
+
+    public async Task<GameMergeResult> MergeGamesAsync(long sourceGameId, long targetGameId, CancellationToken cancellationToken)
+    {
+        if (sourceGameId == targetGameId)
+        {
+            throw new YFTimeTrackerException("Ein Spiel kann nicht mit sich selbst zusammengeführt werden.");
+        }
+
+        var source = await games.GetByIdAsync(sourceGameId, cancellationToken)
+            ?? throw new YFTimeTrackerException("Das zusammenzuführende Spiel wurde nicht gefunden.");
+        var target = await games.GetByIdAsync(targetGameId, cancellationToken)
+            ?? throw new YFTimeTrackerException("Das Zielspiel wurde nicht gefunden.");
+
+        var sourceSessions = await sessions.GetSessionsForGameAsync(sourceGameId, cancellationToken);
+        var targetSessions = await sessions.GetSessionsForGameAsync(targetGameId, cancellationToken);
+
+        // Eine laufende Session hätte zwei Probleme: das Tracking hält den alten Spieleintrag noch im
+        // Speicher, und pro Spiel darf nur eine Session offen sein. Gleiche Regel wie beim Bearbeiten.
+        if (sourceSessions.Any(session => session.IsOpen) || targetSessions.Any(session => session.IsOpen))
+        {
+            throw new YFTimeTrackerException(
+                "Solange eine Session läuft, lassen sich die Spiele nicht zusammenführen. Pausiere zuerst das Tracking oder beende das Spiel.");
+        }
+
+        var plan = SessionMergePlanner.Create(targetSessions, sourceSessions);
+        await games.MergeIntoAsync(sourceGameId, targetGameId, plan, cancellationToken);
+
+        return new GameMergeResult(
+            target.Id,
+            target.Name,
+            sourceSessions.Count,
+            plan.RemovedSessionIds.Count,
+            source.Executables.Count);
     }
 
     public Task DeleteGameAsync(long gameId, CancellationToken cancellationToken)

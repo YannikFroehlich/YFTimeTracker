@@ -161,6 +161,9 @@ public sealed class GamesViewModelTests
         public Task UpdateGameAsync(long gameId, string displayName, string executablePath, int? dailyPlaytimeLimitMinutes, int? weeklyPlaytimeLimitMinutes, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task DeleteGameAsync(long gameId, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<GameMergeResult> MergeGamesAsync(long sourceGameId, long targetGameId, CancellationToken cancellationToken)
+            => throw new NotSupportedException();
     }
 
     private sealed class FakeSessionEditor : IGameSessionEditor
@@ -172,6 +175,9 @@ public sealed class GamesViewModelTests
             throw new NotSupportedException();
 
         public Task DeleteSessionAsync(long sessionId, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task MoveSessionAsync(long sessionId, long targetGameId, CancellationToken cancellationToken)
+            => throw new NotSupportedException();
     }
 
     private sealed class FakeFilePicker : IFilePickerService

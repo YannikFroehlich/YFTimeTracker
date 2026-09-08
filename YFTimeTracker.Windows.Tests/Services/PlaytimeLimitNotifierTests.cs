@@ -314,6 +314,9 @@ public sealed class PlaytimeLimitNotifierTests
 
         public Task DeleteAsync(long id, CancellationToken cancellationToken)
             => throw new NotSupportedException();
+
+        public Task MergeIntoAsync(long sourceGameId, long targetGameId, SessionMergePlan plan, CancellationToken cancellationToken)
+            => throw new NotSupportedException();
     }
 
     private sealed class FakeTrackingService : IGameTrackingService

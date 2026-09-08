@@ -5,7 +5,7 @@ namespace YFTimeTracker.Core.Abstractions;
 public interface IGlobalSearchRepository
 {
     Task<GlobalSearchResults> SearchAsync(
-        string searchText,
+        GlobalSearchQuery query,
         int gameCount,
         int sessionCount,
         CancellationToken cancellationToken);

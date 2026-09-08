@@ -21,6 +21,7 @@ public sealed class GamesViewModel : ObservableObject
     private readonly IGameIconService? gameIcons;
     private readonly List<GameListItemViewModel> allGames = [];
     private GameListItemViewModel? selectedGame;
+    private GameListItemViewModel? selectedMergeTarget;
     private SessionListItemViewModel? selectedSession;
     private LibrarySourceFilterOption selectedSourceFilter;
     private LibraryStatusFilterOption selectedStatusFilter;
@@ -86,6 +87,7 @@ public sealed class GamesViewModel : ObservableObject
         BrowseExecutableCommand = new AsyncRelayCommand(BrowseExecutableAsync);
         AddOrUpdateGameCommand = new AsyncRelayCommand(AddOrUpdateGameAsync);
         DeleteSelectedGameCommand = new AsyncRelayCommand(DeleteSelectedGameAsync);
+        MergeSelectedGameCommand = new AsyncRelayCommand(MergeSelectedGameAsync);
         AddManualSessionCommand = new AsyncRelayCommand(AddManualSessionAsync);
         DeleteSelectedSessionCommand = new AsyncRelayCommand(DeleteSelectedSessionAsync);
     }
@@ -182,6 +184,8 @@ public sealed class GamesViewModel : ObservableObject
                 return;
             }
 
+            RefreshMergeTargets();
+
             if (value is not null)
             {
                 DisplayName = value.Name;
@@ -196,6 +200,22 @@ public sealed class GamesViewModel : ObservableObject
             Sessions.Clear();
         }
     }
+
+    public ObservableCollection<GameListItemViewModel> MergeTargets { get; } = [];
+
+    public GameListItemViewModel? SelectedMergeTarget
+    {
+        get => selectedMergeTarget;
+        set
+        {
+            if (SetProperty(ref selectedMergeTarget, value))
+            {
+                OnPropertyChanged(nameof(CanMergeSelectedGame));
+            }
+        }
+    }
+
+    public bool CanMergeSelectedGame => SelectedGame is not null && SelectedMergeTarget is not null;
 
     public SessionListItemViewModel? SelectedSession
     {
@@ -244,6 +264,8 @@ public sealed class GamesViewModel : ObservableObject
     public IAsyncRelayCommand AddOrUpdateGameCommand { get; }
 
     public IAsyncRelayCommand DeleteSelectedGameCommand { get; }
+
+    public IAsyncRelayCommand MergeSelectedGameCommand { get; }
 
     public IAsyncRelayCommand AddManualSessionCommand { get; }
 
@@ -341,6 +363,8 @@ public sealed class GamesViewModel : ObservableObject
             Sessions.Clear();
         }
 
+        RefreshMergeTargets();
+
         ResultSummary = allGames.Count == 0
             ? "Keine Spiele"
             : Games.Count == allGames.Count
@@ -423,6 +447,47 @@ public sealed class GamesViewModel : ObservableObject
         catch (Exception ex)
         {
             StatusMessage = $"Speichern fehlgeschlagen: {ex.Message}";
+        }
+    }
+
+    private void RefreshMergeTargets()
+    {
+        var previousId = SelectedMergeTarget?.Id;
+        MergeTargets.Clear();
+        foreach (var candidate in allGames.Where(game => game.Id != selectedGame?.Id).OrderBy(game => game.Name))
+        {
+            MergeTargets.Add(candidate);
+        }
+
+        SelectedMergeTarget = MergeTargets.FirstOrDefault(game => game.Id == previousId);
+        OnPropertyChanged(nameof(CanMergeSelectedGame));
+    }
+
+    private async Task MergeSelectedGameAsync()
+    {
+        if (SelectedGame is not { } source || SelectedMergeTarget is not { } target)
+        {
+            StatusMessage = "Bitte ein Spiel und ein Zielspiel auswählen.";
+            return;
+        }
+
+        try
+        {
+            var result = await catalog.MergeGamesAsync(source.Id, target.Id, CancellationToken.None);
+            SelectedGame = null;
+            await RefreshAsync();
+            SelectedGame = Games.FirstOrDefault(game => game.Id == result.TargetGameId);
+            StatusMessage = result.CombinedSessionCount == 0
+                ? $"{result.MovedSessionCount} Session(s) zu {result.TargetGameName} übernommen"
+                : $"{result.MovedSessionCount} Session(s) zu {result.TargetGameName} übernommen, {result.CombinedSessionCount} davon zusammengefasst";
+        }
+        catch (YFTimeTrackerException exception)
+        {
+            StatusMessage = exception.Message;
+        }
+        catch (Exception exception)
+        {
+            StatusMessage = $"Zusammenführen fehlgeschlagen: {exception.Message}";
         }
     }
 

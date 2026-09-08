@@ -71,6 +71,11 @@ Für Xbox-/Microsoft-Store-Spiele zusätzlich prüfen:
 3. Einen Session-Treffer öffnen, der älter als 30 Tage ist. Die Ansicht **Sessions** muss auf **Gesamter Zeitraum** wechseln und die Session auswählen.
 4. Nach `Statistik` suchen und den Bereichstreffer öffnen. Die App muss zu **Statistiken** navigieren.
 5. Schnell nacheinander unterschiedliche Suchbegriffe eingeben. Veraltete Treffer dürfen die Ergebnisse der neueren Suche nicht überschreiben.
+6. Einen Spielnamen mit vertauschten Buchstaben eingeben, etwa `cyberpnuk` für `Cyberpunk`. Der passende Spieltreffer muss weiterhin erscheinen.
+7. Den Launcher-Filter aktivieren. Es dürfen nur Spiele und Sessions des gewählten Launchers erscheinen; der aktive Filter muss am Filter-Symbol erkennbar sein.
+8. Den Session-Zeitraum auf **Letzte 7 Tage** stellen. Spieltreffer bleiben sichtbar, Session-Treffer außerhalb des Zeitraums dürfen nicht erscheinen.
+9. `Strg+K` außerhalb des Suchfelds drücken. Die globale Suche muss den Tastaturfokus erhalten.
+10. Eine Suche öffnen, das Suchfeld erneut fokussieren und den Eintrag unter **Zuletzt gesucht** auswählen. Der Begriff muss erneut gesucht werden. Anschließend den Verlauf über **Suchverlauf löschen** entfernen.
 
 ## Lokale Spiel-Icons
 

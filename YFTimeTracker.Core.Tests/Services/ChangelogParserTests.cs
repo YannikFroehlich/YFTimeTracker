@@ -69,4 +69,28 @@ public sealed class ChangelogParserTests
     {
         Assert.IsNull(ChangelogParser.TryGetLatestEntry(markdown));
     }
+
+    [TestMethod]
+    public void ParseBullets_extracts_bullets_without_requiring_a_heading()
+    {
+        const string markdown = """
+            - Neu: Erster Punkt
+            * Neu: Zweiter Punkt
+
+            Einleitender Satz ohne Bulletpoint.
+            """;
+
+        var bullets = ChangelogParser.ParseBullets(markdown);
+
+        CollectionAssert.AreEqual(new[] { "Neu: Erster Punkt", "Neu: Zweiter Punkt" }, bullets.ToArray());
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("   ")]
+    public void ParseBullets_returns_empty_for_blank_input(string? markdown)
+    {
+        Assert.IsEmpty(ChangelogParser.ParseBullets(markdown));
+    }
 }

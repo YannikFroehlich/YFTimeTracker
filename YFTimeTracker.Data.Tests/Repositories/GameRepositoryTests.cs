@@ -216,4 +216,91 @@ public sealed class GameRepositoryTests
         Assert.IsNull(game.DailyPlaytimeLimitMinutes);
         Assert.IsNull(game.WeeklyPlaytimeLimitMinutes);
     }
+
+    [TestMethod]
+    public async Task MergeInto_moves_sessions_and_executables_and_drops_the_source_game()
+    {
+        using var paths = new TempAppPathProvider();
+        var factory = new TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var games = new GameRepository(factory);
+        var sessions = new GameSessionRepository(factory);
+        var addedAt = DateTimeOffset.Parse("2026-09-08T09:00:00Z");
+
+        var target = await games.AddAsync(new Game
+        {
+            Name = "Beta",
+            Source = GameSource.Steam,
+            ExecutablePath = @"C:\Games\Beta\beta.exe",
+            ExecutablePathKey = @"C:\GAMES\BETA\BETA.EXE",
+            ExecutableName = "beta.exe",
+            AddedAtUtc = addedAt
+        }, CancellationToken.None);
+
+        var source = await games.AddAsync(new Game
+        {
+            Name = "Beta (manuell)",
+            Source = GameSource.Manual,
+            ExecutablePath = @"C:\Games\Beta\launch.exe",
+            ExecutablePathKey = @"C:\GAMES\BETA\LAUNCH.EXE",
+            ExecutableName = "launch.exe",
+            AddedAtUtc = addedAt
+        }, CancellationToken.None);
+        await games.AddExecutableAsync(source.Id, new GameExecutable
+        {
+            ExecutablePath = @"C:\Games\Beta\bin\render.exe",
+            ExecutablePathKey = @"C:\GAMES\BETA\BIN\RENDER.EXE",
+            ExecutableName = "render.exe",
+            AddedAtUtc = addedAt
+        }, CancellationToken.None);
+
+        var keptTarget = await sessions.AddAsync(Closed(target.Id, "10:00", "11:30"), CancellationToken.None);
+        var overlapping = await sessions.AddAsync(Closed(source.Id, "11:00", "12:00"), CancellationToken.None);
+        var standalone = await sessions.AddAsync(Closed(source.Id, "20:00", "21:00"), CancellationToken.None);
+
+        var plan = YFTimeTracker.Core.Services.SessionMergePlanner.Create(
+            await sessions.GetSessionsForGameAsync(target.Id, CancellationToken.None),
+            await sessions.GetSessionsForGameAsync(source.Id, CancellationToken.None));
+
+        await games.MergeIntoAsync(source.Id, target.Id, plan, CancellationToken.None);
+
+        Assert.IsNull(await games.GetByIdAsync(source.Id, CancellationToken.None), "Das Quellspiel muss weg sein.");
+
+        var merged = await games.GetByIdAsync(target.Id, CancellationToken.None);
+        Assert.IsNotNull(merged);
+        Assert.AreEqual("Beta", merged.Name);
+        Assert.AreEqual(GameSource.Steam, merged.Source);
+        Assert.HasCount(3, merged.Executables);
+        Assert.HasCount(1, merged.Executables.Where(executable => executable.IsPrimary));
+        Assert.AreEqual(@"C:\GAMES\BETA\BETA.EXE", merged.PrimaryExecutable?.ExecutablePathKey);
+
+        // Der Cascade auf GameSessions darf die umgehängten Sessions nicht mitnehmen.
+        var mergedSessions = await sessions.GetSessionsForGameAsync(target.Id, CancellationToken.None);
+        Assert.HasCount(2, mergedSessions);
+        Assert.IsNull(await sessions.GetByIdAsync(overlapping.Id, CancellationToken.None));
+
+        var combined = mergedSessions.Single(session => session.Id == keptTarget.Id);
+        Assert.AreEqual(At("10:00"), combined.StartedAtUtc);
+        Assert.AreEqual(At("12:00"), combined.EndedAtUtc);
+        Assert.AreEqual(7200, combined.DurationSeconds);
+
+        var moved = mergedSessions.Single(session => session.Id == standalone.Id);
+        Assert.AreEqual(target.Id, moved.GameId);
+    }
+
+    private static GameSession Closed(long gameId, string start, string end) => new()
+    {
+        GameId = gameId,
+        StartedAtUtc = At(start),
+        LastSeenAtUtc = At(end),
+        EndedAtUtc = At(end),
+        DurationSeconds = (long)(At(end) - At(start)).TotalSeconds,
+        BootSessionId = "boot"
+    };
+
+    private static DateTimeOffset At(string time) => DateTimeOffset.Parse($"2026-09-08T{time}:00Z");
 }

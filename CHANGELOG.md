@@ -2,6 +2,15 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.3.0 – 2026-09-08
+- Neu: Der Update-Dialog zeigt jetzt die Versionshinweise des neuen Releases an, bevor installiert wird. „Später erinnern“ verschiebt die automatische Erinnerung um 24 Stunden statt beim nächsten Start erneut zu erscheinen.
+- Verbessert: Fehlgeschlagene Updates nennen jetzt die wahrscheinliche Ursache (keine Internetverbindung, blockierter Update-Ordner) statt einer allgemeinen Fehlermeldung – auch im Tray-Menü sichtbar.
+- Neu: Das Tray-Symbol zeigt jetzt den Tracking-Zustand an – unterschiedliche Icons für „Tracking aktiv“, „pausiert“ und „Spiel läuft“. Die Kurzinfo beim Überfahren mit der Maus nennt zusätzlich die aktuelle Spielzeit der laufenden Session.
+- Verbessert: Die globale Suche toleriert Tippfehler, lässt sich nach Launcher und Session-Zeitraum filtern und ist appweit über `Strg+K` erreichbar. Die sechs letzten Suchbegriffe bleiben lokal gespeichert und können direkt erneut verwendet oder gelöscht werden.
+- Neu: Zwei Einträge desselben Spiels lassen sich in der Bibliothek zusammenführen. Sessions und EXE-Zuordnungen wandern auf das gewählte Zielspiel, der doppelte Eintrag verschwindet, und die Spielzeit bleibt vollständig erhalten. Bisher war Löschen die einzige Möglichkeit – und die nahm die Spielzeit des gelöschten Eintrags mit.
+- Neu: Eine abgeschlossene Session kann auf ein anderes Spiel umgehängt werden. Dafür wird in den Sessions beim Bearbeiten einfach ein anderes Spiel ausgewählt. Bisher ließen sich nur die Zeiten korrigieren, nicht aber eine Fehlzuordnung.
+- Überschneiden sich beim Zusammenführen Sessions beider Einträge, werden sie zu einer Session vom frühesten Start bis zum spätesten Ende zusammengefasst. Dadurch wird dieselbe Spielzeit nicht doppelt gezählt.
+
 ## 1.2.0 – 2026-09-07
 - Neu: Übersicht der lokalen Sicherungen unter **Einstellungen → Daten & Sicherungen**. Die automatisch angelegten Sicherungen sind dort mit Datum, Größe und Art aufgeführt und lassen sich direkt wiederherstellen – vorher war der Ordner nur über den Explorer erreichbar.
 - Behoben: Das Löschen eines Spiels fragt jetzt nach und nennt vorher, wie viele Sessions und wie viel Spielzeit dabei verloren gehen. Bisher löschte ein einzelner Klick das Spiel samt gesamter Spielzeit sofort, während für eine einzelne Session längst nachgefragt wurde.

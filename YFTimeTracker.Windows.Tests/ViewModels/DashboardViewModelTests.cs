@@ -164,6 +164,9 @@ public sealed class DashboardViewModelTests
         public Task SetPrimaryExecutableAsync(long gameId, GameExecutable executable, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
+        public Task MergeIntoAsync(long sourceGameId, long targetGameId, SessionMergePlan plan, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
         public Task DeleteAsync(long id, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 

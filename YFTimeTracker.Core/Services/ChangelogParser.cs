@@ -42,4 +42,24 @@ public static class ChangelogParser
 
         return heading is null ? null : new ChangelogEntry(heading, bullets);
     }
+
+    public static IReadOnlyList<string> ParseBullets(string? markdown)
+    {
+        if (string.IsNullOrWhiteSpace(markdown))
+        {
+            return Array.Empty<string>();
+        }
+
+        var bullets = new List<string>();
+        foreach (var rawLine in markdown.Replace("\r\n", "\n").Split('\n'))
+        {
+            var line = rawLine.Trim();
+            if (line.StartsWith("- ", StringComparison.Ordinal) || line.StartsWith("* ", StringComparison.Ordinal))
+            {
+                bullets.Add(line[2..].Trim());
+            }
+        }
+
+        return bullets;
+    }
 }

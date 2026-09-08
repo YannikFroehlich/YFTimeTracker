@@ -6,6 +6,12 @@
     xmlns:viewModels="using:YFTimeTracker.App.ViewModels"
     Title="YFTimeTracker">
     <Grid x:Name="RootGrid" Background="{ThemeResource YFBackgroundBrush}">
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator
+                Key="K"
+                Modifiers="Control"
+                Invoked="GlobalSearchShortcut_Invoked" />
+        </Grid.KeyboardAccelerators>
         <Grid.RowDefinitions>
             <RowDefinition Height="32" />
             <RowDefinition Height="*" />
@@ -184,64 +190,137 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <AutoSuggestBox
-                        x:Name="GlobalSearchBox"
-                        MaxWidth="620"
-                        Height="46"
-                        AutomationProperties.Name="Globale Suche"
-                        Background="{ThemeResource YFOutlineButtonBackgroundBrush}"
-                        BorderBrush="{ThemeResource YFStrokeBrush}"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        Foreground="{ThemeResource YFTextBrush}"
-                        HorizontalAlignment="Stretch"
-                        ItemsSource="{x:Bind GlobalSearchViewModel.Results, Mode=OneWay}"
-                        PlaceholderText="Spiele, Sessions oder Statistiken suchen …"
-                        QueryIcon="Find"
-                        QuerySubmitted="GlobalSearchBox_QuerySubmitted"
-                        SuggestionChosen="GlobalSearchBox_SuggestionChosen"
-                        TextChanged="GlobalSearchBox_TextChanged"
-                        UpdateTextOnSelect="False"
-                        VerticalContentAlignment="Center">
-                        <AutoSuggestBox.ItemTemplate>
-                            <DataTemplate x:DataType="viewModels:GlobalSearchResultViewModel">
-                                <Grid
-                                    MinWidth="520"
-                                    Padding="10,8"
-                                    ColumnSpacing="12"
-                                    Tag="{Binding}"
-                                    Tapped="GlobalSearchResult_Tapped">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="32" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <controls:GameIcon
-                                        Width="32"
-                                        Height="32"
-                                        Background="#142845"
-                                        FontFamily="{Binding IconFontFamily}"
-                                        FontSize="13"
-                                        Foreground="{StaticResource YFBlueBrush}"
-                                        IconCornerRadius="8"
-                                        IconPadding="3"
-                                        IconPath="{Binding IconPath}"
-                                        Initials="{Binding IconText}" />
-                                    <StackPanel Grid.Column="1" Spacing="2">
-                                        <TextBlock
+                    <Grid MaxWidth="680" HorizontalAlignment="Stretch" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <AutoSuggestBox
+                            x:Name="GlobalSearchBox"
+                            Height="46"
+                            AutomationProperties.Name="Globale Suche"
+                            Background="{ThemeResource YFOutlineButtonBackgroundBrush}"
+                            BorderBrush="{ThemeResource YFStrokeBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Foreground="{ThemeResource YFTextBrush}"
+                            GotFocus="GlobalSearchBox_GotFocus"
+                            HorizontalAlignment="Stretch"
+                            ItemsSource="{x:Bind GlobalSearchViewModel.Results, Mode=OneWay}"
+                            PlaceholderText="Spiele, Sessions oder Statistiken suchen …  Strg+K"
+                            QueryIcon="Find"
+                            QuerySubmitted="GlobalSearchBox_QuerySubmitted"
+                            TextChanged="GlobalSearchBox_TextChanged"
+                            UpdateTextOnSelect="False"
+                            VerticalContentAlignment="Center">
+                            <AutoSuggestBox.ItemTemplate>
+                                <DataTemplate x:DataType="viewModels:GlobalSearchResultViewModel">
+                                    <Grid
+                                        MinWidth="440"
+                                        Padding="10,8"
+                                        ColumnSpacing="12"
+                                        Tag="{Binding}"
+                                        Tapped="GlobalSearchResult_Tapped">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="32" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <controls:GameIcon
+                                            Width="32"
+                                            Height="32"
+                                            Background="#142845"
+                                            FontFamily="{Binding IconFontFamily}"
                                             FontSize="13"
-                                            FontWeight="SemiBold"
-                                            Text="{x:Bind Title}"
-                                            TextTrimming="CharacterEllipsis" />
-                                        <TextBlock
-                                            FontSize="11"
-                                            Foreground="{ThemeResource YFMutedBrush}"
-                                            Text="{x:Bind Subtitle}"
-                                            TextTrimming="CharacterEllipsis" />
+                                            Foreground="{StaticResource YFBlueBrush}"
+                                            IconCornerRadius="8"
+                                            IconPadding="3"
+                                            IconPath="{Binding IconPath}"
+                                            Initials="{Binding IconText}" />
+                                        <StackPanel Grid.Column="1" Spacing="2">
+                                            <TextBlock
+                                                FontSize="13"
+                                                FontWeight="SemiBold"
+                                                Text="{x:Bind Title}"
+                                                TextTrimming="CharacterEllipsis" />
+                                            <TextBlock
+                                                FontSize="11"
+                                                Foreground="{ThemeResource YFMutedBrush}"
+                                                Text="{x:Bind Subtitle}"
+                                                TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </AutoSuggestBox.ItemTemplate>
+                        </AutoSuggestBox>
+
+                        <Button
+                            x:Name="GlobalSearchFilterButton"
+                            Grid.Column="1"
+                            Width="46"
+                            Height="46"
+                            Padding="0"
+                            AutomationProperties.Name="Suchfilter"
+                            Background="{ThemeResource YFOutlineButtonBackgroundBrush}"
+                            BorderBrush="{ThemeResource YFStrokeBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            ToolTipService.ToolTip="Suche filtern">
+                            <Button.Flyout>
+                                <Flyout x:Name="GlobalSearchFilterFlyout" Placement="BottomEdgeAlignedRight">
+                                    <StackPanel Width="280" Spacing="12">
+                                        <TextBlock FontSize="15" FontWeight="SemiBold" Text="Suche filtern" />
+                                        <StackPanel Spacing="5">
+                                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Launcher" />
+                                            <ComboBox
+                                                x:Name="GlobalSearchSourceFilter"
+                                                HorizontalAlignment="Stretch"
+                                                SelectedIndex="0"
+                                                SelectionChanged="GlobalSearchFilter_SelectionChanged">
+                                                <ComboBoxItem Content="Alle Launcher" Tag="All" />
+                                                <ComboBoxItem Content="Manuell" Tag="Manual" />
+                                                <ComboBoxItem Content="Steam" Tag="Steam" />
+                                                <ComboBoxItem Content="Epic Games" Tag="Epic" />
+                                                <ComboBoxItem Content="GOG" Tag="Gog" />
+                                                <ComboBoxItem Content="Xbox / Microsoft Store" Tag="Xbox" />
+                                                <ComboBoxItem Content="Battle.net" Tag="BattleNet" />
+                                                <ComboBoxItem Content="Ubisoft Connect" Tag="Ubisoft" />
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Spacing="5">
+                                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Sessions-Zeitraum" />
+                                            <ComboBox
+                                                x:Name="GlobalSearchTimeFilter"
+                                                HorizontalAlignment="Stretch"
+                                                SelectedIndex="0"
+                                                SelectionChanged="GlobalSearchFilter_SelectionChanged">
+                                                <ComboBoxItem Content="Gesamter Zeitraum" Tag="All" />
+                                                <ComboBoxItem Content="Letzte 7 Tage" Tag="7" />
+                                                <ComboBoxItem Content="Letzte 30 Tage" Tag="30" />
+                                                <ComboBoxItem Content="Letzte 12 Monate" Tag="365" />
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <Button
+                                            HorizontalAlignment="Stretch"
+                                            Click="ClearGlobalSearchHistory_Click"
+                                            Content="Suchverlauf löschen"
+                                            Style="{StaticResource YFOutlineButtonStyle}" />
                                     </StackPanel>
-                                </Grid>
-                            </DataTemplate>
-                        </AutoSuggestBox.ItemTemplate>
-                    </AutoSuggestBox>
+                                </Flyout>
+                            </Button.Flyout>
+                            <Grid Width="24" Height="24">
+                                <FontIcon FontSize="16" Glyph="&#xE71C;" />
+                                <Ellipse
+                                    x:Name="GlobalSearchFilterIndicator"
+                                    Width="7"
+                                    Height="7"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Fill="{StaticResource YFBlueBrush}"
+                                    Visibility="Collapsed" />
+                            </Grid>
+                        </Button>
+                    </Grid>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16">
                         <Grid Width="42" Height="42">

@@ -37,6 +37,7 @@ public sealed class SessionsViewModel : ObservableObject
     private TimeSpan? editorStartTime;
     private TimeSpan? editorEndTime;
     private long? editingSessionId;
+    private long? editingGameId;
     private bool editorFieldsEnabled = true;
     private string? lastExportedFilePath;
     private bool isExportEnabled;
@@ -190,7 +191,7 @@ public sealed class SessionsViewModel : ObservableObject
         }
     }
 
-    public bool EditorGameSelectionEnabled => EditorFieldsEnabled && editingSessionId is null;
+    public bool EditorGameSelectionEnabled => EditorFieldsEnabled;
 
     public bool EditorCanSave => EditorFieldsEnabled && EditorGame is not null;
 
@@ -388,9 +389,18 @@ public sealed class SessionsViewModel : ObservableObject
         try
         {
             var isNewSession = editingSessionId is null;
+            string? movedToGameName = null;
             long savedSessionId;
             if (editingSessionId is { } sessionId)
             {
+                if (EditorGame.Id != editingGameId)
+                {
+                    // Erst umhängen, dann die Zeiten: die Überschneidungsprüfung muss gegen
+                    // das Zielspiel laufen, nicht gegen das bisherige.
+                    await sessionEditor.MoveSessionAsync(sessionId, EditorGame.Id, CancellationToken.None);
+                    movedToGameName = EditorGame.Name;
+                }
+
                 await sessionEditor.UpdateManualSessionAsync(
                     sessionId,
                     startedAtUtc,
@@ -410,7 +420,11 @@ public sealed class SessionsViewModel : ObservableObject
 
             await RefreshAsync();
             SelectedSession = Sessions.FirstOrDefault(session => session.Id == savedSessionId);
-            StatusMessage = isNewSession ? "Session hinzugefügt" : "Session gespeichert";
+            StatusMessage = isNewSession
+                ? "Session hinzugefügt"
+                : movedToGameName is null
+                    ? "Session gespeichert"
+                    : $"Session zu {movedToGameName} verschoben";
         }
         catch (YFTimeTrackerException exception)
         {
@@ -448,6 +462,7 @@ public sealed class SessionsViewModel : ObservableObject
     private void BeginEditSession(SessionListItemViewModel session)
     {
         editingSessionId = session.Id;
+        editingGameId = session.GameId;
         editorGame = EditorGames.FirstOrDefault(game => game.Id == session.GameId);
         OnPropertyChanged(nameof(EditorGame));
 

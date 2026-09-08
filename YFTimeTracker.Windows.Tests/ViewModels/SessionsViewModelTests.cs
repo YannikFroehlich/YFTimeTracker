@@ -157,6 +157,40 @@ public sealed class SessionsViewModelTests
         Assert.IsFalse(File.Exists(exportPath));
     }
 
+    [TestMethod]
+    public async Task Saving_an_edited_session_with_another_game_moves_it()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var alpha = CreateGame(1, "Alpha");
+        var beta = CreateGame(2, "Beta");
+        var repository = new FakeSessionRepository(
+        [
+            CreateCompletedSession(1, alpha, now.AddHours(-2), now.AddHours(-1))
+        ]);
+        Game[] games = [alpha, beta];
+        var editor = new FakeSessionEditor(repository, id => games.FirstOrDefault(game => game.Id == id));
+        var viewModel = new SessionsViewModel(
+            new FakeCatalog(games),
+            repository,
+            editor,
+            new FixedClock(now),
+            new FakeFilePicker(),
+            new FakeExplorerService());
+
+        await viewModel.RefreshAsync();
+        viewModel.SelectedSession = viewModel.Sessions.Single();
+
+        // Vor der Reparaturfunktion war die Spielauswahl beim Bearbeiten gesperrt.
+        Assert.IsTrue(viewModel.EditorGameSelectionEnabled);
+
+        viewModel.EditorGame = viewModel.EditorGames.Single(game => game.Id == beta.Id);
+        await viewModel.SaveSessionCommand.ExecuteAsync(null);
+
+        Assert.AreEqual(1, editor.MoveCallCount);
+        Assert.AreEqual(beta.Id, repository.Items.Single().GameId);
+        StringAssert.Contains(viewModel.StatusMessage, "Beta");
+    }
+
     private static SessionsViewModel CreateViewModel(
         IReadOnlyList<Game> games,
         FakeSessionRepository repository,
@@ -228,6 +262,9 @@ public sealed class SessionsViewModelTests
         public Task UpdateGameAsync(long gameId, string displayName, string executablePath, int? dailyPlaytimeLimitMinutes, int? weeklyPlaytimeLimitMinutes, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task DeleteGameAsync(long gameId, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<GameMergeResult> MergeGamesAsync(long sourceGameId, long targetGameId, CancellationToken cancellationToken)
+            => throw new NotSupportedException();
     }
 
     private sealed class FakeSessionEditor(
@@ -271,6 +308,17 @@ public sealed class SessionsViewModelTests
         public Task DeleteSessionAsync(long sessionId, CancellationToken cancellationToken)
         {
             repository.Items.RemoveAll(session => session.Id == sessionId);
+            return Task.CompletedTask;
+        }
+
+        public int MoveCallCount { get; private set; }
+
+        public Task MoveSessionAsync(long sessionId, long targetGameId, CancellationToken cancellationToken)
+        {
+            MoveCallCount++;
+            var session = repository.Items.Single(item => item.Id == sessionId);
+            session.GameId = targetGameId;
+            session.Game = gameResolver(targetGameId);
             return Task.CompletedTask;
         }
     }

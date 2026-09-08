@@ -119,19 +119,72 @@ public sealed class GlobalSearchViewModelTests
         Assert.AreEqual(2, iconService.CallCount);
     }
 
+    [TestMethod]
+    public async Task Search_forwards_launcher_and_relative_time_filters()
+    {
+        var now = DateTimeOffset.Parse("2026-08-31T12:00:00Z");
+        var repository = new FakeSearchRepository(GlobalSearchResults.Empty);
+        var viewModel = new GlobalSearchViewModel(repository, new FixedClock(now));
+
+        await viewModel.SearchAsync(
+            "Alpha",
+            GameSource.Steam,
+            TimeSpan.FromDays(30),
+            CancellationToken.None);
+
+        Assert.IsNotNull(repository.LastQuery);
+        Assert.AreEqual("Alpha", repository.LastQuery.SearchText);
+        Assert.AreEqual(GameSource.Steam, repository.LastQuery.Source);
+        Assert.AreEqual(now.AddDays(-30), repository.LastQuery.SessionsSinceUtc);
+    }
+
+    [TestMethod]
+    public async Task Recent_searches_are_loaded_deduplicated_saved_and_cleared()
+    {
+        var settings = new FakeSettingsStore
+        {
+            Value = "[\"Alpha\",\"alpha\",\"Beta\"]"
+        };
+        var viewModel = new GlobalSearchViewModel(
+            new FakeSearchRepository(GlobalSearchResults.Empty),
+            new FixedClock(DateTimeOffset.UtcNow),
+            settings: settings);
+
+        await viewModel.ShowRecentSearchesAsync(CancellationToken.None);
+
+        Assert.HasCount(2, viewModel.Results);
+        Assert.AreEqual(GlobalSearchResultKind.RecentSearch, viewModel.Results[0].Kind);
+        Assert.AreEqual("Alpha", viewModel.Results[0].SearchText);
+
+        await viewModel.RememberSearchAsync("Gamma", CancellationToken.None);
+
+        StringAssert.StartsWith(settings.Value, "[\"Gamma\",\"Alpha\",\"Beta\"]");
+
+        await viewModel.ClearRecentSearchesAsync(CancellationToken.None);
+
+        Assert.AreEqual("[]", settings.Value);
+
+        await viewModel.ShowRecentSearchesAsync(CancellationToken.None);
+
+        Assert.IsEmpty(viewModel.Results);
+    }
+
     private sealed class FakeSearchRepository(GlobalSearchResults results) : IGlobalSearchRepository
     {
         public GlobalSearchResults Results { get; set; } = results;
 
         public int CallCount { get; private set; }
 
+        public GlobalSearchQuery? LastQuery { get; private set; }
+
         public Task<GlobalSearchResults> SearchAsync(
-            string searchText,
+            GlobalSearchQuery query,
             int gameCount,
             int sessionCount,
             CancellationToken cancellationToken)
         {
             CallCount++;
+            LastQuery = query;
             return Task.FromResult(Results);
         }
     }
@@ -150,5 +203,25 @@ public sealed class GlobalSearchViewModelTests
             CallCount++;
             return Task.FromResult<string?>(iconPath);
         }
+    }
+
+    private sealed class FakeSettingsStore : ISettingsStore
+    {
+        public string? Value { get; set; }
+
+        public Task<string?> GetAsync(string key, CancellationToken cancellationToken) =>
+            Task.FromResult(Value);
+
+        public Task SetAsync(string key, string value, CancellationToken cancellationToken)
+        {
+            Value = value;
+            return Task.CompletedTask;
+        }
+
+        public Task<int> GetIntAsync(string key, int fallback, CancellationToken cancellationToken) =>
+            Task.FromResult(fallback);
+
+        public Task<bool> GetBoolAsync(string key, bool fallback, CancellationToken cancellationToken) =>
+            Task.FromResult(fallback);
     }
 }
