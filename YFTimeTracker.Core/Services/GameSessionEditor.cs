@@ -45,6 +45,36 @@ public sealed class GameSessionEditor(
         await sessions.UpdateAsync(session, cancellationToken);
     }
 
+    public async Task MoveSessionAsync(long sessionId, long targetGameId, CancellationToken cancellationToken)
+    {
+        var session = await sessions.GetByIdAsync(sessionId, cancellationToken)
+            ?? throw new YFTimeTrackerException("Die Session wurde nicht gefunden.");
+
+        if (session.IsOpen)
+        {
+            throw new YFTimeTrackerException("Eine laufende Session kann nicht verschoben werden. Pausiere zuerst das Tracking oder beende das Spiel.");
+        }
+
+        if (session.GameId == targetGameId)
+        {
+            throw new YFTimeTrackerException("Die Session liegt bereits bei diesem Spiel.");
+        }
+
+        if (await games.GetByIdAsync(targetGameId, cancellationToken) is null)
+        {
+            throw new YFTimeTrackerException("Das Spiel wurde nicht gefunden.");
+        }
+
+        if (await sessions.HasOverlapAsync(targetGameId, session.StartedAtUtc, session.EndedAtUtc!.Value, null, cancellationToken))
+        {
+            throw new YFTimeTrackerException("Diese Session überschneidet sich mit einer bestehenden Session des Zielspiels.");
+        }
+
+        session.GameId = targetGameId;
+        session.Game = null;
+        await sessions.UpdateAsync(session, cancellationToken);
+    }
+
     public async Task DeleteSessionAsync(long sessionId, CancellationToken cancellationToken)
     {
         var session = await sessions.GetByIdAsync(sessionId, cancellationToken)

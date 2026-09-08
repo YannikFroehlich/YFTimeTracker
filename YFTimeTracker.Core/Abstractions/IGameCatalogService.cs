@@ -16,5 +16,7 @@ public interface IGameCatalogService
         int? weeklyPlaytimeLimitMinutes,
         CancellationToken cancellationToken);
 
+    Task<GameMergeResult> MergeGamesAsync(long sourceGameId, long targetGameId, CancellationToken cancellationToken);
+
     Task DeleteGameAsync(long gameId, CancellationToken cancellationToken);
 }

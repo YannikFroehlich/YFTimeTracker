@@ -215,6 +215,19 @@ internal sealed class InMemoryGameRepository : IGameRepository
         IsPrimary = executable.IsPrimary,
         AddedAtUtc = executable.AddedAtUtc
     };
+
+    public SessionMergePlan? LastMergePlan { get; private set; }
+
+    public (long Source, long Target)? LastMergeGameIds { get; private set; }
+
+    public Task MergeIntoAsync(long sourceGameId, long targetGameId, SessionMergePlan plan, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        LastMergePlan = plan;
+        LastMergeGameIds = (sourceGameId, targetGameId);
+        games.RemoveAll(game => game.Id == sourceGameId);
+        return Task.CompletedTask;
+    }
 }
 
 internal sealed class InMemoryGameSessionRepository(Func<long, Game?> gameResolver) : IGameSessionRepository

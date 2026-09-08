@@ -109,6 +109,65 @@ public sealed class GameRepository(IDbContextFactory<YFTimeTrackerDbContext> con
         await context.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task MergeIntoAsync(long sourceGameId, long targetGameId, SessionMergePlan plan, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
+        var removedIds = plan.RemovedSessionIds.ToHashSet();
+        if (removedIds.Count > 0)
+        {
+            var absorbed = await context.GameSessions
+                .Where(session => removedIds.Contains(session.Id))
+                .ToListAsync(cancellationToken);
+            context.GameSessions.RemoveRange(absorbed);
+        }
+
+        foreach (var update in plan.Updates)
+        {
+            var session = await context.GameSessions
+                .FirstOrDefaultAsync(candidate => candidate.Id == update.SessionId, cancellationToken);
+            if (session is null)
+            {
+                continue;
+            }
+
+            session.GameId = targetGameId;
+            session.StartedAtUtc = update.StartedAtUtc;
+            session.Close(update.EndedAtUtc);
+        }
+
+        // Sessions, die der Plan nicht anfasst, dürfen nicht am Quellspiel hängen bleiben - sonst
+        // nimmt der Cascade sie beim Löschen mit.
+        var remaining = await context.GameSessions
+            .Where(session => session.GameId == sourceGameId && !removedIds.Contains(session.Id))
+            .ToListAsync(cancellationToken);
+        foreach (var session in remaining)
+        {
+            session.GameId = targetGameId;
+        }
+
+        // Das Zielspiel behält seine primäre EXE, deshalb kommen die übernommenen als weitere dazu.
+        var executables = await context.GameExecutables
+            .Where(executable => executable.GameId == sourceGameId)
+            .ToListAsync(cancellationToken);
+        foreach (var executable in executables)
+        {
+            executable.GameId = targetGameId;
+            executable.IsPrimary = false;
+        }
+
+        if (await context.Games.FirstOrDefaultAsync(game => game.Id == sourceGameId, cancellationToken) is { } source)
+        {
+            context.Games.Remove(source);
+        }
+
+        await context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
     public async Task DeleteAsync(long id, CancellationToken cancellationToken)
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);

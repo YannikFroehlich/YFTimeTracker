@@ -296,6 +296,9 @@ public sealed class GameDetailsViewModelTests
         }
 
         public Task DeleteGameAsync(long gameId, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<GameMergeResult> MergeGamesAsync(long sourceGameId, long targetGameId, CancellationToken cancellationToken)
+            => throw new NotSupportedException();
     }
 
     private sealed class FakeGameRepository(Game game) : IGameRepository
@@ -322,6 +325,9 @@ public sealed class GameDetailsViewModelTests
         public Task SetPrimaryExecutableAsync(long gameId, GameExecutable executable, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public Task DeleteAsync(long id, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task MergeIntoAsync(long sourceGameId, long targetGameId, SessionMergePlan plan, CancellationToken cancellationToken)
+            => throw new NotSupportedException();
     }
 
     private sealed class FakeSessionEditor(FakeSessionRepository repository, Game game) : IGameSessionEditor
@@ -355,6 +361,9 @@ public sealed class GameDetailsViewModelTests
             repository.Items.RemoveAll(session => session.Id == sessionId);
             return Task.CompletedTask;
         }
+
+        public Task MoveSessionAsync(long sessionId, long targetGameId, CancellationToken cancellationToken)
+            => throw new NotSupportedException();
     }
 
     private sealed class FakeSessionRepository(IEnumerable<GameSession> sessions) : IGameSessionRepository

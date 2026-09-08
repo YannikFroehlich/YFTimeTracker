@@ -75,6 +75,37 @@ public sealed partial class GamesPage : Page
         }
     }
 
+    private async void MergeGame_Click(object sender, RoutedEventArgs e)
+    {
+        var source = ViewModel.SelectedGame;
+        var target = ViewModel.SelectedMergeTarget;
+        if (source is null || target is null || LibraryRoot.XamlRoot is null)
+        {
+            return;
+        }
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = LibraryRoot.XamlRoot,
+            Title = $"{source.Name} mit {target.Name} zusammenführen?",
+            Content = new TextBlock
+            {
+                MaxWidth = 460,
+                Text = $"{source.SessionCount} Session(s) mit {source.TotalPlaytime} Spielzeit und alle EXE-Zuordnungen wechseln zu „{target.Name}“. "
+                    + $"Der Eintrag „{source.Name}“ verschwindet danach. Überschneiden sich Sessions beider Spiele, werden sie zu einer zusammengefasst.",
+                TextWrapping = TextWrapping.Wrap
+            },
+            PrimaryButtonText = "Zusammenführen",
+            CloseButtonText = "Abbrechen",
+            DefaultButton = ContentDialogButton.Close
+        };
+
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        {
+            await ViewModel.MergeSelectedGameCommand.ExecuteAsync(null);
+        }
+    }
+
     private void OpenGameDetails_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: long gameId })

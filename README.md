@@ -46,9 +46,10 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 **Bibliothek und Sessions**
 
 - Bibliothek mit Suche, Sortierung, Spieldetails und EXE-Verwaltung
+- Doppelte Einträge desselben Spiels zusammenführen, ohne Spielzeit zu verlieren
 - Spiele direkt aus den Spieldetails heraus starten
 - Lokale Spiel-Icons aus den registrierten EXE-Dateien mit datensparsamem Cache
-- Anlegen, Bearbeiten und Löschen manueller Sessions, inklusive CSV-Export der Sessions-Liste
+- Anlegen, Bearbeiten und Löschen manueller Sessions sowie Umhängen einer Session auf ein anderes Spiel, inklusive CSV-Export der Sessions-Liste
 - Direkter Link zum Explorer-Ordner nach einem Export
 
 **Windows-Integration**

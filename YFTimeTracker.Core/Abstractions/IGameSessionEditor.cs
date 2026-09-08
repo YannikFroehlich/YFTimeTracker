@@ -8,5 +8,7 @@ public interface IGameSessionEditor
 
     Task UpdateManualSessionAsync(long sessionId, DateTimeOffset startedAtUtc, DateTimeOffset endedAtUtc, CancellationToken cancellationToken);
 
+    Task MoveSessionAsync(long sessionId, long targetGameId, CancellationToken cancellationToken);
+
     Task DeleteSessionAsync(long sessionId, CancellationToken cancellationToken);
 }

@@ -251,6 +251,26 @@
 
                         <Border Height="1" Background="{ThemeResource YFStrokeBrush}" />
 
+                        <StackPanel Spacing="7">
+                            <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="ZUSAMMENFÜHREN" />
+                            <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Sessions und EXE-Zuordnungen dieses Spiels auf ein anderes übertragen. Dieser Eintrag verschwindet danach, die Spielzeit bleibt erhalten." TextWrapping="Wrap" />
+                            <ComboBox
+                                HorizontalAlignment="Stretch"
+                                DisplayMemberPath="Name"
+                                Header="Zielspiel"
+                                ItemsSource="{Binding MergeTargets}"
+                                PlaceholderText="Zielspiel auswählen"
+                                SelectedItem="{Binding SelectedMergeTarget, Mode=TwoWay}" />
+                            <Button
+                                HorizontalAlignment="Left"
+                                Click="MergeGame_Click"
+                                IsEnabled="{Binding CanMergeSelectedGame}"
+                                Style="{StaticResource YFOutlineButtonStyle}"
+                                Content="Spiele zusammenführen" />
+                        </StackPanel>
+
+                        <Border Height="1" Background="{ThemeResource YFStrokeBrush}" />
+
                         <StackPanel Spacing="5">
                             <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SESSIONS" />
                             <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Fehlende Spielzeit kann manuell ergänzt werden." />

@@ -2,6 +2,11 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.3.0 – 2026-09-08
+- Neu: Zwei Einträge desselben Spiels lassen sich in der Bibliothek zusammenführen. Sessions und EXE-Zuordnungen wandern auf das gewählte Zielspiel, der doppelte Eintrag verschwindet, und die Spielzeit bleibt vollständig erhalten. Bisher war Löschen die einzige Möglichkeit – und die nahm die Spielzeit des gelöschten Eintrags mit.
+- Neu: Eine abgeschlossene Session kann auf ein anderes Spiel umgehängt werden. Dafür wird in den Sessions beim Bearbeiten einfach ein anderes Spiel ausgewählt. Bisher ließen sich nur die Zeiten korrigieren, nicht aber eine Fehlzuordnung.
+- Überschneiden sich beim Zusammenführen Sessions beider Einträge, werden sie zu einer Session vom frühesten Start bis zum spätesten Ende zusammengefasst. Dadurch wird dieselbe Spielzeit nicht doppelt gezählt.
+
 ## 1.2.0 – 2026-09-07
 - Neu: Übersicht der lokalen Sicherungen unter **Einstellungen → Daten & Sicherungen**. Die automatisch angelegten Sicherungen sind dort mit Datum, Größe und Art aufgeführt und lassen sich direkt wiederherstellen – vorher war der Ordner nur über den Explorer erreichbar.
 - Behoben: Das Löschen eines Spiels fragt jetzt nach und nennt vorher, wie viele Sessions und wie viel Spielzeit dabei verloren gehen. Bisher löschte ein einzelner Klick das Spiel samt gesamter Spielzeit sofort, während für eine einzelne Session längst nachgefragt wurde.
