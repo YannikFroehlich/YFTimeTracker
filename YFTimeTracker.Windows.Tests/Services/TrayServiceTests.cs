@@ -1,10 +1,35 @@
 using YFTimeTracker.App.Services;
+using YFTimeTracker.Core.Models;
 
 namespace YFTimeTracker.Windows.Tests.Services;
 
 [TestClass]
 public sealed class TrayServiceTests
 {
+    [TestMethod]
+    public void Icon_kind_is_paused_when_tracking_paused()
+    {
+        var state = new TrackingState(true, true, [new RunningGameInfo(1, "Spiel", DateTimeOffset.UtcNow, TimeSpan.Zero)]);
+
+        Assert.AreEqual(TrayIconKind.Paused, TrayService.SelectIconKind(state));
+    }
+
+    [TestMethod]
+    public void Icon_kind_is_running_when_a_game_is_open()
+    {
+        var state = new TrackingState(true, false, [new RunningGameInfo(1, "Spiel", DateTimeOffset.UtcNow, TimeSpan.Zero)]);
+
+        Assert.AreEqual(TrayIconKind.Running, TrayService.SelectIconKind(state));
+    }
+
+    [TestMethod]
+    public void Icon_kind_is_active_when_no_game_is_open()
+    {
+        var state = new TrackingState(true, false, Array.Empty<RunningGameInfo>());
+
+        Assert.AreEqual(TrayIconKind.Active, TrayService.SelectIconKind(state));
+    }
+
     [TestMethod]
     public void Update_menu_is_actionable_when_idle()
     {

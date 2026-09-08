@@ -2,6 +2,9 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.4.0 – 2026-09-08
+- Neu: Das Tray-Symbol zeigt jetzt den Tracking-Zustand an – unterschiedliche Icons für „Tracking aktiv“, „pausiert“ und „Spiel läuft“. Die Kurzinfo beim Überfahren mit der Maus nennt zusätzlich die aktuelle Spielzeit der laufenden Session.
+
 ## 1.3.0 – 2026-09-08
 - Verbessert: Die globale Suche toleriert Tippfehler, lässt sich nach Launcher und Session-Zeitraum filtern und ist appweit über `Strg+K` erreichbar. Die sechs letzten Suchbegriffe bleiben lokal gespeichert und können direkt erneut verwendet oder gelöscht werden.
 - Neu: Zwei Einträge desselben Spiels lassen sich in der Bibliothek zusammenführen. Sessions und EXE-Zuordnungen wandern auf das gewählte Zielspiel, der doppelte Eintrag verschwindet, und die Spielzeit bleibt vollständig erhalten. Bisher war Löschen die einzige Möglichkeit – und die nahm die Spielzeit des gelöschten Eintrags mit.

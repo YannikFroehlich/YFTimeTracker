@@ -56,6 +56,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 
 - Ersteinrichtungs-Assistent für Tracking, Launcher, Tray und Autostart
 - Tray-Betrieb, Tracking-Pause, optionaler Autostart und Einzelinstanz-Schutz
+- Eigenes Tray-Symbol je Zustand (aktiv, pausiert, Spiel läuft) und die aktuelle Sessiondauer in der Tray-Kurzinfo
 - Optional minimierter Start direkt im Tray, sowohl beim manuellen Start als auch über den Windows-Autostart
 - Helles und dunkles Design, umschaltbar in den Einstellungen
 - Lokales Profil mit editierbarem Anzeigename und Akzentfarbe (nur auf diesem Gerät gespeichert)
