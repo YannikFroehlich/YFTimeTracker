@@ -288,7 +288,37 @@
 
                         <StackPanel Spacing="10">
                             <StackPanel Spacing="4">
-                                <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SICHERUNGSZIEL" />
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SICHERUNGSZIEL" />
+                                    <FontIcon
+                                        FontSize="13"
+                                        Foreground="{StaticResource YFCyanBrush}"
+                                        Glyph="&#xE946;">
+                                        <ToolTipService.ToolTip>
+                                            <ToolTip>
+                                                <StackPanel MaxWidth="320" Spacing="6">
+                                                    <TextBlock TextWrapping="Wrap">
+                                                        <Run FontWeight="SemiBold" Text="Lokal:" />
+                                                        <Run Text="Es wird keine zusätzliche Kopie angelegt. Die Sicherung bleibt ausschließlich im lokalen App-Ordner (%LocalAppData%\YFTimeTracker\Backups)." />
+                                                    </TextBlock>
+                                                    <TextBlock TextWrapping="Wrap">
+                                                        <Run FontWeight="SemiBold" Text="OneDrive-Ordner:" />
+                                                        <Run Text="Über „Ordner wählen“ einen lokal synchronisierten OneDrive-Ordner auswählen. Die tägliche Sicherungsdatei wird zusätzlich dorthin kopiert, sobald OneDrive den Ordner synchronisiert." />
+                                                    </TextBlock>
+                                                    <TextBlock TextWrapping="Wrap">
+                                                        <Run FontWeight="SemiBold" Text="Google Drive-Ordner:" />
+                                                        <Run Text="Wie OneDrive, aber mit einem lokal synchronisierten Ordner von Google Drive for Desktop." />
+                                                    </TextBlock>
+                                                    <TextBlock TextWrapping="Wrap">
+                                                        <Run FontWeight="SemiBold" Text="YFDatenbank:" />
+                                                        <Run Text="Noch in Entwicklung (Demnächst) – aktuell ohne Funktion, kann aber schon ausgewählt werden." />
+                                                    </TextBlock>
+                                                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Die lokale Sicherung bleibt in jedem Fall die Grundlage für die Wiederherstellung." TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </ToolTip>
+                                        </ToolTipService.ToolTip>
+                                    </FontIcon>
+                                </StackPanel>
                                 <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Zusätzlich zur lokalen Sicherung kann die tägliche Sicherungsdatei in einen selbst gewählten Ordner kopiert werden." TextWrapping="Wrap" />
                             </StackPanel>
 

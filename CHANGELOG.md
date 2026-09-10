@@ -3,7 +3,8 @@
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
 ## 1.4.0 – 2026-09-10
-- Neu: Unter **Einstellungen → Daten & Sicherung** lässt sich ein zusätzliches Sicherungsziel für die tägliche Sicherung wählen – ein OneDrive- oder Google-Drive-Ordner. Die lokale Sicherung läuft dabei unverändert weiter und bleibt die Grundlage für Wiederherstellung; die Datei wird danach zusätzlich in den gewählten Ordner kopiert. „YFDatenbank“ ist als kommendes Sicherungsziel bereits auswählbar, aber noch nicht funktionsfähig (Demnächst).
+- Neu: Unter **Einstellungen → Daten & Sicherung** lässt sich ein zusätzliches Sicherungsziel für die tägliche Sicherung wählen – ein OneDrive- oder Google-Drive-Ordner. Die lokale Sicherung läuft dabei unverändert weiter und bleibt die Grundlage für Wiederherstellung; die Datei wird danach zusätzlich in den gewählten Ordner kopiert. „YFDatenbank” ist als kommendes Sicherungsziel bereits auswählbar, aber noch nicht funktionsfähig (Demnächst).
+- Verbessert: Das Sicherungsziel in den Einstellungen hat jetzt ein Info-Symbol, das für Lokal, OneDrive, Google Drive und YFDatenbank kurz erklärt, was die jeweilige Auswahl bedeutet und was dafür zu tun ist.
 
 ## 1.3.0 – 2026-09-08
 - Neu: Der Update-Dialog zeigt jetzt die Versionshinweise des neuen Releases an, bevor installiert wird. „Später erinnern“ verschiebt die automatische Erinnerung um 24 Stunden statt beim nächsten Start erneut zu erscheinen.
