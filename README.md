@@ -65,6 +65,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 **Daten, Updates und Diagnose**
 
 - Lokale Backups sowie Import und Export, mit Übersicht der vorhandenen Sicherungen und Wiederherstellung direkt in den Einstellungen
+- Optionales zusätzliches Sicherungsziel für die tägliche Sicherung (OneDrive- oder Google-Drive-Ordner) – die lokale Sicherung bleibt dabei unverändert die Grundlage für Wiederherstellung; „YFDatenbank“ ist als kommendes Ziel bereits sichtbar (Demnächst)
 - Automatische Update-Prüfung für installierte Ausgaben
 - "Was ist neu"-Dialog mit den Änderungen der Version beim ersten Start nach einem Update
 - Diagnoseansicht und Export eines datensparsamen Diagnose-ZIP

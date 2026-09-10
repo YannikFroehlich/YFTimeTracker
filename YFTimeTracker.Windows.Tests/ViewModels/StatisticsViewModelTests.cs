@@ -208,6 +208,8 @@ public sealed class StatisticsViewModelTests
 
         public Task<string?> PickImportArchiveAsync(CancellationToken cancellationToken) => Task.FromResult<string?>(null);
 
+        public Task<string?> PickBackupFolderAsync(CancellationToken cancellationToken) => Task.FromResult<string?>(null);
+
         public Task<string?> PickYearReviewImageAsync(int year, CancellationToken cancellationToken) => Task.FromResult<string?>(null);
 
         public Task<string?> PickStatisticsExportAsync(string periodLabel, CancellationToken cancellationToken) => Task.FromResult(exportPath);

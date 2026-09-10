@@ -215,6 +215,119 @@ public sealed class JsonZipBackupServiceTests
         Assert.AreEqual("Alpha", (await repository.GetAllAsync(CancellationToken.None)).Single().Name);
     }
 
+    [TestMethod]
+    public async Task Daily_backup_is_not_mirrored_when_destination_is_local()
+    {
+        using var paths = new TestRepositories.TempAppPathProvider();
+        var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var clock = new TestRepositories.TestClock(DateTimeOffset.Parse("2026-09-10T12:00:00Z"));
+        var settings = new SettingsStore(factory, clock);
+        var externalFolder = Directory.CreateTempSubdirectory("YFTimeTracker.Tests.External").FullName;
+        try
+        {
+            var backup = new JsonZipBackupService(factory, paths, clock, settings);
+            await backup.CreateDailyBackupAsync(CancellationToken.None);
+
+            Assert.IsEmpty(Directory.GetFileSystemEntries(externalFolder));
+        }
+        finally
+        {
+            Directory.Delete(externalFolder, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task Daily_backup_is_mirrored_to_a_valid_external_folder()
+    {
+        using var paths = new TestRepositories.TempAppPathProvider();
+        var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var clock = new TestRepositories.TestClock(DateTimeOffset.Parse("2026-09-10T12:00:00Z"));
+        var settings = new SettingsStore(factory, clock);
+        var externalFolder = Directory.CreateTempSubdirectory("YFTimeTracker.Tests.External").FullName;
+        try
+        {
+            await settings.SetAsync(AppSettingKeys.BackupDestination, nameof(BackupDestinationKind.OneDrive), CancellationToken.None);
+            await settings.SetAsync(AppSettingKeys.BackupExternalFolderPath, externalFolder, CancellationToken.None);
+
+            var backup = new JsonZipBackupService(factory, paths, clock, settings);
+            var backupPath = await backup.CreateDailyBackupAsync(CancellationToken.None);
+            Assert.IsNotNull(backupPath);
+
+            var mirroredPath = Path.Combine(externalFolder, "YFTimeTracker Backups", Path.GetFileName(backupPath));
+            Assert.IsTrue(File.Exists(mirroredPath), "Die Sicherung wurde nicht in den externen Ordner gespiegelt.");
+            Assert.AreEqual(new FileInfo(backupPath).Length, new FileInfo(mirroredPath).Length);
+        }
+        finally
+        {
+            Directory.Delete(externalFolder, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task Daily_backup_succeeds_even_when_the_external_folder_is_unreachable()
+    {
+        using var paths = new TestRepositories.TempAppPathProvider();
+        var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var clock = new TestRepositories.TestClock(DateTimeOffset.Parse("2026-09-10T12:00:00Z"));
+        var settings = new SettingsStore(factory, clock);
+        await settings.SetAsync(AppSettingKeys.BackupDestination, nameof(BackupDestinationKind.OneDrive), CancellationToken.None);
+        await settings.SetAsync(
+            AppSettingKeys.BackupExternalFolderPath,
+            Path.Combine(paths.DataDirectory, "does-not-exist"),
+            CancellationToken.None);
+
+        var backup = new JsonZipBackupService(factory, paths, clock, settings);
+        var backupPath = await backup.CreateDailyBackupAsync(CancellationToken.None);
+
+        Assert.IsNotNull(backupPath);
+        Assert.IsTrue(File.Exists(backupPath));
+    }
+
+    [TestMethod]
+    public async Task Daily_backup_is_not_mirrored_for_the_not_yet_implemented_yf_database_destination()
+    {
+        using var paths = new TestRepositories.TempAppPathProvider();
+        var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var clock = new TestRepositories.TestClock(DateTimeOffset.Parse("2026-09-10T12:00:00Z"));
+        var settings = new SettingsStore(factory, clock);
+        var externalFolder = Directory.CreateTempSubdirectory("YFTimeTracker.Tests.External").FullName;
+        try
+        {
+            await settings.SetAsync(AppSettingKeys.BackupDestination, nameof(BackupDestinationKind.YfDatabase), CancellationToken.None);
+            await settings.SetAsync(AppSettingKeys.BackupExternalFolderPath, externalFolder, CancellationToken.None);
+
+            var backup = new JsonZipBackupService(factory, paths, clock, settings);
+            var backupPath = await backup.CreateDailyBackupAsync(CancellationToken.None);
+
+            Assert.IsNotNull(backupPath);
+            Assert.IsEmpty(Directory.GetFileSystemEntries(externalFolder));
+        }
+        finally
+        {
+            Directory.Delete(externalFolder, recursive: true);
+        }
+    }
+
     private static string[] CreateAgedBackups(string directory, string prefix, int count, DateTimeOffset oldestCreatedAt)
     {
         var paths = new List<string>();

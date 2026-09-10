@@ -2,6 +2,8 @@ using System.IO.Compression;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
 using YFTimeTracker.Core.Validation;
@@ -12,8 +14,12 @@ public sealed class JsonZipBackupService(
     IDbContextFactory<YFTimeTrackerDbContext> contextFactory,
     IAppPathProvider appPathProvider,
     IClock clock,
-    ISettingsStore settingsStore) : IBackupService
+    ISettingsStore settingsStore,
+    ILogger<JsonZipBackupService>? logger = null) : IBackupService
 {
+    private const string ExternalMirrorFolderName = "YFTimeTracker Backups";
+    private readonly ILogger<JsonZipBackupService> log = logger ?? NullLogger<JsonZipBackupService>.Instance;
+
     private const string ExportVersion = "2";
     private const string DataEntryName = "yftimetracker-data.json";
     private const string DailyBackupPrefix = "auto-";
@@ -47,7 +53,41 @@ public sealed class JsonZipBackupService(
         SqliteConnection.ClearAllPools();
         File.Copy(appPathProvider.DatabasePath, backupPath, overwrite: false);
         await settingsStore.SetAsync(AppSettingKeys.LastBackupDate, today.ToString("O"), cancellationToken);
+        await MirrorToExternalDestinationAsync(backupPath, cancellationToken);
         return backupPath;
+    }
+
+    // Reine Spiegelung, keine Umleitung: die lokale Sicherung oben ist bereits abgeschlossen
+    // und bleibt die einzige Quelle für Wiederherstellen/Aufräumen. Ein nicht erreichbares
+    // externes Ziel (Ordner nicht gemountet, Berechtigung fehlt) darf die lokale Sicherung
+    // niemals gefährden – Fehler werden nur geloggt, nie geworfen.
+    private async Task MirrorToExternalDestinationAsync(string backupPath, CancellationToken cancellationToken)
+    {
+        var destinationRaw = await settingsStore.GetAsync(AppSettingKeys.BackupDestination, cancellationToken);
+        if (!Enum.TryParse<BackupDestinationKind>(destinationRaw, out var destination) ||
+            destination is BackupDestinationKind.Local or BackupDestinationKind.YfDatabase)
+        {
+            return;
+        }
+
+        var externalRoot = await settingsStore.GetAsync(AppSettingKeys.BackupExternalFolderPath, cancellationToken);
+        if (string.IsNullOrWhiteSpace(externalRoot) || !Directory.Exists(externalRoot))
+        {
+            log.LogWarning("Externes Sicherungsziel {Destination} ist nicht erreichbar: {Folder}", destination, externalRoot);
+            return;
+        }
+
+        try
+        {
+            var mirrorDirectory = Path.Combine(externalRoot, ExternalMirrorFolderName);
+            Directory.CreateDirectory(mirrorDirectory);
+            var targetPath = Path.Combine(mirrorDirectory, Path.GetFileName(backupPath));
+            File.Copy(backupPath, targetPath, overwrite: true);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            log.LogWarning(exception, "Sicherung konnte nicht nach {Destination} gespiegelt werden", destination);
+        }
     }
 
     public Task<string?> CreatePreMigrationBackupAsync(CancellationToken cancellationToken)

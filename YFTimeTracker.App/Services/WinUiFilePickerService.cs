@@ -49,6 +49,20 @@ public sealed class WinUiFilePickerService(IAppPathProvider paths) : IFilePicker
         return file?.Path;
     }
 
+    public async Task<string?> PickBackupFolderAsync(CancellationToken cancellationToken)
+    {
+        var picker = new FolderPicker
+        {
+            SuggestedStartLocation = PickerLocationId.DocumentsLibrary
+        };
+        InitializePicker(picker);
+        picker.FileTypeFilter.Add("*");
+
+        var folder = await picker.PickSingleFolderAsync();
+        cancellationToken.ThrowIfCancellationRequested();
+        return folder?.Path;
+    }
+
     public async Task<string?> PickDiagnosticsArchiveAsync(CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(paths.ExportDirectory);

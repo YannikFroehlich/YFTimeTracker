@@ -10,6 +10,8 @@ public static class AppSettingKeys
     public const string StartMinimized = "ui.startMinimized";
     public const string FirstRunSetupCompleted = "ui.firstRunSetupCompleted";
     public const string BackupRetentionDays = "backup.retentionDays";
+    public const string BackupDestination = "backup.destination";
+    public const string BackupExternalFolderPath = "backup.externalFolderPath";
     public const string StartupEnabled = "windows.startupEnabled";
     public const string LastBackupDate = "backup.lastBackupDate";
     public const string Theme = "ui.theme";
