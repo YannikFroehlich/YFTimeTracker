@@ -41,6 +41,7 @@ public sealed record GamePlaytimeStatistics(
     GameSource Source,
     TimeSpan Duration,
     int SessionCount,
-    DateTimeOffset LastPlayedAtUtc);
+    DateTimeOffset LastPlayedAtUtc,
+    IReadOnlyList<string> Tags);
 
 public sealed record WeekdayPlaytimeStatistics(DayOfWeek DayOfWeek, TimeSpan Duration);

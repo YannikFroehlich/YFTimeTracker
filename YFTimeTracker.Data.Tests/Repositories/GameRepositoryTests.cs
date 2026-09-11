@@ -292,6 +292,86 @@ public sealed class GameRepositoryTests
         Assert.AreEqual(target.Id, moved.GameId);
     }
 
+    [TestMethod]
+    public async Task SetPinnedAsync_and_SetTagsAsync_persist_and_replace()
+    {
+        using var paths = new TempAppPathProvider();
+        var factory = new TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var games = new GameRepository(factory);
+        var game = await games.AddAsync(new Game
+        {
+            Name = "Test",
+            ExecutablePath = @"C:\Games\Test.exe",
+            ExecutablePathKey = @"C:\GAMES\TEST.EXE",
+            ExecutableName = "Test.exe",
+            AddedAtUtc = DateTimeOffset.Parse("2026-09-11T10:00:00Z")
+        }, CancellationToken.None);
+
+        await games.SetPinnedAsync(game.Id, true, CancellationToken.None);
+        await games.SetTagsAsync(game.Id, ["Shooter", "Multiplayer"], CancellationToken.None);
+
+        var stored = await games.GetByIdAsync(game.Id, CancellationToken.None);
+        Assert.IsNotNull(stored);
+        Assert.IsTrue(stored.IsPinned);
+        CollectionAssert.AreEquivalent(new[] { "Shooter", "Multiplayer" }, stored.Tags.Select(tag => tag.Tag).ToArray());
+
+        await games.SetTagsAsync(game.Id, ["Story"], CancellationToken.None);
+        stored = await games.GetByIdAsync(game.Id, CancellationToken.None);
+        Assert.IsNotNull(stored);
+        CollectionAssert.AreEqual(new[] { "Story" }, stored.Tags.Select(tag => tag.Tag).ToArray());
+    }
+
+    [TestMethod]
+    public async Task MergeInto_combines_tags_and_carries_over_a_pinned_source()
+    {
+        using var paths = new TempAppPathProvider();
+        var factory = new TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var games = new GameRepository(factory);
+        var sessions = new GameSessionRepository(factory);
+        var addedAt = DateTimeOffset.Parse("2026-09-11T09:00:00Z");
+
+        var target = await games.AddAsync(new Game
+        {
+            Name = "Beta",
+            ExecutablePath = @"C:\Games\Beta\beta.exe",
+            ExecutablePathKey = @"C:\GAMES\BETA\BETA.EXE",
+            ExecutableName = "beta.exe",
+            AddedAtUtc = addedAt
+        }, CancellationToken.None);
+        await games.SetTagsAsync(target.Id, ["Multiplayer"], CancellationToken.None);
+
+        var source = await games.AddAsync(new Game
+        {
+            Name = "Beta (manuell)",
+            ExecutablePath = @"C:\Games\Beta\launch.exe",
+            ExecutablePathKey = @"C:\GAMES\BETA\LAUNCH.EXE",
+            ExecutableName = "launch.exe",
+            AddedAtUtc = addedAt
+        }, CancellationToken.None);
+        await games.SetPinnedAsync(source.Id, true, CancellationToken.None);
+        // "multiplayer" dupliziert (case-insensitiv) einen bereits am Ziel vorhandenen Tag und darf
+        // nicht zum Unique-Index-Konflikt führen; "Koop" ist neu und muss übernommen werden.
+        await games.SetTagsAsync(source.Id, ["multiplayer", "Koop"], CancellationToken.None);
+
+        var plan = YFTimeTracker.Core.Services.SessionMergePlanner.Create([], []);
+        await games.MergeIntoAsync(source.Id, target.Id, plan, CancellationToken.None);
+
+        var merged = await games.GetByIdAsync(target.Id, CancellationToken.None);
+        Assert.IsNotNull(merged);
+        Assert.IsTrue(merged.IsPinned, "Ein gepinntes Quellspiel muss den Pin auf das Ziel übertragen.");
+        CollectionAssert.AreEquivalent(new[] { "Multiplayer", "Koop" }, merged.Tags.Select(tag => tag.Tag).ToArray());
+    }
+
     private static GameSession Closed(long gameId, string start, string end) => new()
     {
         GameId = gameId,

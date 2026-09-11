@@ -372,6 +372,11 @@
                                         Value="{Binding WeeklyProgressPercent}" />
                                     <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding WeeklyProgressText}" />
                                 </StackPanel>
+                                <TextBox
+                                    Header="Tags"
+                                    PlaceholderText="z. B. Shooter, Multiplayer"
+                                    Style="{StaticResource YFTextBoxStyle}"
+                                    Text="{Binding TagsText, Mode=TwoWay}" />
                                 <Button HorizontalAlignment="Stretch" Command="{Binding SaveGameCommand}" Style="{StaticResource YFAccentButtonStyle}" Content="Speichern" />
                             </StackPanel>
                         </Border>

@@ -225,13 +225,15 @@ public sealed class JsonZipBackupService(
         var executables = await context.GameExecutables.AsNoTracking().OrderBy(executable => executable.Id).ToListAsync(cancellationToken);
         var sessions = await context.GameSessions.AsNoTracking().OrderBy(session => session.Id).ToListAsync(cancellationToken);
         var settings = await context.AppSettings.AsNoTracking().OrderBy(setting => setting.Key).ToListAsync(cancellationToken);
+        var tags = await context.GameTags.AsNoTracking().OrderBy(tag => tag.Id).ToListAsync(cancellationToken);
 
         var document = new BackupDocument(
             new BackupManifest("YFTimeTracker", ExportVersion, clock.UtcNow, games.Count, sessions.Count),
             games,
             executables,
             sessions,
-            settings);
+            settings,
+            tags);
 
         await using var fileStream = File.Create(archivePath);
         using var archive = new ZipArchive(fileStream, ZipArchiveMode.Create);
@@ -292,6 +294,7 @@ public sealed class JsonZipBackupService(
                 tempContext.GameExecutables.AddRange(document.Executables);
                 tempContext.GameSessions.AddRange(document.Sessions);
                 tempContext.AppSettings.AddRange(document.Settings);
+                tempContext.GameTags.AddRange(document.Tags ?? []);
                 await tempContext.SaveChangesAsync(cancellationToken);
             }
 
@@ -363,6 +366,14 @@ public sealed class JsonZipBackupService(
                 throw new YFTimeTrackerException("Das Archiv enthält ungültige Sessions.");
             }
         }
+
+        foreach (var tag in document.Tags ?? [])
+        {
+            if (!gameIds.Contains(tag.GameId) || string.IsNullOrWhiteSpace(tag.Tag))
+            {
+                throw new YFTimeTrackerException("Das Archiv enthält ungültige Tag-Zuordnungen.");
+            }
+        }
     }
 
     private static BackupDocument UpgradeLegacyBackup(JsonElement root)
@@ -394,6 +405,7 @@ public sealed class JsonZipBackupService(
             games,
             executables,
             legacy.Sessions,
-            legacy.Settings);
+            legacy.Settings,
+            []);
     }
 }

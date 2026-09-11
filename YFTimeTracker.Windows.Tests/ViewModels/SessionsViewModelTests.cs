@@ -259,12 +259,14 @@ public sealed class SessionsViewModelTests
 
         public Task<Game> AddGameAsync(string executablePath, string? displayName, CancellationToken cancellationToken) => throw new NotSupportedException();
 
-        public Task UpdateGameAsync(long gameId, string displayName, string executablePath, int? dailyPlaytimeLimitMinutes, int? weeklyPlaytimeLimitMinutes, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task UpdateGameAsync(long gameId, string displayName, string executablePath, int? dailyPlaytimeLimitMinutes, int? weeklyPlaytimeLimitMinutes, IReadOnlyList<string> tags, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task DeleteGameAsync(long gameId, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task<GameMergeResult> MergeGamesAsync(long sourceGameId, long targetGameId, CancellationToken cancellationToken)
             => throw new NotSupportedException();
+
+        public Task SetPinnedAsync(long gameId, bool isPinned, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class FakeSessionEditor(

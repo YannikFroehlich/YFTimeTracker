@@ -42,10 +42,12 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Typfehlertolerante globale Suche nach Spielen, EXE-Dateien, Sessions und App-Bereichen mit Launcher- und Zeitraumfilter, lokalem Suchverlauf und `Strg+K`-Schnellzugriff
 - Statistiken für frei wählbare Zeiträume und einzelne Spiele mit CSV-Export
 - Jahresrückblick mit Monatsverlauf, Vorjahresvergleich, Rekorden, Top-Spielen und PNG-Export
+- Donut-Auswertung „Nach Tag“, die die Spielzeit nach den in der Bibliothek vergebenen Tags gruppiert
 
 **Bibliothek und Sessions**
 
 - Bibliothek mit Suche, Sortierung, Spieldetails und EXE-Verwaltung
+- Spiele anheften, damit sie oben in der Bibliothek bleiben, sowie frei vergebene Tags pro Spiel zum Filtern und für die Auswertung „Nach Tag“
 - Doppelte Einträge desselben Spiels zusammenführen, ohne Spielzeit zu verlieren
 - Spiele direkt aus den Spieldetails heraus starten
 - Lokale Spiel-Icons aus den registrierten EXE-Dateien mit datensparsamem Cache

@@ -7,7 +7,8 @@ internal sealed record BackupDocument(
     IReadOnlyList<Game> Games,
     IReadOnlyList<GameExecutable> Executables,
     IReadOnlyList<GameSession> Sessions,
-    IReadOnlyList<AppSetting> Settings);
+    IReadOnlyList<AppSetting> Settings,
+    IReadOnlyList<GameTag>? Tags = null);
 
 internal sealed record LegacyBackupDocument(
     BackupManifest Manifest,

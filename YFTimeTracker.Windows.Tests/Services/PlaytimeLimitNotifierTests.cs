@@ -312,6 +312,12 @@ public sealed class PlaytimeLimitNotifierTests
         public Task SetPrimaryExecutableAsync(long gameId, GameExecutable executable, CancellationToken cancellationToken)
             => throw new NotSupportedException();
 
+        public Task SetPinnedAsync(long gameId, bool isPinned, CancellationToken cancellationToken)
+            => throw new NotSupportedException();
+
+        public Task SetTagsAsync(long gameId, IReadOnlyList<string> tags, CancellationToken cancellationToken)
+            => throw new NotSupportedException();
+
         public Task DeleteAsync(long id, CancellationToken cancellationToken)
             => throw new NotSupportedException();
 

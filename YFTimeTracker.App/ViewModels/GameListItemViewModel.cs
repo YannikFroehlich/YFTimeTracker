@@ -72,6 +72,14 @@ public sealed class GameListItemViewModel(Game game, string? iconPath = null)
 
     public bool IsRunning { get; }
 
+    public bool IsPinned => game.IsPinned;
+
+    public string PinGlyph => IsPinned ? ((char)0xE735).ToString() : ((char)0xE734).ToString();
+
+    public string PinTooltip => IsPinned ? "Nicht mehr anheften" : "Oben anheften";
+
+    public IReadOnlyList<string> Tags => game.Tags.Select(tag => tag.Tag).ToArray();
+
     public TimeSpan TotalDuration => TimeSpan.FromTicks(gameSessions.Sum(session => session.GetEffectiveDuration(nowUtc).Ticks));
 
     public string TotalPlaytime => TimeFormatter.Format(TotalDuration);
@@ -119,7 +127,8 @@ public sealed class GameListItemViewModel(Game game, string? iconPath = null)
     public string SearchableText => string.Join(
         ' ',
         new[] { game.Name, game.InstallDirectory ?? string.Empty }
-            .Concat(game.Executables.Select(executable => $"{executable.ExecutableName} {executable.ExecutablePath}")));
+            .Concat(game.Executables.Select(executable => $"{executable.ExecutableName} {executable.ExecutablePath}"))
+            .Concat(Tags));
 
     public Game Model => game;
 }

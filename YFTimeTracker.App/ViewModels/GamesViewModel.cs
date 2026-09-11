@@ -26,6 +26,7 @@ public sealed class GamesViewModel : ObservableObject
     private LibrarySourceFilterOption selectedSourceFilter;
     private LibraryStatusFilterOption selectedStatusFilter;
     private LibrarySortOption selectedSortOption;
+    private LibraryTagFilterOption selectedTagFilter;
     private string searchText = string.Empty;
     private string resultSummary = "0 Spiele";
     private string emptyStateText = "Noch keine Spiele in der Bibliothek.";
@@ -80,6 +81,7 @@ public sealed class GamesViewModel : ObservableObject
             new LibrarySortOption(LibrarySortKind.Name, "Name A–Z")
         ];
         selectedSortOption = SortOptions[0];
+        selectedTagFilter = TagFilters[0];
 
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         ClearFiltersCommand = new RelayCommand(ClearFilters);
@@ -90,6 +92,7 @@ public sealed class GamesViewModel : ObservableObject
         MergeSelectedGameCommand = new AsyncRelayCommand(MergeSelectedGameAsync);
         AddManualSessionCommand = new AsyncRelayCommand(AddManualSessionAsync);
         DeleteSelectedSessionCommand = new AsyncRelayCommand(DeleteSelectedSessionAsync);
+        TogglePinCommand = new AsyncRelayCommand<long>(TogglePinAsync);
     }
 
     public ObservableCollection<GameListItemViewModel> Games { get; } = [];
@@ -101,6 +104,8 @@ public sealed class GamesViewModel : ObservableObject
     public IReadOnlyList<LibraryStatusFilterOption> StatusFilters { get; }
 
     public IReadOnlyList<LibrarySortOption> SortOptions { get; }
+
+    public ObservableCollection<LibraryTagFilterOption> TagFilters { get; } = [new LibraryTagFilterOption(null, "Alle Tags")];
 
     public string SearchText
     {
@@ -144,6 +149,18 @@ public sealed class GamesViewModel : ObservableObject
         set
         {
             if (value is not null && SetProperty(ref selectedSortOption, value))
+            {
+                ApplyFilters();
+            }
+        }
+    }
+
+    public LibraryTagFilterOption SelectedTagFilter
+    {
+        get => selectedTagFilter;
+        set
+        {
+            if (value is not null && SetProperty(ref selectedTagFilter, value))
             {
                 ApplyFilters();
             }
@@ -271,6 +288,8 @@ public sealed class GamesViewModel : ObservableObject
 
     public IAsyncRelayCommand DeleteSelectedSessionCommand { get; }
 
+    public IAsyncRelayCommand<long> TogglePinCommand { get; }
+
     public async Task RefreshAsync()
     {
         try
@@ -297,6 +316,7 @@ public sealed class GamesViewModel : ObservableObject
                     iconPaths.GetValueOrDefault(game.Id)));
             }
 
+            UpdateTagFilters();
             ApplyFilters();
             StatusMessage = allGames.Count == 0
                 ? "Noch keine Spiele registriert"
@@ -330,15 +350,24 @@ public sealed class GamesViewModel : ObservableObject
             _ => query
         };
 
+        if (SelectedTagFilter.Tag is { } tag)
+        {
+            query = query.Where(game => game.Tags.Contains(tag, StringComparer.OrdinalIgnoreCase));
+        }
+
         query = SelectedSortOption.Kind switch
         {
             LibrarySortKind.Playtime => query
-                .OrderByDescending(game => game.IsRunning)
+                .OrderByDescending(game => game.IsPinned)
+                .ThenByDescending(game => game.IsRunning)
                 .ThenByDescending(game => game.TotalDuration)
                 .ThenBy(game => game.Name, StringComparer.CurrentCultureIgnoreCase),
-            LibrarySortKind.Name => query.OrderBy(game => game.Name, StringComparer.CurrentCultureIgnoreCase),
+            LibrarySortKind.Name => query
+                .OrderByDescending(game => game.IsPinned)
+                .ThenBy(game => game.Name, StringComparer.CurrentCultureIgnoreCase),
             _ => query
-                .OrderByDescending(game => game.IsRunning)
+                .OrderByDescending(game => game.IsPinned)
+                .ThenByDescending(game => game.IsRunning)
                 .ThenByDescending(game => game.LastPlayedAtUtc ?? DateTimeOffset.MinValue)
                 .ThenBy(game => game.Name, StringComparer.CurrentCultureIgnoreCase)
         };
@@ -383,12 +412,58 @@ public sealed class GamesViewModel : ObservableObject
         selectedSourceFilter = SourceFilters[0];
         selectedStatusFilter = StatusFilters[0];
         selectedSortOption = SortOptions[0];
+        selectedTagFilter = TagFilters[0];
         OnPropertyChanged(nameof(SearchText));
         OnPropertyChanged(nameof(SelectedSourceFilter));
         OnPropertyChanged(nameof(SelectedStatusFilter));
         OnPropertyChanged(nameof(SelectedSortOption));
+        OnPropertyChanged(nameof(SelectedTagFilter));
         ApplyFilters();
         StatusMessage = "Bibliotheksfilter zurückgesetzt";
+    }
+
+    private void UpdateTagFilters()
+    {
+        var previousTag = SelectedTagFilter.Tag;
+        var tags = allGames
+            .SelectMany(game => game.Tags)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(tag => tag, StringComparer.CurrentCultureIgnoreCase);
+
+        TagFilters.Clear();
+        TagFilters.Add(new LibraryTagFilterOption(null, "Alle Tags"));
+        foreach (var tag in tags)
+        {
+            TagFilters.Add(new LibraryTagFilterOption(tag, tag));
+        }
+
+        selectedTagFilter = TagFilters.FirstOrDefault(option => string.Equals(option.Tag, previousTag, StringComparison.OrdinalIgnoreCase))
+            ?? TagFilters[0];
+        OnPropertyChanged(nameof(SelectedTagFilter));
+    }
+
+    private async Task TogglePinAsync(long gameId)
+    {
+        var item = allGames.FirstOrDefault(game => game.Id == gameId);
+        if (item is null)
+        {
+            return;
+        }
+
+        var newState = !item.IsPinned;
+        item.Model.IsPinned = newState;
+        ApplyFilters();
+
+        try
+        {
+            await catalog.SetPinnedAsync(gameId, newState, CancellationToken.None);
+        }
+        catch (Exception exception)
+        {
+            item.Model.IsPinned = !newState;
+            ApplyFilters();
+            StatusMessage = $"Anheften fehlgeschlagen: {exception.Message}";
+        }
     }
 
     private void NewGame()
@@ -434,6 +509,7 @@ public sealed class GamesViewModel : ObservableObject
                     ExecutablePath,
                     SelectedGame.Model.DailyPlaytimeLimitMinutes,
                     SelectedGame.Model.WeeklyPlaytimeLimitMinutes,
+                    SelectedGame.Model.Tags.Select(tag => tag.Tag).ToArray(),
                     CancellationToken.None);
             }
 
@@ -610,6 +686,8 @@ public sealed record LibrarySourceFilterOption(GameSource? Source, string Label)
 public sealed record LibraryStatusFilterOption(LibraryStatusFilterKind Kind, string Label);
 
 public sealed record LibrarySortOption(LibrarySortKind Kind, string Label);
+
+public sealed record LibraryTagFilterOption(string? Tag, string Label);
 
 public enum LibraryStatusFilterKind
 {

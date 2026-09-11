@@ -18,6 +18,8 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
 
     public DbSet<GameExecutable> GameExecutables => Set<GameExecutable>();
 
+    public DbSet<GameTag> GameTags => Set<GameTag>();
+
     public DbSet<GameSession> GameSessions => Set<GameSession>();
 
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
@@ -67,6 +69,19 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
                 .IsUnique()
                 .HasDatabaseName("IX_GameExecutables_GameId_Primary")
                 .HasFilter("IsPrimary = 1");
+        });
+
+        modelBuilder.Entity<GameTag>(entity =>
+        {
+            entity.ToTable("GameTags");
+            entity.HasKey(tag => tag.Id);
+            entity.Property(tag => tag.Tag).HasMaxLength(60).IsRequired();
+            entity.HasOne(tag => tag.Game)
+                .WithMany(game => game.Tags)
+                .HasForeignKey(tag => tag.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(tag => tag.GameId);
+            entity.HasIndex(tag => new { tag.GameId, tag.Tag }).IsUnique();
         });
 
         modelBuilder.Entity<GameSession>(entity =>

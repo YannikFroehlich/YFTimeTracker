@@ -18,8 +18,8 @@ public sealed class StatisticsViewModelTests
             sessionCount: 3,
             games:
             [
-                new GamePlaytimeStatistics(1, "Alpha Game", GameSource.Steam, TimeSpan.FromHours(6), 2, now),
-                new GamePlaytimeStatistics(2, "Beta", GameSource.Manual, TimeSpan.FromHours(2), 1, now.AddDays(-1))
+                new GamePlaytimeStatistics(1, "Alpha Game", GameSource.Steam, TimeSpan.FromHours(6), 2, now, []),
+                new GamePlaytimeStatistics(2, "Beta", GameSource.Manual, TimeSpan.FromHours(2), 1, now.AddDays(-1), [])
             ]);
         var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), new FakeFilePicker(), new FakeExplorerService());
 
@@ -43,6 +43,36 @@ public sealed class StatisticsViewModelTests
         Assert.AreEqual("75 %", viewModel.GameShares[0].ShareText);
         Assert.HasCount(26, viewModel.HeatmapWeeks);
         Assert.HasCount(7, viewModel.HeatmapWeeks[0].Days);
+    }
+
+    [TestMethod]
+    public async Task Tag_shares_group_by_tag_and_bucket_untagged_games_separately()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var report = CreateReport(
+            total: TimeSpan.FromHours(8),
+            previous: null,
+            sessionCount: 3,
+            games:
+            [
+                // Zählt sowohl bei "Shooter" als auch bei "Multiplayer" voll mit.
+                new GamePlaytimeStatistics(1, "Alpha", GameSource.Steam, TimeSpan.FromHours(4), 1, now, ["Shooter", "Multiplayer"]),
+                new GamePlaytimeStatistics(2, "Beta", GameSource.Manual, TimeSpan.FromHours(2), 1, now, ["Shooter"]),
+                new GamePlaytimeStatistics(3, "Gamma", GameSource.Manual, TimeSpan.FromHours(2), 1, now, [])
+            ]);
+        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), new FakeFilePicker(), new FakeExplorerService());
+
+        await viewModel.RefreshAsync();
+
+        Assert.HasCount(3, viewModel.TagShares, "Shooter, Multiplayer und Ohne Tag.");
+        var shooter = viewModel.TagShares.Single(slice => slice.Name == "Shooter");
+        var multiplayer = viewModel.TagShares.Single(slice => slice.Name == "Multiplayer");
+        var untagged = viewModel.TagShares.Single(slice => slice.Name == "Ohne Tag");
+        // Bucket-Summe ist 6h(Shooter: Alpha+Beta)+4h(Multiplayer: Alpha)+2h(Ohne Tag: Gamma) = 12h,
+        // nicht die Gesamtspielzeit von 8h - die Anteile beziehen sich bewusst auf diese Summe.
+        Assert.AreEqual("50 %", shooter.ShareText);
+        Assert.AreEqual($"{33.3:0.#} %", multiplayer.ShareText);
+        Assert.AreEqual($"{16.7:0.#} %", untagged.ShareText);
     }
 
     [TestMethod]
@@ -73,8 +103,8 @@ public sealed class StatisticsViewModelTests
             sessionCount: 3,
             games:
             [
-                new GamePlaytimeStatistics(1, "Alpha Game", GameSource.Steam, TimeSpan.FromHours(6), 2, now),
-                new GamePlaytimeStatistics(2, "Beta", GameSource.Manual, TimeSpan.FromHours(2), 1, now.AddDays(-1))
+                new GamePlaytimeStatistics(1, "Alpha Game", GameSource.Steam, TimeSpan.FromHours(6), 2, now, []),
+                new GamePlaytimeStatistics(2, "Beta", GameSource.Manual, TimeSpan.FromHours(2), 1, now.AddDays(-1), [])
             ]);
         var exportPath = Path.Combine(Path.GetTempPath(), $"yftimetracker-statistics-test-{Guid.NewGuid():N}.csv");
         var filePicker = new FakeFilePicker(exportPath);

@@ -14,9 +14,12 @@ public interface IGameCatalogService
         string executablePath,
         int? dailyPlaytimeLimitMinutes,
         int? weeklyPlaytimeLimitMinutes,
+        IReadOnlyList<string> tags,
         CancellationToken cancellationToken);
 
     Task<GameMergeResult> MergeGamesAsync(long sourceGameId, long targetGameId, CancellationToken cancellationToken);
 
     Task DeleteGameAsync(long gameId, CancellationToken cancellationToken);
+
+    Task SetPinnedAsync(long gameId, bool isPinned, CancellationToken cancellationToken);
 }
