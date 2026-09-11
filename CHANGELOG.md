@@ -3,7 +3,7 @@
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
 ## 1.5.0 – 2026-09-11
-- Neu: Spiele lassen sich in der Bibliothek anheften (Stern-Symbol auf der Spielkarte) – angeheftete Spiele stehen danach immer ganz oben in der Liste, unabhängig von Sortierung und laufenden Spielen.
+- Neu: Spiele lassen sich in der Bibliothek anheften (Stern-Symbol auf der Spielkarte) – angeheftete Spiele stehen danach immer ganz oben in der Liste, unabhängig von Sortierung und laufenden Spielen, und können über den Statusfilter gezielt angezeigt werden.
 - Neu: Frei vergebene Tags pro Spiel (in den Spieldetails, komma-getrennt) – filterbar in der Bibliothek und als eigene Donut-Auswertung „Nach Tag“ in den Statistiken. Ein Spiel mit mehreren Tags zählt in jedem seiner Tags voll mit; ungetaggte Spiele laufen in „Ohne Tag“ zusammen.
 
 ## 1.4.0 – 2026-09-10

@@ -1,10 +1,11 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Xaml;
 using YFTimeTracker.Core.Models;
 using YFTimeTracker.Core.Services;
 
 namespace YFTimeTracker.App.ViewModels;
 
-public sealed class GameListItemViewModel(Game game, string? iconPath = null)
+public sealed class GameListItemViewModel(Game game, string? iconPath = null) : ObservableObject
 {
     private const string ProgressNormalColor = "#3182FF";
     private const string ProgressLimitReachedColor = "#FF5368";
@@ -72,7 +73,22 @@ public sealed class GameListItemViewModel(Game game, string? iconPath = null)
 
     public bool IsRunning { get; }
 
-    public bool IsPinned => game.IsPinned;
+    public bool IsPinned
+    {
+        get => game.IsPinned;
+        internal set
+        {
+            if (game.IsPinned == value)
+            {
+                return;
+            }
+
+            game.IsPinned = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PinGlyph));
+            OnPropertyChanged(nameof(PinTooltip));
+        }
+    }
 
     public string PinGlyph => IsPinned ? ((char)0xE735).ToString() : ((char)0xE734).ToString();
 

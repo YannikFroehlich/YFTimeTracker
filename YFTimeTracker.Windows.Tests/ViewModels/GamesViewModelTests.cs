@@ -92,6 +92,56 @@ public sealed class GamesViewModelTests
     }
 
     [TestMethod]
+    public async Task Pinning_first_game_notifies_pin_bindings_immediately()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var alpha = CreateGame(1, "Alpha", GameSource.Steam, "alpha.exe");
+        var beta = CreateGame(2, "Beta", GameSource.Epic, "beta.exe");
+        var viewModel = CreateViewModel(
+            [alpha, beta],
+            new FakeSessionRepository([]),
+            new FakeTrackingService(TrackingState.Stopped),
+            now);
+
+        await viewModel.RefreshAsync();
+        var firstGame = viewModel.Games[0];
+        var originalGlyph = firstGame.PinGlyph;
+        var changedProperties = new List<string?>();
+        firstGame.PropertyChanged += (_, args) => changedProperties.Add(args.PropertyName);
+
+        await viewModel.TogglePinCommand.ExecuteAsync(firstGame.Id);
+
+        Assert.AreSame(firstGame, viewModel.Games[0], "Das bereits erste Spiel bleibt an derselben Position.");
+        Assert.IsTrue(firstGame.IsPinned);
+        Assert.AreNotEqual(originalGlyph, firstGame.PinGlyph);
+        CollectionAssert.Contains(changedProperties, nameof(GameListItemViewModel.IsPinned));
+        CollectionAssert.Contains(changedProperties, nameof(GameListItemViewModel.PinGlyph));
+        CollectionAssert.Contains(changedProperties, nameof(GameListItemViewModel.PinTooltip));
+    }
+
+    [TestMethod]
+    public async Task Pinned_status_filter_shows_only_pinned_games()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var alpha = CreateGame(1, "Alpha", GameSource.Steam, "alpha.exe");
+        alpha.IsPinned = true;
+        var beta = CreateGame(2, "Beta", GameSource.Epic, "beta.exe");
+        var viewModel = CreateViewModel(
+            [alpha, beta],
+            new FakeSessionRepository([]),
+            new FakeTrackingService(TrackingState.Stopped),
+            now);
+
+        await viewModel.RefreshAsync();
+        viewModel.SelectedStatusFilter = viewModel.StatusFilters.Single(
+            filter => filter.Kind == LibraryStatusFilterKind.Pinned);
+
+        Assert.HasCount(1, viewModel.Games);
+        Assert.AreEqual("Alpha", viewModel.Games[0].Name);
+        Assert.AreEqual("1 von 2 Spielen", viewModel.ResultSummary);
+    }
+
+    [TestMethod]
     public async Task Filtering_out_selected_game_clears_editor_state()
     {
         var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");

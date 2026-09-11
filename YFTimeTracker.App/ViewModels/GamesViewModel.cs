@@ -70,6 +70,7 @@ public sealed class GamesViewModel : ObservableObject
         StatusFilters =
         [
             new LibraryStatusFilterOption(LibraryStatusFilterKind.All, "Alle Status"),
+            new LibraryStatusFilterOption(LibraryStatusFilterKind.Pinned, "Nur angeheftete"),
             new LibraryStatusFilterOption(LibraryStatusFilterKind.Running, "Aktuell aktiv"),
             new LibraryStatusFilterOption(LibraryStatusFilterKind.MissingExecutable, "EXE fehlt")
         ];
@@ -345,6 +346,7 @@ public sealed class GamesViewModel : ObservableObject
 
         query = SelectedStatusFilter.Kind switch
         {
+            LibraryStatusFilterKind.Pinned => query.Where(game => game.IsPinned),
             LibraryStatusFilterKind.Running => query.Where(game => game.IsRunning),
             LibraryStatusFilterKind.MissingExecutable => query.Where(game => !game.Exists),
             _ => query
@@ -451,7 +453,7 @@ public sealed class GamesViewModel : ObservableObject
         }
 
         var newState = !item.IsPinned;
-        item.Model.IsPinned = newState;
+        item.IsPinned = newState;
         ApplyFilters();
 
         try
@@ -460,7 +462,7 @@ public sealed class GamesViewModel : ObservableObject
         }
         catch (Exception exception)
         {
-            item.Model.IsPinned = !newState;
+            item.IsPinned = !newState;
             ApplyFilters();
             StatusMessage = $"Anheften fehlgeschlagen: {exception.Message}";
         }
@@ -692,6 +694,7 @@ public sealed record LibraryTagFilterOption(string? Tag, string Label);
 public enum LibraryStatusFilterKind
 {
     All,
+    Pinned,
     Running,
     MissingExecutable
 }

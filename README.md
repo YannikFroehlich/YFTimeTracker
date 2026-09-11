@@ -47,7 +47,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 **Bibliothek und Sessions**
 
 - Bibliothek mit Suche, Sortierung, Spieldetails und EXE-Verwaltung
-- Spiele anheften, damit sie oben in der Bibliothek bleiben, sowie frei vergebene Tags pro Spiel zum Filtern und für die Auswertung „Nach Tag“
+- Spiele anheften, damit sie oben in der Bibliothek bleiben, angeheftete Spiele gezielt filtern sowie frei vergebene Tags pro Spiel zum Filtern und für die Auswertung „Nach Tag“
 - Doppelte Einträge desselben Spiels zusammenführen, ohne Spielzeit zu verlieren
 - Spiele direkt aus den Spieldetails heraus starten
 - Lokale Spiel-Icons aus den registrierten EXE-Dateien mit datensparsamem Cache

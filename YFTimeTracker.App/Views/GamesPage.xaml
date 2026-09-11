@@ -163,7 +163,7 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="56" />
                                             <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="34" />
+                                            <ColumnDefinition Width="42" />
                                             <ColumnDefinition Width="42" />
                                         </Grid.ColumnDefinitions>
                                         <controls:GameIcon
