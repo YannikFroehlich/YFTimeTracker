@@ -96,6 +96,7 @@ internal sealed class InMemoryGameRepository : IGameRepository
     private readonly List<Game> games = [];
     private long nextId = 1;
     private long nextExecutableId = 1;
+    private long nextTagId = 1;
 
     public Task<IReadOnlyList<Game>> GetAllAsync(CancellationToken cancellationToken)
     {
@@ -190,6 +191,21 @@ internal sealed class InMemoryGameRepository : IGameRepository
         return Task.CompletedTask;
     }
 
+    public Task SetPinnedAsync(long gameId, bool isPinned, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        games.Single(candidate => candidate.Id == gameId).IsPinned = isPinned;
+        return Task.CompletedTask;
+    }
+
+    public Task SetTagsAsync(long gameId, IReadOnlyList<string> tags, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var game = games.Single(candidate => candidate.Id == gameId);
+        game.Tags = tags.Select(tag => new GameTag { Id = nextTagId++, GameId = gameId, Tag = tag }).ToList();
+        return Task.CompletedTask;
+    }
+
     private static Game Clone(Game game)
     {
         return new Game
@@ -201,7 +217,9 @@ internal sealed class InMemoryGameRepository : IGameRepository
             InstallDirectory = game.InstallDirectory,
             InstallDirectoryKey = game.InstallDirectoryKey,
             AddedAtUtc = game.AddedAtUtc,
-            Executables = game.Executables.Select(CloneExecutable).ToList()
+            IsPinned = game.IsPinned,
+            Executables = game.Executables.Select(CloneExecutable).ToList(),
+            Tags = game.Tags.Select(CloneTag).ToList()
         };
     }
 
@@ -214,6 +232,13 @@ internal sealed class InMemoryGameRepository : IGameRepository
         ExecutableName = executable.ExecutableName,
         IsPrimary = executable.IsPrimary,
         AddedAtUtc = executable.AddedAtUtc
+    };
+
+    private static GameTag CloneTag(GameTag tag) => new()
+    {
+        Id = tag.Id,
+        GameId = tag.GameId,
+        Tag = tag.Tag
     };
 
     public SessionMergePlan? LastMergePlan { get; private set; }

@@ -34,6 +34,8 @@ public sealed class GameSessionRepository(IDbContextFactory<YFTimeTrackerDbConte
         var query = context.GameSessions
             .Include(session => session.Game)
             .ThenInclude(game => game!.Executables)
+            .Include(session => session.Game)
+            .ThenInclude(game => game!.Tags)
             .AsNoTracking()
             .AsQueryable();
 

@@ -20,6 +20,10 @@ public interface IGameRepository
 
     Task SetPrimaryExecutableAsync(long gameId, GameExecutable executable, CancellationToken cancellationToken);
 
+    Task SetPinnedAsync(long gameId, bool isPinned, CancellationToken cancellationToken);
+
+    Task SetTagsAsync(long gameId, IReadOnlyList<string> tags, CancellationToken cancellationToken);
+
     /// <summary>
     /// Hängt EXE-Zuordnungen und Sessions des Quellspiels auf das Zielspiel um und löscht das
     /// Quellspiel - in einer Transaktion. Sessions gehören normalerweise ins Session-Repository,

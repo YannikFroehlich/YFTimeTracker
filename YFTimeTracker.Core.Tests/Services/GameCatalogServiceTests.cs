@@ -45,6 +45,7 @@ public sealed class GameCatalogServiceTests
                 @"C:\Games\Alpha.exe",
                 null,
                 null,
+                [],
                 CancellationToken.None));
 
         Assert.AreEqual("Bitte gib einen Anzeigenamen an.", exception.Message);
@@ -57,9 +58,28 @@ public sealed class GameCatalogServiceTests
         var game = await catalog.AddGameAsync(@"C:\Games\Alpha.exe", "Alpha", CancellationToken.None);
 
         var exception = await Assert.ThrowsAsync<YFTimeTrackerException>(
-            () => catalog.UpdateGameAsync(game.Id, "Alpha", string.Empty, null, null, CancellationToken.None));
+            () => catalog.UpdateGameAsync(game.Id, "Alpha", string.Empty, null, null, [], CancellationToken.None));
 
         Assert.AreEqual("Bitte wähle eine .exe-Datei aus.", exception.Message);
+    }
+
+    [TestMethod]
+    public async Task Updating_tags_trims_and_deduplicates_case_insensitively()
+    {
+        var (catalog, _, _) = CreateCatalog();
+        var game = await catalog.AddGameAsync(@"C:\Games\Alpha.exe", "Alpha", CancellationToken.None);
+
+        await catalog.UpdateGameAsync(
+            game.Id,
+            "Alpha",
+            @"C:\Games\Alpha.exe",
+            null,
+            null,
+            ["  Shooter ", "Multiplayer", "shooter", ""],
+            CancellationToken.None);
+
+        var stored = (await catalog.GetGamesAsync(CancellationToken.None)).Single(candidate => candidate.Id == game.Id);
+        CollectionAssert.AreEqual(new[] { "Shooter", "Multiplayer" }, stored.Tags.Select(tag => tag.Tag).ToArray());
     }
 
     [TestMethod]

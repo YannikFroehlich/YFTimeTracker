@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
+using YFTimeTracker.Core.Validation;
 
 namespace YFTimeTracker.Data.Repositories;
 
@@ -11,6 +12,7 @@ public sealed class GameRepository(IDbContextFactory<YFTimeTrackerDbContext> con
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         return await context.Games
             .Include(game => game.Executables)
+            .Include(game => game.Tags)
             .AsNoTracking()
             .OrderBy(game => game.Name)
             .ToListAsync(cancellationToken);
@@ -21,6 +23,7 @@ public sealed class GameRepository(IDbContextFactory<YFTimeTrackerDbContext> con
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         return await context.Games
             .Include(game => game.Executables)
+            .Include(game => game.Tags)
             .AsNoTracking()
             .FirstOrDefaultAsync(game => game.Id == id, cancellationToken);
     }
@@ -30,6 +33,7 @@ public sealed class GameRepository(IDbContextFactory<YFTimeTrackerDbContext> con
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         return await context.Games
             .Include(game => game.Executables)
+            .Include(game => game.Tags)
             .AsNoTracking()
             .FirstOrDefaultAsync(game => game.Executables.Any(executable => executable.ExecutablePathKey == executablePathKey), cancellationToken);
     }
@@ -39,6 +43,7 @@ public sealed class GameRepository(IDbContextFactory<YFTimeTrackerDbContext> con
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         return await context.Games
             .Include(game => game.Executables)
+            .Include(game => game.Tags)
             .AsNoTracking()
             .FirstOrDefaultAsync(game => game.Source == source && game.ExternalGameId == externalGameId, cancellationToken);
     }
@@ -109,6 +114,26 @@ public sealed class GameRepository(IDbContextFactory<YFTimeTrackerDbContext> con
         await context.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task SetPinnedAsync(long gameId, bool isPinned, CancellationToken cancellationToken)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        var game = await context.Games.FirstOrDefaultAsync(candidate => candidate.Id == gameId, cancellationToken)
+            ?? throw new YFTimeTrackerException("Das Spiel wurde nicht gefunden.");
+        game.IsPinned = isPinned;
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SetTagsAsync(long gameId, IReadOnlyList<string> tags, CancellationToken cancellationToken)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        var existing = await context.GameTags
+            .Where(tag => tag.GameId == gameId)
+            .ToListAsync(cancellationToken);
+        context.GameTags.RemoveRange(existing);
+        context.GameTags.AddRange(tags.Select(tag => new GameTag { GameId = gameId, Tag = tag }));
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task MergeIntoAsync(long sourceGameId, long targetGameId, SessionMergePlan plan, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(plan);
@@ -159,8 +184,35 @@ public sealed class GameRepository(IDbContextFactory<YFTimeTrackerDbContext> con
             executable.IsPrimary = false;
         }
 
+        // Tags des Quellspiels wandern mit, Duplikate (bereits am Ziel vorhanden) werden verworfen statt
+        // gegen den Unique-Index (GameId, Tag) zu laufen.
+        var targetTagNames = await context.GameTags
+            .Where(tag => tag.GameId == targetGameId)
+            .Select(tag => tag.Tag)
+            .ToListAsync(cancellationToken);
+        var sourceTags = await context.GameTags
+            .Where(tag => tag.GameId == sourceGameId)
+            .ToListAsync(cancellationToken);
+        foreach (var tag in sourceTags)
+        {
+            if (targetTagNames.Contains(tag.Tag, StringComparer.OrdinalIgnoreCase))
+            {
+                context.GameTags.Remove(tag);
+            }
+            else
+            {
+                tag.GameId = targetGameId;
+            }
+        }
+
         if (await context.Games.FirstOrDefaultAsync(game => game.Id == sourceGameId, cancellationToken) is { } source)
         {
+            if (source.IsPinned)
+            {
+                var target = await context.Games.FirstAsync(game => game.Id == targetGameId, cancellationToken);
+                target.IsPinned = true;
+            }
+
             context.Games.Remove(source);
         }
 

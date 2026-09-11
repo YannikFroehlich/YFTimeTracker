@@ -23,6 +23,10 @@ public sealed class Game
 
     public int? WeeklyPlaytimeLimitMinutes { get; set; }
 
+    public bool IsPinned { get; set; }
+
+    public List<GameTag> Tags { get; set; } = [];
+
     [JsonIgnore]
     public string LegacyExecutablePath { get; set; } = string.Empty;
 

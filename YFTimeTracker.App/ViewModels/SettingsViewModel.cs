@@ -54,6 +54,8 @@ public sealed class SettingsViewModel : ObservableObject
     private string diagnosticsLogDirectory = "Logordner wird geladen …";
     private bool isExportFolderAvailable;
     private ThemeOption selectedTheme;
+    private BackupDestinationOption selectedBackupDestination;
+    private string externalBackupFolderPath = string.Empty;
     private BackupListItemViewModel? selectedBackup;
 
     public SettingsViewModel(
@@ -88,12 +90,22 @@ public sealed class SettingsViewModel : ObservableObject
         ];
         selectedTheme = ThemeOptions[2];
 
+        BackupDestinationOptions =
+        [
+            new BackupDestinationOption(BackupDestinationKind.Local, "Lokal"),
+            new BackupDestinationOption(BackupDestinationKind.OneDrive, "OneDrive-Ordner"),
+            new BackupDestinationOption(BackupDestinationKind.GoogleDrive, "Google Drive-Ordner"),
+            new BackupDestinationOption(BackupDestinationKind.YfDatabase, "YFDatenbank (Demnächst)")
+        ];
+        selectedBackupDestination = BackupDestinationOptions[0];
+
         LoadCommand = new AsyncRelayCommand(LoadAsync);
         SaveCommand = new AsyncRelayCommand(SaveAsync);
         ExportCommand = new AsyncRelayCommand(ExportAsync);
         OpenLogDirectoryCommand = new RelayCommand(OpenLogDirectory);
         ExportDiagnosticsCommand = new AsyncRelayCommand(ExportDiagnosticsAsync);
         OpenExportFolderCommand = new RelayCommand(OpenExportFolder);
+        ChooseBackupFolderCommand = new AsyncRelayCommand(ChooseBackupFolderAsync);
 
         ApplyUpdateState(appUpdateService.State);
         appUpdateService.StateChanged += AppUpdateService_StateChanged;
@@ -273,6 +285,47 @@ public sealed class SettingsViewModel : ObservableObject
 
     public ThemeOption SelectedTheme { get => selectedTheme; set => SetProperty(ref selectedTheme, value); }
 
+    public IReadOnlyList<BackupDestinationOption> BackupDestinationOptions { get; }
+
+    public BackupDestinationOption SelectedBackupDestination
+    {
+        get => selectedBackupDestination;
+        set
+        {
+            if (SetProperty(ref selectedBackupDestination, value))
+            {
+                OnPropertyChanged(nameof(ExternalFolderRowVisibility));
+                OnPropertyChanged(nameof(YfDatabasePreviewNoticeVisibility));
+            }
+        }
+    }
+
+    public string ExternalBackupFolderPath
+    {
+        get => externalBackupFolderPath;
+        private set
+        {
+            if (SetProperty(ref externalBackupFolderPath, value))
+            {
+                OnPropertyChanged(nameof(ExternalBackupFolderPathDisplay));
+            }
+        }
+    }
+
+    public string ExternalBackupFolderPathDisplay =>
+        string.IsNullOrWhiteSpace(ExternalBackupFolderPath) ? "Kein Ordner ausgewählt" : ExternalBackupFolderPath;
+
+    public Visibility ExternalFolderRowVisibility => SelectedBackupDestination.Value
+        is BackupDestinationKind.OneDrive or BackupDestinationKind.GoogleDrive
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public Visibility YfDatabasePreviewNoticeVisibility => SelectedBackupDestination.Value == BackupDestinationKind.YfDatabase
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public IAsyncRelayCommand ChooseBackupFolderCommand { get; }
+
     public IAsyncRelayCommand LoadCommand { get; }
 
     public IAsyncRelayCommand SaveCommand { get; }
@@ -317,6 +370,13 @@ public sealed class SettingsViewModel : ObservableObject
         HeartbeatIntervalSeconds = await settings.GetIntAsync(AppSettingKeys.HeartbeatIntervalSeconds, 30, CancellationToken.None);
         BackupRetentionDays = await settings.GetIntAsync(AppSettingKeys.BackupRetentionDays, 14, CancellationToken.None);
         SelectedTheme = ThemeOptions.FirstOrDefault(option => option.Value == themeService.CurrentPreference) ?? ThemeOptions[2];
+        var destinationRaw = await settings.GetAsync(AppSettingKeys.BackupDestination, CancellationToken.None);
+        var destination = Enum.TryParse<BackupDestinationKind>(destinationRaw, out var parsedDestination)
+            ? parsedDestination
+            : BackupDestinationKind.Local;
+        SelectedBackupDestination = BackupDestinationOptions.FirstOrDefault(option => option.Value == destination)
+            ?? BackupDestinationOptions[0];
+        ExternalBackupFolderPath = await settings.GetAsync(AppSettingKeys.BackupExternalFolderPath, CancellationToken.None) ?? string.Empty;
         RefreshBackups();
 
         var state = await startupService.GetStateAsync(CancellationToken.None);
@@ -349,6 +409,8 @@ public sealed class SettingsViewModel : ObservableObject
         await settings.SetAsync(AppSettingKeys.TrackingIntervalSeconds, Math.Clamp((int)TrackingIntervalSeconds, 1, 60).ToString(), CancellationToken.None);
         await settings.SetAsync(AppSettingKeys.HeartbeatIntervalSeconds, Math.Clamp((int)HeartbeatIntervalSeconds, 5, 300).ToString(), CancellationToken.None);
         await settings.SetAsync(AppSettingKeys.BackupRetentionDays, Math.Clamp((int)BackupRetentionDays, 1, 365).ToString(), CancellationToken.None);
+        await settings.SetAsync(AppSettingKeys.BackupDestination, SelectedBackupDestination.Value.ToString(), CancellationToken.None);
+        await settings.SetAsync(AppSettingKeys.BackupExternalFolderPath, ExternalBackupFolderPath, CancellationToken.None);
         await themeService.SetThemeAsync(SelectedTheme.Value, CancellationToken.None);
 
         var startupState = await startupService.SetEnabledAsync(StartWithWindows, CancellationToken.None);
@@ -388,6 +450,15 @@ public sealed class SettingsViewModel : ObservableObject
     public Task<string?> PickImportArchiveAsync()
     {
         return filePicker.PickImportArchiveAsync(CancellationToken.None);
+    }
+
+    private async Task ChooseBackupFolderAsync()
+    {
+        var path = await filePicker.PickBackupFolderAsync(CancellationToken.None);
+        if (path is not null)
+        {
+            ExternalBackupFolderPath = path;
+        }
     }
 
     public async Task ImportAsync(string archivePath)
@@ -614,3 +685,5 @@ public sealed class SettingsViewModel : ObservableObject
 }
 
 public sealed record ThemeOption(AppThemePreference Value, string Label);
+
+public sealed record BackupDestinationOption(BackupDestinationKind Value, string Label);

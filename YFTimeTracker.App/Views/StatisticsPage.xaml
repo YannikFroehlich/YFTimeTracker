@@ -22,6 +22,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <Grid x:Name="HeaderGrid" Margin="0,0,0,14">
@@ -449,7 +450,54 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Row="5" Margin="0,14,0,0" Padding="12,9" Background="{ThemeResource YFStatusBarBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
+            <Border x:Name="TagSharesCard" Grid.Row="5" Margin="0,14,0,0" Style="{StaticResource YFCardStyle}" Visibility="{Binding TagSharesVisibility}">
+                <Grid ColumnSpacing="24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.ColumnSpan="2">
+                        <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="NACH TAG" />
+                        <TextBlock Margin="0,4,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Spielzeit gruppiert nach den vergebenen Tags. Ein Spiel mit mehreren Tags zählt in jedem seiner Tags voll mit, die Anteile beziehen sich deshalb auf die Summe aller Tag-Anteile, nicht auf die Gesamtspielzeit der Seite." TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Grid Grid.Row="1" Width="140" Height="140" Margin="0,14,0,0" HorizontalAlignment="Center" VerticalAlignment="Top">
+                        <ItemsControl ItemsSource="{Binding TagShares}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Grid Width="140" Height="140" HorizontalAlignment="Center" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Path Data="{Binding Converter={StaticResource ArcGeometryConverter}}" Stroke="{Binding StrokeColor, Converter={StaticResource HexColorBrushConverter}}" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeThickness="20" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                    <ItemsControl Grid.Row="1" Grid.Column="1" Margin="0,14,0,0" ItemsSource="{Binding TagShares}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,8" ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="10" Height="10" Background="{Binding StrokeColor, Converter={StaticResource HexColorBrushConverter}}" CornerRadius="3" />
+                                    <TextBlock Grid.Column="1" FontSize="12" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="2" FontSize="12" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding ShareText}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="6" Margin="0,14,0,0" Padding="12,9" Background="{ThemeResource YFStatusBarBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
                 <Grid ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />

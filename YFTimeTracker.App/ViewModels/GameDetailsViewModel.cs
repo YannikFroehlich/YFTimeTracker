@@ -37,6 +37,7 @@ public sealed class GameDetailsViewModel : ObservableObject
     private string sourceDetail = "Lokal hinzugefügt";
     private string installDirectory = "Kein Installationsordner hinterlegt";
     private string primaryExecutablePath = string.Empty;
+    private string tagsText = string.Empty;
     private string totalPlaytimeText = "0 min";
     private string sessionCountText = "Keine Sessions";
     private string averageSessionText = "0 min";
@@ -118,6 +119,12 @@ public sealed class GameDetailsViewModel : ObservableObject
     public string InstallDirectory { get => installDirectory; private set => SetProperty(ref installDirectory, value); }
 
     public string PrimaryExecutablePath { get => primaryExecutablePath; private set => SetProperty(ref primaryExecutablePath, value); }
+
+    public string TagsText
+    {
+        get => tagsText;
+        set => SetProperty(ref tagsText, value ?? string.Empty);
+    }
 
     public double DailyPlaytimeLimitMinutes
     {
@@ -342,6 +349,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         PrimaryExecutablePath = game.PrimaryExecutable?.ExecutablePath ?? string.Empty;
         DailyPlaytimeLimitMinutes = game.DailyPlaytimeLimitMinutes ?? 0;
         WeeklyPlaytimeLimitMinutes = game.WeeklyPlaytimeLimitMinutes ?? 0;
+        TagsText = string.Join(", ", game.Tags.Select(tag => tag.Tag));
 
         Executables.Clear();
         foreach (var executable in game.Executables
@@ -494,6 +502,7 @@ public sealed class GameDetailsViewModel : ObservableObject
                 loadedGame.PrimaryExecutable?.ExecutablePath ?? string.Empty,
                 DailyPlaytimeLimitMinutes > 0 ? (int)DailyPlaytimeLimitMinutes : null,
                 WeeklyPlaytimeLimitMinutes > 0 ? (int)WeeklyPlaytimeLimitMinutes : null,
+                TagsText.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries),
                 CancellationToken.None);
             await RefreshAsync();
             StatusMessage = "Spielname gespeichert";

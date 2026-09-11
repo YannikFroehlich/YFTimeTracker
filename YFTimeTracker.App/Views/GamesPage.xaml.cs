@@ -114,6 +114,14 @@ public sealed partial class GamesPage : Page
         }
     }
 
+    private void TogglePin_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: long gameId })
+        {
+            ViewModel.TogglePinCommand.Execute(gameId);
+        }
+    }
+
     private void UpdateLayout(double width)
     {
         var compactFilters = width < 1080;
@@ -130,6 +138,7 @@ public sealed partial class GamesPage : Page
         PositionFilter(StatusFilterBox, narrowFilters ? 2 : compactFilters ? 1 : 0, narrowFilters ? 0 : compactFilters ? 1 : 2);
         PositionFilter(SortBox, narrowFilters ? 3 : compactFilters ? 2 : 0, compactFilters ? 0 : 3);
         PositionFilter(ClearFiltersButton, narrowFilters ? 4 : compactFilters ? 2 : 0, narrowFilters ? 0 : compactFilters ? 1 : 4);
+        PositionFilter(TagFilterBox, narrowFilters ? 5 : compactFilters ? 3 : 1, 0, narrowFilters ? 1 : compactFilters ? 2 : 5);
 
         var compact = width < 980;
         LibraryContent.ColumnDefinitions[0].Width = compact ? new GridLength(1, GridUnitType.Star) : new GridLength(430);

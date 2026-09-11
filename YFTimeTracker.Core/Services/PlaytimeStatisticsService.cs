@@ -118,7 +118,8 @@ public sealed class PlaytimeStatisticsService(
                     game?.Source ?? GameSource.Manual,
                     TimeSpan.FromTicks(group.Sum(contribution => contribution.Duration.Ticks)),
                     group.Count(),
-                    group.Max(contribution => GetEffectiveSessionEnd(contribution.Session)));
+                    group.Max(contribution => GetEffectiveSessionEnd(contribution.Session)),
+                    game?.Tags.Select(tag => tag.Tag).ToArray() ?? []);
             })
             .OrderByDescending(game => game.Duration)
             .ThenBy(game => game.Name, StringComparer.CurrentCultureIgnoreCase)

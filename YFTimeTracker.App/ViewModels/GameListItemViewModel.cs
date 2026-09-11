@@ -1,10 +1,11 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Xaml;
 using YFTimeTracker.Core.Models;
 using YFTimeTracker.Core.Services;
 
 namespace YFTimeTracker.App.ViewModels;
 
-public sealed class GameListItemViewModel(Game game, string? iconPath = null)
+public sealed class GameListItemViewModel(Game game, string? iconPath = null) : ObservableObject
 {
     private const string ProgressNormalColor = "#3182FF";
     private const string ProgressLimitReachedColor = "#FF5368";
@@ -72,6 +73,29 @@ public sealed class GameListItemViewModel(Game game, string? iconPath = null)
 
     public bool IsRunning { get; }
 
+    public bool IsPinned
+    {
+        get => game.IsPinned;
+        internal set
+        {
+            if (game.IsPinned == value)
+            {
+                return;
+            }
+
+            game.IsPinned = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PinGlyph));
+            OnPropertyChanged(nameof(PinTooltip));
+        }
+    }
+
+    public string PinGlyph => IsPinned ? ((char)0xE735).ToString() : ((char)0xE734).ToString();
+
+    public string PinTooltip => IsPinned ? "Nicht mehr anheften" : "Oben anheften";
+
+    public IReadOnlyList<string> Tags => game.Tags.Select(tag => tag.Tag).ToArray();
+
     public TimeSpan TotalDuration => TimeSpan.FromTicks(gameSessions.Sum(session => session.GetEffectiveDuration(nowUtc).Ticks));
 
     public string TotalPlaytime => TimeFormatter.Format(TotalDuration);
@@ -119,7 +143,8 @@ public sealed class GameListItemViewModel(Game game, string? iconPath = null)
     public string SearchableText => string.Join(
         ' ',
         new[] { game.Name, game.InstallDirectory ?? string.Empty }
-            .Concat(game.Executables.Select(executable => $"{executable.ExecutableName} {executable.ExecutablePath}")));
+            .Concat(game.Executables.Select(executable => $"{executable.ExecutableName} {executable.ExecutablePath}"))
+            .Concat(Tags));
 
     public Game Model => game;
 }

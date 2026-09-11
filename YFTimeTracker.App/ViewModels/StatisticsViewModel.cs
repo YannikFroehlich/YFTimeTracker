@@ -55,6 +55,7 @@ public sealed class StatisticsViewModel : ObservableObject
     private string statusMessage = "Statistiken werden aus deinen lokalen Sessions berechnet.";
     private Visibility dataVisibility = Visibility.Collapsed;
     private Visibility emptyVisibility = Visibility.Visible;
+    private Visibility tagSharesVisibility = Visibility.Collapsed;
     private IReadOnlyList<Point> trendLinePoints = [];
     private IReadOnlyList<Point> trendAreaPoints = [];
     private string topGameShareText = "–";
@@ -136,6 +137,8 @@ public sealed class StatisticsViewModel : ObservableObject
 
     public Visibility EmptyVisibility { get => emptyVisibility; private set => SetProperty(ref emptyVisibility, value); }
 
+    public Visibility TagSharesVisibility { get => tagSharesVisibility; private set => SetProperty(ref tagSharesVisibility, value); }
+
     public IReadOnlyList<Point> TrendLinePoints { get => trendLinePoints; private set => SetProperty(ref trendLinePoints, value); }
 
     public IReadOnlyList<Point> TrendAreaPoints { get => trendAreaPoints; private set => SetProperty(ref trendAreaPoints, value); }
@@ -151,6 +154,8 @@ public sealed class StatisticsViewModel : ObservableObject
     public ObservableCollection<TopGameStatisticsViewModel> TopGames { get; } = [];
 
     public ObservableCollection<GameShareSliceViewModel> GameShares { get; } = [];
+
+    public ObservableCollection<GameShareSliceViewModel> TagShares { get; } = [];
 
     public ObservableCollection<WeekdayStatisticsViewModel> Weekdays { get; } = [];
 
@@ -276,6 +281,7 @@ public sealed class StatisticsViewModel : ObservableObject
         UpdateTimeline(report);
         UpdateGames(report);
         UpdateGameShares(report);
+        UpdateTagShares(report);
         UpdateWeekdays(report);
         UpdateInsights(report);
 
@@ -392,11 +398,78 @@ public sealed class StatisticsViewModel : ObservableObject
             slices.Add(("Sonstige", otherDuration, MutedColor));
         }
 
+        foreach (var slice in BuildShareSlices(slices, report.TotalDuration.TotalSeconds))
+        {
+            GameShares.Add(slice);
+        }
+    }
+
+    // Ein Spiel kann mehreren Tags zugeordnet sein und zählt dann in jedem seiner Buckets voll
+    // mit - die Anteile beziehen sich deshalb bewusst auf die Summe aller Bucket-Dauern, nicht auf
+    // die Gesamtspielzeit der Seite, sonst würden die Bogenstücke nicht mehr exakt 360°/100 % ergeben.
+    private void UpdateTagShares(PlaytimeStatistics report)
+    {
+        TagShares.Clear();
+
+        var tagDurations = new List<(string Name, TimeSpan Duration)>();
+        var untaggedDuration = TimeSpan.Zero;
+        foreach (var game in report.Games)
+        {
+            if (game.Tags.Count == 0)
+            {
+                untaggedDuration += game.Duration;
+                continue;
+            }
+
+            foreach (var tag in game.Tags)
+            {
+                var index = tagDurations.FindIndex(entry => string.Equals(entry.Name, tag, StringComparison.OrdinalIgnoreCase));
+                if (index >= 0)
+                {
+                    tagDurations[index] = (tagDurations[index].Name, tagDurations[index].Duration + game.Duration);
+                }
+                else
+                {
+                    tagDurations.Add((tag, game.Duration));
+                }
+            }
+        }
+
+        if (untaggedDuration > TimeSpan.Zero)
+        {
+            tagDurations.Add(("Ohne Tag", untaggedDuration));
+        }
+
+        var totalTaggedSeconds = tagDurations.Sum(entry => entry.Duration.TotalSeconds);
+        TagSharesVisibility = totalTaggedSeconds > 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (totalTaggedSeconds <= 0)
+        {
+            return;
+        }
+
+        var slices = tagDurations
+            .OrderByDescending(entry => entry.Duration)
+            .Select((entry, index) => (
+                entry.Name,
+                entry.Duration,
+                Color: entry.Name == "Ohne Tag" ? MutedColor : GetAccentColor(index)))
+            .ToList();
+
+        foreach (var slice in BuildShareSlices(slices, totalTaggedSeconds))
+        {
+            TagShares.Add(slice);
+        }
+    }
+
+    private static IEnumerable<GameShareSliceViewModel> BuildShareSlices(
+        IReadOnlyList<(string Name, TimeSpan Duration, string Color)> slices,
+        double totalSecondsForShare)
+    {
         var cumulativeDegrees = 0d;
         var halfGapDegrees = slices.Count > 1 ? DonutGapDegrees / 2 : 0;
         foreach (var slice in slices)
         {
-            var shareFraction = slice.Duration.TotalSeconds / report.TotalDuration.TotalSeconds;
+            var shareFraction = totalSecondsForShare <= 0 ? 0 : slice.Duration.TotalSeconds / totalSecondsForShare;
             var sliceDegrees = shareFraction * 360;
             var startDegrees = cumulativeDegrees + halfGapDegrees;
             var endDegrees = cumulativeDegrees + sliceDegrees - halfGapDegrees;
@@ -408,14 +481,14 @@ public sealed class StatisticsViewModel : ObservableObject
             }
 
             var span = Math.Min(endDegrees - startDegrees, 359.99);
-            GameShares.Add(new GameShareSliceViewModel(
+            yield return new GameShareSliceViewModel(
                 PointOnDonut(startDegrees),
                 PointOnDonut(startDegrees + span),
                 DonutRadius,
                 span > 180,
                 slice.Color,
                 slice.Name,
-                $"{shareFraction * 100:0.#} %"));
+                $"{shareFraction * 100:0.#} %");
         }
     }
 

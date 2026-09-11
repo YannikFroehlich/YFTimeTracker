@@ -110,6 +110,30 @@ public sealed class GameDetailsViewModelTests
     }
 
     [TestMethod]
+    public async Task Tags_are_loaded_as_comma_separated_text_and_saved_as_a_list()
+    {
+        var now = DateTimeOffset.Parse("2026-08-31T12:00:00Z");
+        var game = CreateGame();
+        game.Tags = [new GameTag { GameId = game.Id, Tag = "Shooter" }, new GameTag { GameId = game.Id, Tag = "Multiplayer" }];
+        var sessions = new FakeSessionRepository([]);
+        var catalog = new FakeCatalog(game);
+        var viewModel = new GameDetailsViewModel(
+            new FakeGameRepository(game),
+            catalog,
+            sessions,
+            new FakeSessionEditor(sessions, game),
+            new FixedClock(now));
+
+        await viewModel.LoadAsync(game.Id);
+        Assert.AreEqual("Shooter, Multiplayer", viewModel.TagsText);
+
+        viewModel.TagsText = "Koop, , Koop, Story";
+        await viewModel.SaveGameCommand.ExecuteAsync(null);
+
+        CollectionAssert.AreEqual(new[] { "Koop", "Koop", "Story" }, game.Tags.Select(tag => tag.Tag).ToArray());
+    }
+
+    [TestMethod]
     public async Task Playtime_limit_progress_reflects_todays_and_this_weeks_sessions()
     {
         var now = DateTimeOffset.Parse("2026-08-31T12:00:00Z");
@@ -286,12 +310,14 @@ public sealed class GameDetailsViewModelTests
             string executablePath,
             int? dailyPlaytimeLimitMinutes,
             int? weeklyPlaytimeLimitMinutes,
+            IReadOnlyList<string> tags,
             CancellationToken cancellationToken)
         {
             UpdateCallCount++;
             game.Name = displayName;
             game.DailyPlaytimeLimitMinutes = dailyPlaytimeLimitMinutes;
             game.WeeklyPlaytimeLimitMinutes = weeklyPlaytimeLimitMinutes;
+            game.Tags = tags.Select(tag => new GameTag { GameId = gameId, Tag = tag }).ToList();
             return Task.CompletedTask;
         }
 
@@ -299,6 +325,12 @@ public sealed class GameDetailsViewModelTests
 
         public Task<GameMergeResult> MergeGamesAsync(long sourceGameId, long targetGameId, CancellationToken cancellationToken)
             => throw new NotSupportedException();
+
+        public Task SetPinnedAsync(long gameId, bool isPinned, CancellationToken cancellationToken)
+        {
+            game.IsPinned = isPinned;
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class FakeGameRepository(Game game) : IGameRepository
@@ -323,6 +355,10 @@ public sealed class GameDetailsViewModelTests
             throw new NotSupportedException();
 
         public Task SetPrimaryExecutableAsync(long gameId, GameExecutable executable, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task SetPinnedAsync(long gameId, bool isPinned, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task SetTagsAsync(long gameId, IReadOnlyList<string> tags, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public Task DeleteAsync(long id, CancellationToken cancellationToken) => throw new NotSupportedException();
 

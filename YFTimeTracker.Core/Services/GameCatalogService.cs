@@ -58,6 +58,7 @@ public sealed class GameCatalogService(
         string executablePath,
         int? dailyPlaytimeLimitMinutes,
         int? weeklyPlaytimeLimitMinutes,
+        IReadOnlyList<string> tags,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(displayName))
@@ -89,6 +90,12 @@ public sealed class GameCatalogService(
             IsPrimary = true,
             AddedAtUtc = clock.UtcNow
         }, cancellationToken);
+        await games.SetTagsAsync(gameId, NormalizeTags(tags), cancellationToken);
+    }
+
+    public Task SetPinnedAsync(long gameId, bool isPinned, CancellationToken cancellationToken)
+    {
+        return games.SetPinnedAsync(gameId, isPinned, cancellationToken);
     }
 
     public async Task<GameMergeResult> MergeGamesAsync(long sourceGameId, long targetGameId, CancellationToken cancellationToken)
@@ -156,5 +163,30 @@ public sealed class GameCatalogService(
         }
 
         return normalizedPath;
+    }
+
+    private static IReadOnlyList<string> NormalizeTags(IReadOnlyList<string> tags)
+    {
+        var normalized = new List<string>();
+        foreach (var tag in tags)
+        {
+            var trimmed = tag.Trim();
+            if (trimmed.Length == 0)
+            {
+                continue;
+            }
+
+            if (trimmed.Length > 60)
+            {
+                trimmed = trimmed[..60];
+            }
+
+            if (!normalized.Contains(trimmed, StringComparer.OrdinalIgnoreCase))
+            {
+                normalized.Add(trimmed);
+            }
+        }
+
+        return normalized;
     }
 }

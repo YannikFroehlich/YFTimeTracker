@@ -2,6 +2,14 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.5.0 – 2026-09-11
+- Neu: Spiele lassen sich in der Bibliothek anheften (Stern-Symbol auf der Spielkarte) – angeheftete Spiele stehen danach immer ganz oben in der Liste, unabhängig von Sortierung und laufenden Spielen, und können über den Statusfilter gezielt angezeigt werden.
+- Neu: Frei vergebene Tags pro Spiel (in den Spieldetails, komma-getrennt) – filterbar in der Bibliothek und als eigene Donut-Auswertung „Nach Tag“ in den Statistiken. Ein Spiel mit mehreren Tags zählt in jedem seiner Tags voll mit; ungetaggte Spiele laufen in „Ohne Tag“ zusammen.
+
+## 1.4.0 – 2026-09-10
+- Neu: Unter **Einstellungen → Daten & Sicherung** lässt sich ein zusätzliches Sicherungsziel für die tägliche Sicherung wählen – ein OneDrive- oder Google-Drive-Ordner. Die lokale Sicherung läuft dabei unverändert weiter und bleibt die Grundlage für Wiederherstellung; die Datei wird danach zusätzlich in den gewählten Ordner kopiert. „YFDatenbank” ist als kommendes Sicherungsziel bereits auswählbar, aber noch nicht funktionsfähig (Demnächst).
+- Verbessert: Das Sicherungsziel in den Einstellungen hat jetzt ein Info-Symbol, das für Lokal, OneDrive, Google Drive und YFDatenbank kurz erklärt, was die jeweilige Auswahl bedeutet und was dafür zu tun ist.
+
 ## 1.3.0 – 2026-09-08
 - Neu: Der Update-Dialog zeigt jetzt die Versionshinweise des neuen Releases an, bevor installiert wird. „Später erinnern“ verschiebt die automatische Erinnerung um 24 Stunden statt beim nächsten Start erneut zu erscheinen.
 - Verbessert: Fehlgeschlagene Updates nennen jetzt die wahrscheinliche Ursache (keine Internetverbindung, blockierter Update-Ordner) statt einer allgemeinen Fehlermeldung – auch im Tray-Menü sichtbar.
