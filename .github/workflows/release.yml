@@ -45,6 +45,19 @@ jobs:
             throw "Ungueltige Release-Version: $version"
           }
 
+          $heading = Get-Content -LiteralPath "CHANGELOG.md" -Encoding utf8 |
+            Where-Object { $_ -match '^##\s+\d+\.\d+\.\d+(\s|$)' } |
+            Select-Object -First 1
+          if ([string]::IsNullOrWhiteSpace($heading)) {
+            throw "CHANGELOG.md enthaelt keinen Versionsabschnitt."
+          }
+
+          $changelogMatch = [regex]::Match($heading, '^##\s+(?<version>\d+\.\d+\.\d+)(?:\s|$)')
+          $changelogVersion = $changelogMatch.Groups['version'].Value
+          if ($changelogVersion -ne $version) {
+            throw "Oberster CHANGELOG-Eintrag $changelogVersion entspricht nicht Release-Version $version."
+          }
+
           $sha = (git rev-parse HEAD).Trim().ToLowerInvariant()
           $expectedSha = "${{ github.sha }}".Trim().ToLowerInvariant()
           if ($sha -notmatch '^[0-9a-f]{40}$' -or $sha -ne $expectedSha) {
