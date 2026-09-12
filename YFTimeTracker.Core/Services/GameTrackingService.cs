@@ -13,6 +13,7 @@ public sealed class GameTrackingService(
     ISettingsStore settings,
     ISystemSuspendNotifier suspendNotifier,
     IClock clock,
+    ITrackingDiagnosticLog diagnostics,
     ILogger<GameTrackingService> logger) : IGameTrackingService
 {
     private const int MinScanIntervalSeconds = 1;
@@ -45,6 +46,7 @@ public sealed class GameTrackingService(
 
     private readonly SemaphoreSlim gate = new(1, 1);
     private readonly Dictionary<string, DiscoveryCandidate> discoveryCandidates = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> reportedExcludedCandidates = new(StringComparer.OrdinalIgnoreCase);
     private CancellationTokenSource? runCancellation;
     private Task? runTask;
     private LauncherDiscoveryResult launcherCatalog = LauncherDiscoveryResult.Empty;
@@ -78,6 +80,11 @@ public sealed class GameTrackingService(
             suspendNotifier.Resumed += SuspendNotifier_Resumed;
             runTask = RunAsync(runCancellation.Token);
             await PublishStateAsync(true, cancellationToken);
+            diagnostics.Record(
+                TrackingDiagnosticEventKind.Status,
+                TrackingDiagnosticSeverity.Information,
+                "Trackingdienst gestartet",
+                isPaused ? "Das Tracking ist in den Einstellungen pausiert." : "Spiele werden automatisch überwacht.");
         }
         catch
         {
@@ -141,7 +148,13 @@ public sealed class GameTrackingService(
         {
             await CloseAllOpenSessionsAsync(clock.UtcNow, cancellationToken);
             discoveryCandidates.Clear();
+            reportedExcludedCandidates.Clear();
             await PublishStateAsync(false, cancellationToken);
+            diagnostics.Record(
+                TrackingDiagnosticEventKind.Status,
+                TrackingDiagnosticSeverity.Information,
+                "Trackingdienst beendet",
+                "Laufende Sessions wurden ordnungsgemäß geschlossen.");
         }
         finally
         {
@@ -159,6 +172,11 @@ public sealed class GameTrackingService(
             await settings.SetAsync(AppSettingKeys.TrackingEnabled, bool.FalseString, cancellationToken);
             await CloseAllOpenSessionsAsync(clock.UtcNow, cancellationToken);
             await PublishStateAsync(runTask is not null, cancellationToken);
+            diagnostics.Record(
+                TrackingDiagnosticEventKind.Status,
+                TrackingDiagnosticSeverity.Warning,
+                "Tracking pausiert",
+                "Laufende Sessions wurden beendet; während der Pause werden keine Spiele importiert.");
         }
         finally
         {
@@ -175,6 +193,11 @@ public sealed class GameTrackingService(
             await settings.SetAsync(AppSettingKeys.TrackingEnabled, bool.TrueString, cancellationToken);
             await ScanOnceCoreAsync(cancellationToken);
             await PublishStateAsync(runTask is not null, cancellationToken);
+            diagnostics.Record(
+                TrackingDiagnosticEventKind.Status,
+                TrackingDiagnosticSeverity.Success,
+                "Tracking fortgesetzt",
+                "Ein sofortiger Scan wurde ausgeführt.");
         }
         finally
         {
@@ -211,6 +234,15 @@ public sealed class GameTrackingService(
             }
 
             await PublishStateAsync(runTask is not null, cancellationToken);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            diagnostics.Record(
+                TrackingDiagnosticEventKind.Error,
+                TrackingDiagnosticSeverity.Error,
+                "Tracking-Scan fehlgeschlagen",
+                $"Technischer Fehler: {exception.GetType().Name}. Beim nächsten Intervall wird erneut geprüft.");
+            throw;
         }
         finally
         {
@@ -250,6 +282,11 @@ public sealed class GameTrackingService(
         {
             try
             {
+                diagnostics.Record(
+                    TrackingDiagnosticEventKind.Interruption,
+                    TrackingDiagnosticSeverity.Information,
+                    "Windows fortgesetzt",
+                    "Nach dem Ruhezustand wird sofort erneut nach laufenden Spielen gesucht.");
                 await ScanOnceAsync(CancellationToken.None);
             }
             catch (Exception exception)
@@ -269,6 +306,11 @@ public sealed class GameTrackingService(
             discoveryCandidates.Clear();
             lastSuccessfulScanAtUtc = suspendedAtUtc;
             logger.LogInformation("Closed the open sessions at {SuspendedAtUtc} because the system suspends.", suspendedAtUtc);
+            diagnostics.Record(
+                TrackingDiagnosticEventKind.Interruption,
+                TrackingDiagnosticSeverity.Warning,
+                "Windows-Ruhezustand erkannt",
+                "Laufende Sessions wurden am Beginn des Ruhezustands beendet.");
             await PublishStateAsync(runTask is not null, cancellationToken);
         }
         finally
@@ -359,6 +401,11 @@ public sealed class GameTrackingService(
                     "Closed stale session {SessionId} for game {GameId} because tracking starts paused.",
                     session.Id,
                     session.GameId);
+                diagnostics.Record(
+                    TrackingDiagnosticEventKind.Session,
+                    TrackingDiagnosticSeverity.Warning,
+                    "Offene Session geschlossen",
+                    $"{GetGameName(session)} wurde beim pausierten App-Start am letzten Lebenszeichen beendet.");
             }
 
             return;
@@ -390,6 +437,11 @@ public sealed class GameTrackingService(
                     session.Id,
                     session.GameId,
                     session.EndedAtUtc);
+                diagnostics.Record(
+                    TrackingDiagnosticEventKind.Session,
+                    TrackingDiagnosticSeverity.Warning,
+                    "Offene Session wiederhergestellt",
+                    $"{GetGameName(session)} lief nicht mehr und wurde am letzten Lebenszeichen beendet.");
             }
             else
             {
@@ -397,6 +449,11 @@ public sealed class GameTrackingService(
                     "Continued open session {SessionId} for game {GameId} after application restart.",
                     session.Id,
                     session.GameId);
+                diagnostics.Record(
+                    TrackingDiagnosticEventKind.Session,
+                    TrackingDiagnosticSeverity.Success,
+                    "Session fortgesetzt",
+                    $"{GetGameName(session)} läuft seit dem vorherigen App-Start weiter.");
             }
         }
 
@@ -432,6 +489,11 @@ public sealed class GameTrackingService(
                 "Detected an unobserved tracking gap from {PreviousScanAtUtc} to {CurrentScanAtUtc}; sleep time will not be counted.",
                 previousSuccessfulScanAtUtc,
                 now);
+            diagnostics.Record(
+                TrackingDiagnosticEventKind.Interruption,
+                TrackingDiagnosticSeverity.Warning,
+                "Tracking-Unterbrechung erkannt",
+                "Zwischen zwei Scans lag eine größere Lücke; diese Zeit wird nicht als Spielzeit gezählt.");
         }
 
         if (await settings.GetBoolAsync(AppSettingKeys.LauncherDiscoveryEnabled, true, cancellationToken))
@@ -479,6 +541,11 @@ public sealed class GameTrackingService(
                     openSession.Id,
                     openSession.GameId,
                     endedAtUtc);
+                diagnostics.Record(
+                    TrackingDiagnosticEventKind.Interruption,
+                    TrackingDiagnosticSeverity.Warning,
+                    "Session wegen Unterbrechung geteilt",
+                    $"{game?.Name ?? GetGameName(openSession)} wird nach dem nächsten bestätigten Scan als neue Session fortgesetzt.");
                 continue;
             }
 
@@ -500,6 +567,11 @@ public sealed class GameTrackingService(
                     "Split session {SessionId} for game {GameId} because all associated processes restarted.",
                     openSession.Id,
                     openSession.GameId);
+                diagnostics.Record(
+                    TrackingDiagnosticEventKind.Session,
+                    TrackingDiagnosticSeverity.Information,
+                    "Prozessneustart erkannt",
+                    $"Die Session von {game?.Name ?? GetGameName(openSession)} wurde geteilt, weil alle zugeordneten Prozesse neu gestartet sind.");
                 continue;
             }
 
@@ -512,6 +584,11 @@ public sealed class GameTrackingService(
                     "Closed session {SessionId} for game {GameId}; no associated process is running.",
                     openSession.Id,
                     openSession.GameId);
+                diagnostics.Record(
+                    TrackingDiagnosticEventKind.Session,
+                    TrackingDiagnosticSeverity.Success,
+                    "Session beendet",
+                    $"{game?.Name ?? GetGameName(openSession)} · {FormatDiagnosticDuration(TimeSpan.FromSeconds(openSession.DurationSeconds ?? 0))} · kein zugeordneter Prozess läuft mehr.");
                 continue;
             }
 
@@ -562,6 +639,14 @@ public sealed class GameTrackingService(
                 session.Id,
                 session.GameId,
                 session.StartedAtUtc);
+            var executableNames = GetMatchingProcesses(game, runningProcesses)
+                .Select(process => Path.GetFileName(process.ExecutablePath))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+            diagnostics.Record(
+                TrackingDiagnosticEventKind.Session,
+                TrackingDiagnosticSeverity.Success,
+                "Session gestartet",
+                $"{game.Name} · {string.Join(", ", executableNames)}");
         }
 
         lastSuccessfulScanAtUtc = now;
@@ -589,6 +674,11 @@ public sealed class GameTrackingService(
         {
             logger.LogWarning(exception, "Launcher discovery failed; registered games will continue to be tracked.");
             launcherCatalogUpdatedAtUtc = now;
+            diagnostics.Record(
+                TrackingDiagnosticEventKind.Error,
+                TrackingDiagnosticSeverity.Warning,
+                "Launcher-Suche fehlgeschlagen",
+                $"Registrierte Spiele werden weiter erkannt. Technischer Fehler: {exception.GetType().Name}.");
         }
     }
 
@@ -599,6 +689,7 @@ public sealed class GameTrackingService(
         CancellationToken cancellationToken)
     {
         var seenCandidateKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seenExcludedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var process in runningProcesses)
         {
@@ -610,15 +701,26 @@ public sealed class GameTrackingService(
 
             var isExplicitLaunchExecutable = installation.LaunchExecutablePaths.Any(path =>
                 IsSameExecutablePath(path, process.ExecutablePathKey));
+            var candidateKey = $"{installation.Source}:{installation.ExternalGameId}:{process.ExecutablePathKey}";
             if (IsExcludedHelperExecutable(process.ExecutablePath))
             {
+                seenExcludedKeys.Add(candidateKey);
+                if (reportedExcludedCandidates.Add(candidateKey))
+                {
+                    diagnostics.Record(
+                        TrackingDiagnosticEventKind.Exclusion,
+                        TrackingDiagnosticSeverity.Information,
+                        "Hilfsprozess ausgeschlossen",
+                        $"{Path.GetFileName(process.ExecutablePath)} wurde bei {installation.Name} nicht als Spiel gewertet.");
+                }
+
                 continue;
             }
 
-            var candidateKey = $"{installation.Source}:{installation.ExternalGameId}:{process.ExecutablePathKey}";
             seenCandidateKeys.Add(candidateKey);
             var firstSeenAtUtc = now;
             var confirmed = isExplicitLaunchExecutable;
+            var wasConfirmed = discoveryCandidates.GetValueOrDefault(candidateKey)?.IsConfirmed ?? false;
 
             if (!confirmed)
             {
@@ -629,7 +731,12 @@ public sealed class GameTrackingService(
                 }
                 else
                 {
-                    discoveryCandidates[candidateKey] = new DiscoveryCandidate(now, scanNumber);
+                    discoveryCandidates[candidateKey] = new DiscoveryCandidate(now, scanNumber, false);
+                    diagnostics.Record(
+                        TrackingDiagnosticEventKind.Detection,
+                        TrackingDiagnosticSeverity.Information,
+                        "Möglicher Spielprozess erkannt",
+                        $"{Path.GetFileName(process.ExecutablePath)} passt zu {installation.Name} und wird beim nächsten Scan bestätigt.");
                 }
             }
 
@@ -638,14 +745,28 @@ public sealed class GameTrackingService(
                 continue;
             }
 
+            if (!wasConfirmed)
+            {
+                diagnostics.Record(
+                    TrackingDiagnosticEventKind.Assignment,
+                    TrackingDiagnosticSeverity.Success,
+                    "Spielprozess zugeordnet",
+                    $"{Path.GetFileName(process.ExecutablePath)} wurde {installation.Name} zugeordnet.");
+            }
+
             var game = await EnsureDiscoveredGameAsync(installation, process, cancellationToken);
             sessionStartOverrides[game.Id] = firstSeenAtUtc;
-            discoveryCandidates[candidateKey] = new DiscoveryCandidate(firstSeenAtUtc, scanNumber);
+            discoveryCandidates[candidateKey] = new DiscoveryCandidate(firstSeenAtUtc, scanNumber, true);
         }
 
         foreach (var staleKey in discoveryCandidates.Keys.Where(key => !seenCandidateKeys.Contains(key)).ToArray())
         {
             discoveryCandidates.Remove(staleKey);
+        }
+
+        foreach (var staleKey in reportedExcludedCandidates.Where(key => !seenExcludedKeys.Contains(key)).ToArray())
+        {
+            reportedExcludedCandidates.Remove(staleKey);
         }
     }
 
@@ -695,6 +816,11 @@ public sealed class GameTrackingService(
                 existing.Id,
                 installation.Source,
                 installation.ExternalGameId);
+            diagnostics.Record(
+                TrackingDiagnosticEventKind.Assignment,
+                TrackingDiagnosticSeverity.Success,
+                "Weitere EXE zugeordnet",
+                $"{executable.ExecutableName} wurde {existing.Name} hinzugefügt.");
             return await games.GetByIdAsync(existing.Id, cancellationToken) ?? existing;
         }
 
@@ -714,6 +840,11 @@ public sealed class GameTrackingService(
             installation.Source,
             installation.ExternalGameId,
             executable.ExecutableName);
+        diagnostics.Record(
+            TrackingDiagnosticEventKind.Detection,
+            TrackingDiagnosticSeverity.Success,
+            "Spiel in die Bibliothek übernommen",
+            $"{game.Name} wurde über {FormatGameSource(game.Source)} erkannt ({executable.ExecutableName}).");
         return game;
     }
 
@@ -784,6 +915,11 @@ public sealed class GameTrackingService(
                     "Closed duplicate open session {SessionId} for game {GameId} with zero duration.",
                     duplicate.Id,
                     duplicate.GameId);
+                diagnostics.Record(
+                    TrackingDiagnosticEventKind.Error,
+                    TrackingDiagnosticSeverity.Warning,
+                    "Doppelte offene Session korrigiert",
+                    $"Für {GetGameName(duplicate)} blieb nur die ältere laufende Session geöffnet.");
             }
         }
 
@@ -848,5 +984,23 @@ public sealed class GameTrackingService(
         }
     }
 
-    private sealed record DiscoveryCandidate(DateTimeOffset FirstSeenAtUtc, long LastSeenScan);
+    private static string GetGameName(GameSession session) => session.Game?.Name ?? $"Spiel #{session.GameId}";
+
+    private static string FormatDiagnosticDuration(TimeSpan duration) => duration.TotalHours >= 1
+        ? $"{(int)duration.TotalHours} h {duration.Minutes:00} min"
+        : $"{Math.Max(0, (int)duration.TotalMinutes)} min";
+
+    private static string FormatGameSource(GameSource source) => source switch
+    {
+        GameSource.Steam => "Steam",
+        GameSource.Epic => "Epic Games",
+        GameSource.Gog => "GOG",
+        GameSource.Xbox => "Xbox/Microsoft Store",
+        GameSource.BattleNet => "Battle.net",
+        GameSource.Ubisoft => "Ubisoft Connect",
+        GameSource.EaApp => "EA app",
+        _ => "eine manuelle Zuordnung"
+    };
+
+    private sealed record DiscoveryCandidate(DateTimeOffset FirstSeenAtUtc, long LastSeenScan, bool IsConfirmed);
 }

@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using YFTimeTracker.App.Services;
 using YFTimeTracker.Core.Abstractions;
+using YFTimeTracker.Core.Models;
+using YFTimeTracker.Core.Services;
 
 namespace YFTimeTracker.Windows.Tests.Diagnostics;
 
@@ -28,9 +30,16 @@ public sealed class AppDiagnosticsServiceTests
                 File.SetLastWriteTimeUtc(logPath, DateTime.UtcNow.AddMinutes(index));
             }
 
+            var trackingDiagnostics = new TrackingDiagnosticLog(new FixedClock(DateTimeOffset.Parse("2026-09-12T10:00:00Z")));
+            trackingDiagnostics.Record(
+                TrackingDiagnosticEventKind.Session,
+                TrackingDiagnosticSeverity.Success,
+                "Session gestartet",
+                "Neon Game · game.exe");
             var service = new AppDiagnosticsService(
                 paths,
                 new TestUpdateService("9.8.7"),
+                trackingDiagnostics,
                 NullLogger<AppDiagnosticsService>.Instance);
             var archivePath = Path.Combine(root, "diagnostics.zip");
 
@@ -40,6 +49,7 @@ public sealed class AppDiagnosticsServiceTests
             using var archive = ZipFile.OpenRead(archivePath);
             var entryNames = archive.Entries.Select(entry => entry.FullName).ToArray();
             CollectionAssert.Contains(entryNames, "diagnostics.txt");
+            CollectionAssert.Contains(entryNames, "tracking-events.txt");
             CollectionAssert.Contains(entryNames, "logs/log-4.log");
             CollectionAssert.Contains(entryNames, "logs/log-3.log");
             CollectionAssert.Contains(entryNames, "logs/log-2.log");
@@ -51,7 +61,16 @@ public sealed class AppDiagnosticsServiceTests
             using var reader = new StreamReader(summaryEntry.Open());
             var summary = await reader.ReadToEndAsync();
             StringAssert.Contains(summary, "App-Version:      9.8.7");
+            StringAssert.Contains(summary, "Tracking-Ereignisse: 1");
             StringAssert.Contains(summary, "Die Datenbank, Backups, Exporte und Spielsessions sind nicht im Archiv enthalten.");
+
+            var trackingEntry = archive.GetEntry("tracking-events.txt");
+            Assert.IsNotNull(trackingEntry);
+            using var trackingReader = new StreamReader(trackingEntry.Open());
+            var trackingText = await trackingReader.ReadToEndAsync();
+            StringAssert.Contains(trackingText, "Session gestartet");
+            StringAssert.Contains(trackingText, "Neon Game · game.exe");
+            Assert.IsFalse(trackingText.Contains(@"C:\", StringComparison.OrdinalIgnoreCase));
         }
         finally
         {
@@ -60,6 +79,11 @@ public sealed class AppDiagnosticsServiceTests
                 Directory.Delete(root, recursive: true);
             }
         }
+    }
+
+    private sealed class FixedClock(DateTimeOffset utcNow) : IClock
+    {
+        public DateTimeOffset UtcNow { get; } = utcNow;
     }
 
     private sealed class TestAppPathProvider(string root) : IAppPathProvider

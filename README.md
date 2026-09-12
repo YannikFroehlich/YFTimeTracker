@@ -9,7 +9,7 @@
   <img src="YFTimeTracker.App/Assets/YFTimeTrackerLogo.png" alt="YFTimeTracker-Logo" width="180">
 </p>
 
-YFTimeTracker ist eine lokale Windows-11-App zum automatischen Erfassen und Auswerten von Spielzeit. Sie erkennt manuell hinterlegte Programmdateien sowie lokale Steam-, Epic-, GOG- und Xbox-/Microsoft-Store-Installationen. Ein Launcher-Spiel wird erst beim ersten tatsächlichen Start in die Bibliothek übernommen.
+YFTimeTracker ist eine lokale Windows-11-App zum automatischen Erfassen und Auswerten von Spielzeit. Sie erkennt manuell hinterlegte Programmdateien sowie lokale Installationen unterstützter Spiele-Launcher. Ein Launcher-Spiel wird erst beim ersten tatsächlichen Start in die Bibliothek übernommen.
 
 Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Konten, Cloud-Dienste und Launcher-Web-APIs sind für das Tracking nicht erforderlich.
 
@@ -32,7 +32,8 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 
 - Automatische Erkennung laufender Spiele und sekundengenaue Sessions
 - Mehrere EXE-Dateien und Prozesse pro Spiel ohne doppelte Sessions
-- Lokale Launcher-Erkennung für Steam, Epic Games, GOG, Xbox-/Microsoft-Store, Battle.net und Ubisoft Connect
+- Lokale Launcher-Erkennung für Steam, Epic Games, GOG, Xbox-/Microsoft-Store, Battle.net, Ubisoft Connect und EA app
+- EA-app-Erkennung über lokale Windows-Installationsdaten; EA Play erfordert weder Anmeldung noch Web-API
 - Xbox-Erkennung über die lokale Windows-Paketverwaltung und `MicrosoftGame.config`, ohne Xbox-Anmeldung oder Web-API
 - Optionales Tages- und Wochenlimit pro Spiel mit Fortschrittsanzeige in Bibliothek, Spieldetails und Dashboard sowie einmaliger Windows-Benachrichtigung bei Erreichen
 
@@ -41,6 +42,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Dashboard mit Live-Tracking, Tages-, Wochen- und Gesamtwerten
 - Typfehlertolerante globale Suche nach Spielen, EXE-Dateien, Sessions und App-Bereichen mit Launcher- und Zeitraumfilter, lokalem Suchverlauf und `Strg+K`-Schnellzugriff
 - Statistiken für frei wählbare Zeiträume und einzelne Spiele mit CSV-Export
+- Kalender-Heatmap für jedes erfasste Jahr mit täglicher Spielzeit, festen Intensitätsstufen, aktivstem Tag und längster Spielserie
 - Jahresrückblick mit Monatsverlauf, Vorjahresvergleich, Rekorden, Top-Spielen und PNG-Export
 - Donut-Auswertung „Nach Tag“, die die Spielzeit nach den in der Bibliothek vergebenen Tags gruppiert
 
@@ -70,7 +72,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Optionales zusätzliches Sicherungsziel für die tägliche Sicherung (OneDrive- oder Google-Drive-Ordner) – die lokale Sicherung bleibt dabei unverändert die Grundlage für Wiederherstellung; „YFDatenbank“ ist als kommendes Ziel bereits sichtbar (Demnächst)
 - Automatische Update-Prüfung für installierte Ausgaben
 - "Was ist neu"-Dialog mit den Änderungen der Version beim ersten Start nach einem Update
-- Diagnoseansicht und Export eines datensparsamen Diagnose-ZIP
+- Diagnoseansicht mit verständlichem Tracking-Ereignisverlauf für Erkennung, Zuordnung, Ausschlüsse und Sessions sowie Export eines datensparsamen Diagnose-ZIP
 
 ## Installation
 
@@ -98,7 +100,7 @@ Alle dauerhaften Daten liegen unter `%LocalAppData%\YFTimeTracker`:
 | `GameIcons` | lokal aus Spiel-EXE-Dateien extrahierte Icon-Kopien |
 | `Logs` | lokale Diagnoseprotokolle |
 
-Das Diagnose-ZIP enthält Systeminformationen und höchstens drei aktuelle Logdateien, aber keine Datenbank, Backups oder Spielsessions.
+Das Diagnose-ZIP enthält Systeminformationen, den begrenzten Tracking-Ereignisverlauf seit dem App-Start und höchstens drei aktuelle Logdateien, aber keine Datenbank, Backups oder Spielsessions. In der verständlichen Ereignisübersicht werden keine vollständigen EXE-Pfade erfasst; die technischen Logdateien können weiterhin lokale Pfade enthalten.
 
 ## Automatisches Tracking
 

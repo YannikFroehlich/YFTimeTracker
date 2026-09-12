@@ -249,26 +249,45 @@ public sealed class PlaytimeStatisticsServiceTests
     }
 
     [TestMethod]
-    public async Task GetActivityHeatmapAsync_returns_daily_totals_for_full_iso_weeks_up_to_today()
+    public async Task GetCalendarHeatmapAsync_returns_every_day_and_available_years()
     {
         var clock = new FakeClock(Utc(2026, 8, 30, 12));
         var games = new InMemoryGameRepository();
         var game = await AddGameAsync(games, "Alpha", clock.UtcNow);
         var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
 
+        await AddClosedSessionAsync(sessions, game.Id, Utc(2025, 12, 20, 8), Utc(2025, 12, 20, 9));
         await AddClosedSessionAsync(sessions, game.Id, Utc(2026, 8, 20, 8), Utc(2026, 8, 20, 11));
         await AddClosedSessionAsync(sessions, game.Id, Utc(2026, 8, 30, 9), Utc(2026, 8, 30, 10, 30));
 
         var service = CreateService(sessions, clock);
-        var days = await service.GetActivityHeatmapAsync(2, TimeZoneInfo.Utc, CancellationToken.None);
+        var calendar = await service.GetCalendarHeatmapAsync(2026, TimeZoneInfo.Utc, CancellationToken.None);
 
-        Assert.HasCount(14, days);
-        Assert.AreEqual(new DateOnly(2026, 8, 17), days[0].Date);
-        Assert.AreEqual(new DateOnly(2026, 8, 30), days[^1].Date);
-        Assert.AreEqual(TimeSpan.FromHours(3), days.Single(day => day.Date == new DateOnly(2026, 8, 20)).Duration);
-        Assert.AreEqual(TimeSpan.FromMinutes(90), days.Single(day => day.Date == new DateOnly(2026, 8, 30)).Duration);
-        Assert.IsTrue(days.Where(day => day.Date != new DateOnly(2026, 8, 20) && day.Date != new DateOnly(2026, 8, 30))
+        Assert.AreEqual(2026, calendar.Year);
+        CollectionAssert.AreEqual(new[] { 2026, 2025 }, calendar.AvailableYears.ToArray());
+        Assert.HasCount(365, calendar.Days);
+        Assert.AreEqual(new DateOnly(2026, 1, 1), calendar.Days[0].Date);
+        Assert.AreEqual(new DateOnly(2026, 12, 31), calendar.Days[^1].Date);
+        Assert.AreEqual(TimeSpan.FromHours(3), calendar.Days.Single(day => day.Date == new DateOnly(2026, 8, 20)).Duration);
+        Assert.AreEqual(TimeSpan.FromMinutes(90), calendar.Days.Single(day => day.Date == new DateOnly(2026, 8, 30)).Duration);
+        Assert.IsTrue(calendar.Days.Where(day => day.Date != new DateOnly(2026, 8, 20) && day.Date != new DateOnly(2026, 8, 30))
             .All(day => day.Duration == TimeSpan.Zero));
+    }
+
+    [TestMethod]
+    public async Task GetCalendarHeatmapAsync_splits_cross_midnight_session_across_calendar_days()
+    {
+        var clock = new FakeClock(Utc(2026, 1, 2, 12));
+        var games = new InMemoryGameRepository();
+        var game = await AddGameAsync(games, "Alpha", clock.UtcNow);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        await AddClosedSessionAsync(sessions, game.Id, Utc(2026, 1, 1, 23), Utc(2026, 1, 2, 2));
+
+        var service = CreateService(sessions, clock);
+        var calendar = await service.GetCalendarHeatmapAsync(2026, TimeZoneInfo.Utc, CancellationToken.None);
+
+        Assert.AreEqual(TimeSpan.FromHours(1), calendar.Days.Single(day => day.Date == new DateOnly(2026, 1, 1)).Duration);
+        Assert.AreEqual(TimeSpan.FromHours(2), calendar.Days.Single(day => day.Date == new DateOnly(2026, 1, 2)).Duration);
     }
 
     private static DateTimeOffset ToUtc(int year, int month, int day, int hour, int minute)

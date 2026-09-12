@@ -45,6 +45,7 @@ public sealed class SessionListItemViewModel : ObservableObject
         GameSource.Xbox => "XBOX",
         GameSource.BattleNet => "BATTLE.NET",
         GameSource.Ubisoft => "UBISOFT",
+        GameSource.EaApp => "EA APP",
         _ => "MANUELL"
     };
 

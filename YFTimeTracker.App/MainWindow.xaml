@@ -285,6 +285,7 @@
                                                 <ComboBoxItem Content="Xbox / Microsoft Store" Tag="Xbox" />
                                                 <ComboBoxItem Content="Battle.net" Tag="BattleNet" />
                                                 <ComboBoxItem Content="Ubisoft Connect" Tag="Ubisoft" />
+                                                <ComboBoxItem Content="EA app" Tag="EaApp" />
                                             </ComboBox>
                                         </StackPanel>
                                         <StackPanel Spacing="5">

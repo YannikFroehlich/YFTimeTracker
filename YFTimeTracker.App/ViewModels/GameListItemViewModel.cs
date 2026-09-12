@@ -43,6 +43,7 @@ public sealed class GameListItemViewModel(Game game, string? iconPath = null) : 
         GameSource.Xbox => "XBOX",
         GameSource.BattleNet => "BATTLE.NET",
         GameSource.Ubisoft => "UBISOFT",
+        GameSource.EaApp => "EA APP",
         _ => "MANUELL"
     };
 

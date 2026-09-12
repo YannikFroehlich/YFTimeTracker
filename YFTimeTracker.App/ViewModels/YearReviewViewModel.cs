@@ -333,6 +333,7 @@ public sealed class YearReviewViewModel : ObservableObject
             GameSource.Xbox => "XBOX",
             GameSource.BattleNet => "BATTLE.NET",
             GameSource.Ubisoft => "UBISOFT",
+            GameSource.EaApp => "EA APP",
             _ => "MANUELL"
         };
     }

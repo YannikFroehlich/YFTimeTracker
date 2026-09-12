@@ -6,7 +6,7 @@ This repository also has an `AGENTS.md` with binding rules for coding agents (br
 
 ## Project
 
-YFTimeTracker is a German-language, fully local Windows 11 desktop app (WinUI 3) that automatically detects and tracks game playtime by watching running processes and local Steam/Epic/GOG/Xbox installations. No cloud accounts, no web APIs for game detection, no telemetry.
+YFTimeTracker is a German-language, fully local Windows 11 desktop app (WinUI 3) that automatically detects and tracks game playtime by watching running processes and local Steam/Epic/GOG/Xbox/Battle.net/Ubisoft/EA app installations. No cloud accounts, no web APIs for game detection, no telemetry.
 
 ## Commands
 
@@ -47,7 +47,7 @@ Four layered class libraries plus one test project per layer, referenced top-dow
 
 - **`YFTimeTracker.Core`** — domain models, abstractions (interfaces), tracking rules, statistics, validation. No dependency on WinUI, SQLite, or concrete Windows APIs; this is what makes tracking logic unit-testable without a UI or database.
 - **`YFTimeTracker.Data`** — EF Core + SQLite. Repositories, migrations, JSON+ZIP backup/import/export. Implements the `Core` repository/store abstractions.
-- **`YFTimeTracker.Windows`** — Windows-specific implementations of `Core` abstractions: process snapshots, local launcher discovery (Steam/Epic/GOG/Xbox), registry, boot-session id, autostart.
+- **`YFTimeTracker.Windows`** — Windows-specific implementations of `Core` abstractions: process snapshots, local launcher discovery (Steam/Epic/GOG/Xbox/Battle.net/Ubisoft/EA app), registry, boot-session id, autostart.
 - **`YFTimeTracker.App`** — WinUI 3 shell: pages/views, ViewModels (CommunityToolkit.Mvvm `ObservableObject` + `AsyncRelayCommand`), tray icon, single-instance handling, first-run setup wizard, Velopack auto-update, diagnostics export.
 - **`YFTimeTracker.Core.Tests` / `YFTimeTracker.Data.Tests` / `YFTimeTracker.Windows.Tests`** — MSTest, mirror the layer they test. There is no `App.Tests` project; UI-adjacent logic that needs testing generally belongs in a lower layer.
 
@@ -104,4 +104,4 @@ When changing this file, prefer adding to `YFTimeTracker.Core.Tests/Services/Gam
 
 ## Manual verification
 
-Automated tests don't cover process/launcher detection, tray behavior, or the update flow. After changes in those areas, additionally check the relevant scenarios in [docs/TRACKING_SMOKE_TEST.md](docs/TRACKING_SMOKE_TEST.md) and, per `CONTRIBUTING.md`, manually verify whichever of these apply: wide/narrow windows, empty vs. populated database, tracking start/end/pause + tray, launcher detection (Steam/Epic/GOG/Xbox), backup/import/export, installed-build update flow, single-instance/autostart/minimized start, first-run setup on empty vs. upgraded database.
+Automated tests don't cover process/launcher detection, tray behavior, or the update flow. After changes in those areas, additionally check the relevant scenarios in [docs/TRACKING_SMOKE_TEST.md](docs/TRACKING_SMOKE_TEST.md) and, per `CONTRIBUTING.md`, manually verify whichever of these apply: wide/narrow windows, empty vs. populated database, tracking start/end/pause + tray, launcher detection (Steam/Epic/GOG/Xbox/Battle.net/Ubisoft/EA app), backup/import/export, installed-build update flow, single-instance/autostart/minimized start, first-run setup on empty vs. upgraded database.

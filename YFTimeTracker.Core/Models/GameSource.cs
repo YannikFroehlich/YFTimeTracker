@@ -8,5 +8,6 @@ public enum GameSource
     Gog = 3,
     Xbox = 4,
     BattleNet = 5,
-    Ubisoft = 6
+    Ubisoft = 6,
+    EaApp = 7
 }

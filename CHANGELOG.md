@@ -5,6 +5,8 @@
 ## 1.5.0 – 2026-09-11
 - Neu: Spiele lassen sich in der Bibliothek anheften (Stern-Symbol auf der Spielkarte) – angeheftete Spiele stehen danach immer ganz oben in der Liste, unabhängig von Sortierung und laufenden Spielen, und können über den Statusfilter gezielt angezeigt werden.
 - Neu: Frei vergebene Tags pro Spiel (in den Spieldetails, komma-getrennt) – filterbar in der Bibliothek und als eigene Donut-Auswertung „Nach Tag“ in den Statistiken. Ein Spiel mit mehreren Tags zählt in jedem seiner Tags voll mit; ungetaggte Spiele laufen in „Ohne Tag“ zusammen.
+- Neu: Die Statistiken enthalten eine Kalender-Heatmap für jedes erfasste Jahr. Sie zeigt die tägliche Spielzeit mit festen Intensitätsstufen sowie aktive Tage, den aktivsten Tag und die längste Serie.
+- Neu: Unter **Einstellungen → Diagnose & Support** zeigt ein verständlicher Tracking-Verlauf, wann Prozesse erkannt, Spielen zugeordnet oder als Hilfsprozess ausgeschlossen wurden und warum Sessions starten, enden oder geteilt werden. Die letzten 100 Ereignisse bleiben nur bis zum Beenden der App im Arbeitsspeicher; vollständige EXE-Pfade werden dort nicht erfasst.
 
 ## 1.4.0 – 2026-09-10
 - Neu: Unter **Einstellungen → Daten & Sicherung** lässt sich ein zusätzliches Sicherungsziel für die tägliche Sicherung wählen – ein OneDrive- oder Google-Drive-Ordner. Die lokale Sicherung läuft dabei unverändert weiter und bleibt die Grundlage für Wiederherstellung; die Datei wird danach zusätzlich in den gewählten Ordner kopiert. „YFDatenbank” ist als kommendes Sicherungsziel bereits auswählbar, aber noch nicht funktionsfähig (Demnächst).
