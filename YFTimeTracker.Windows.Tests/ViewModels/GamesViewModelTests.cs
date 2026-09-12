@@ -9,7 +9,7 @@ namespace YFTimeTracker.Windows.Tests.ViewModels;
 public sealed class GamesViewModelTests
 {
     [TestMethod]
-    public void Xbox_games_have_source_label_and_library_filter()
+    public void Launcher_games_have_source_labels_and_library_filters()
     {
         var game = CreateGame(1, "Xbox Spiel", GameSource.Xbox, "game.exe");
         var viewModel = CreateViewModel(
@@ -20,6 +20,10 @@ public sealed class GamesViewModelTests
 
         Assert.AreEqual("XBOX", new GameListItemViewModel(game).SourceLabel);
         Assert.HasCount(1, viewModel.SourceFilters.Where(filter => filter.Source == GameSource.Xbox));
+        Assert.AreEqual(
+            "EA APP",
+            new GameListItemViewModel(CreateGame(2, "EA Spiel", GameSource.EaApp, "ea.exe")).SourceLabel);
+        Assert.HasCount(1, viewModel.SourceFilters.Where(filter => filter.Source == GameSource.EaApp));
     }
 
     [TestMethod]

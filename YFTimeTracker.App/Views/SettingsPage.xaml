@@ -2,7 +2,12 @@
     x:Class="YFTimeTracker.App.Views.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Loaded="Page_Loaded">
+    xmlns:converters="using:YFTimeTracker.App.Converters"
+    Loaded="Page_Loaded"
+    Unloaded="Page_Unloaded">
+    <Page.Resources>
+        <converters:HexColorBrushConverter x:Key="HexColorBrushConverter" />
+    </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <Grid x:Name="SettingsRoot" Padding="24,4,24,28" SizeChanged="SettingsRoot_SizeChanged">
             <Grid.RowDefinitions>
@@ -57,7 +62,7 @@
                                 <ToggleSwitch
                                     Header="Launcher automatisch erkennen"
                                     OffContent="Nur Bibliothek"
-                                    OnContent="Steam, Epic, GOG, Xbox, Battle.net, Ubisoft Connect"
+                                    OnContent="Steam, Epic, GOG, Xbox, Battle.net, Ubisoft, EA app"
                                     IsOn="{Binding LauncherDiscoveryEnabled, Mode=TwoWay}" />
                                 <Grid ColumnSpacing="8">
                                     <Grid.ColumnDefinitions>
@@ -106,6 +111,14 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Foreground="{StaticResource YFBlueBrush}" Text="Ubisoft Connect" />
                                     <TextBlock Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource YFMutedTextStyle}" Text="{Binding UbisoftStatusText}" />
+                                </Grid>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Foreground="{StaticResource YFBlueBrush}" Text="EA app" />
+                                    <TextBlock Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource YFMutedTextStyle}" Text="{Binding EaAppStatusText}" />
                                 </Grid>
                             </StackPanel>
                         </Border>
@@ -484,14 +497,18 @@
                         <Grid>
                             <StackPanel Margin="0,0,44,0">
                                 <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="DIAGNOSE &amp; SUPPORT" />
-                                <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Version, Speicherorte und lokale Fehlerprotokolle" />
+                                <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Version, Speicherorte und verständlicher Tracking-Verlauf" />
                             </StackPanel>
                             <Border Width="34" Height="34" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#291B52" CornerRadius="10">
                                 <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15" Foreground="#B18CFF" Glyph="&#xE90F;" />
                             </Border>
                         </Grid>
 
-                        <Grid ColumnSpacing="24">
+                        <Grid x:Name="DiagnosticsOverviewGrid" ColumnSpacing="24" RowSpacing="14">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="1.25*" />
                                 <ColumnDefinition Width="Auto" />
@@ -524,7 +541,7 @@
                                 </Grid>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="1" MinWidth="235" VerticalAlignment="Center" Spacing="10">
+                            <StackPanel x:Name="DiagnosticsActions" Grid.Column="1" MinWidth="235" VerticalAlignment="Center" Spacing="10">
                                 <Button HorizontalAlignment="Stretch" Command="{Binding OpenLogDirectoryCommand}" Style="{StaticResource YFOutlineButtonStyle}">
                                     <StackPanel Orientation="Horizontal" Spacing="9">
                                         <FontIcon FontSize="14" Glyph="&#xED25;" />
@@ -537,9 +554,71 @@
                                         <TextBlock Text="Diagnosebericht exportieren" />
                                     </StackPanel>
                                 </Button>
-                                <TextBlock MaxWidth="260" Style="{StaticResource YFMutedTextStyle}" Text="Enthält Systeminformationen und bis zu drei aktuelle Logs, aber keine Datenbank oder Sicherungen." TextWrapping="Wrap" />
+                                <TextBlock MaxWidth="260" Style="{StaticResource YFMutedTextStyle}" Text="Enthält Systeminformationen, Tracking-Ereignisse und bis zu drei aktuelle Logs, aber keine Datenbank oder Sicherungen." TextWrapping="Wrap" />
                             </StackPanel>
                         </Grid>
+
+                        <Border Height="1" Background="{ThemeResource YFStrokeBrush}" />
+
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock FontSize="15" FontWeight="SemiBold" Text="Tracking-Ereignisse" />
+                                <TextBlock Margin="0,4,0,0" Style="{StaticResource YFMutedTextStyle}" Text="{Binding TrackingDiagnosticsSummaryText}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Button
+                                Grid.Column="1"
+                                Padding="10,6"
+                                Command="{Binding ClearTrackingDiagnosticsCommand}"
+                                Style="{StaticResource YFOutlineButtonStyle}">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <FontIcon FontSize="12" Glyph="&#xE74D;" />
+                                    <TextBlock FontSize="12" Text="Liste leeren" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <ListView
+                            MaxHeight="380"
+                            IsItemClickEnabled="False"
+                            ItemContainerStyle="{StaticResource YFListViewItemStyle}"
+                            ItemsSource="{Binding TrackingDiagnosticEvents}"
+                            SelectionMode="None"
+                            Visibility="{Binding TrackingDiagnosticsVisibility}">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Padding="0,9" ColumnSpacing="11">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="34" />
+                                            <ColumnDefinition Width="74" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="32" Height="32" Background="{ThemeResource YFEmptyStatePanelBrush}" BorderBrush="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" BorderThickness="1" CornerRadius="9">
+                                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Glyph="{Binding Glyph}" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock FontFamily="Consolas" FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding TimeText}" />
+                                            <TextBlock FontSize="9" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Text="{Binding KindText}" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="3">
+                                            <TextBlock FontSize="12" FontWeight="SemiBold" Text="{Binding Title}" TextWrapping="Wrap" />
+                                            <TextBlock FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding Detail}" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+
+                        <Border Padding="18" Background="{ThemeResource YFEmptyStatePanelBrush}" CornerRadius="10" Visibility="{Binding TrackingDiagnosticsEmptyVisibility}">
+                            <StackPanel HorizontalAlignment="Center" Spacing="7">
+                                <FontIcon HorizontalAlignment="Center" FontSize="22" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE9D9;" />
+                                <TextBlock HorizontalAlignment="Center" FontWeight="SemiBold" Text="Noch keine Tracking-Ereignisse" />
+                                <TextBlock MaxWidth="460" TextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="Starte oder beende ein Spiel. Erkennung, Zuordnung und Session-Verlauf erscheinen dann hier – ohne vollständige EXE-Pfade." TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Border>
             </Grid>

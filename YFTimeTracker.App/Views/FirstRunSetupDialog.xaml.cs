@@ -126,7 +126,7 @@ public sealed partial class FirstRunSetupDialog : ContentDialog
                 ? "✓ Automatisches Tracking ist aktiv"
                 : "– Automatisches Tracking startet pausiert";
             LauncherSummaryText.Text = LauncherToggle.IsOn
-                ? "✓ Steam, Epic, GOG und Xbox werden lokal erkannt"
+                ? "✓ Unterstützte Launcher einschließlich EA app werden lokal erkannt"
                 : "– Es werden nur manuell hinterlegte Spiele erkannt";
             TraySummaryText.Text = TrayToggle.IsOn
                 ? "✓ Beim Schließen läuft YFTimeTracker im Tray weiter"

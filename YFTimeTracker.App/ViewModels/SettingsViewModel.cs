@@ -23,6 +23,7 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly IGameInstallationProvider installationProvider;
     private readonly IAppUpdateService appUpdateService;
     private readonly IAppDiagnosticsService diagnosticsService;
+    private readonly ITrackingDiagnosticLog trackingDiagnostics;
     private readonly DispatcherQueue dispatcherQueue;
     private bool trackingEnabled = true;
     private bool launcherDiscoveryEnabled = true;
@@ -40,6 +41,7 @@ public sealed class SettingsViewModel : ObservableObject
     private string xboxStatusText = "Nicht geprüft";
     private string battleNetStatusText = "Nicht geprüft";
     private string ubisoftStatusText = "Nicht geprüft";
+    private string eaAppStatusText = "Nicht geprüft";
     private string currentAppVersionText = "Installiert: unbekannt";
     private string updateStatusText = "Update-Status wird geladen …";
     private string availableUpdateText = string.Empty;
@@ -52,6 +54,7 @@ public sealed class SettingsViewModel : ObservableObject
     private string diagnosticsInstallDirectory = "Installationsordner wird geladen …";
     private string diagnosticsDataDirectory = "Datenordner wird geladen …";
     private string diagnosticsLogDirectory = "Logordner wird geladen …";
+    private string trackingDiagnosticsSummaryText = "Noch keine Tracking-Ereignisse seit dem App-Start";
     private bool isExportFolderAvailable;
     private ThemeOption selectedTheme;
     private BackupDestinationOption selectedBackupDestination;
@@ -68,7 +71,8 @@ public sealed class SettingsViewModel : ObservableObject
         IGameTrackingService trackingService,
         IGameInstallationProvider installationProvider,
         IAppUpdateService appUpdateService,
-        IAppDiagnosticsService diagnosticsService)
+        IAppDiagnosticsService diagnosticsService,
+        ITrackingDiagnosticLog trackingDiagnostics)
     {
         this.settings = settings;
         this.startupService = startupService;
@@ -80,6 +84,7 @@ public sealed class SettingsViewModel : ObservableObject
         this.installationProvider = installationProvider;
         this.appUpdateService = appUpdateService;
         this.diagnosticsService = diagnosticsService;
+        this.trackingDiagnostics = trackingDiagnostics;
         dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         ThemeOptions =
@@ -104,6 +109,7 @@ public sealed class SettingsViewModel : ObservableObject
         ExportCommand = new AsyncRelayCommand(ExportAsync);
         OpenLogDirectoryCommand = new RelayCommand(OpenLogDirectory);
         ExportDiagnosticsCommand = new AsyncRelayCommand(ExportDiagnosticsAsync);
+        ClearTrackingDiagnosticsCommand = new RelayCommand(ClearTrackingDiagnostics);
         OpenExportFolderCommand = new RelayCommand(OpenExportFolder);
         ChooseBackupFolderCommand = new AsyncRelayCommand(ChooseBackupFolderAsync);
 
@@ -207,6 +213,12 @@ public sealed class SettingsViewModel : ObservableObject
         private set => SetProperty(ref ubisoftStatusText, value);
     }
 
+    public string EaAppStatusText
+    {
+        get => eaAppStatusText;
+        private set => SetProperty(ref eaAppStatusText, value);
+    }
+
     public string CurrentAppVersionText
     {
         get => currentAppVersionText;
@@ -279,6 +291,20 @@ public sealed class SettingsViewModel : ObservableObject
         private set => SetProperty(ref diagnosticsLogDirectory, value);
     }
 
+    public string TrackingDiagnosticsSummaryText
+    {
+        get => trackingDiagnosticsSummaryText;
+        private set => SetProperty(ref trackingDiagnosticsSummaryText, value);
+    }
+
+    public Visibility TrackingDiagnosticsVisibility => TrackingDiagnosticEvents.Count == 0
+        ? Visibility.Collapsed
+        : Visibility.Visible;
+
+    public Visibility TrackingDiagnosticsEmptyVisibility => TrackingDiagnosticEvents.Count == 0
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
     public bool IsExportFolderAvailable { get => isExportFolderAvailable; private set => SetProperty(ref isExportFolderAvailable, value); }
 
     public IReadOnlyList<ThemeOption> ThemeOptions { get; }
@@ -334,6 +360,8 @@ public sealed class SettingsViewModel : ObservableObject
 
     public ObservableCollection<BackupListItemViewModel> Backups { get; } = [];
 
+    public ObservableCollection<TrackingDiagnosticEventViewModel> TrackingDiagnosticEvents { get; } = [];
+
     public BackupListItemViewModel? SelectedBackup
     {
         get => selectedBackup;
@@ -356,12 +384,15 @@ public sealed class SettingsViewModel : ObservableObject
 
     public IAsyncRelayCommand ExportDiagnosticsCommand { get; }
 
+    public IRelayCommand ClearTrackingDiagnosticsCommand { get; }
+
     public IRelayCommand OpenExportFolderCommand { get; }
 
     public async Task LoadAsync()
     {
         ApplyUpdateState(appUpdateService.State);
         ApplyDiagnosticsSnapshot(diagnosticsService.GetSnapshot());
+        RefreshTrackingDiagnostics();
         TrackingEnabled = await settings.GetBoolAsync(AppSettingKeys.TrackingEnabled, true, CancellationToken.None);
         LauncherDiscoveryEnabled = await settings.GetBoolAsync(AppSettingKeys.LauncherDiscoveryEnabled, true, CancellationToken.None);
         MinimizeOnClose = await settings.GetBoolAsync(AppSettingKeys.MinimizeOnClose, true, CancellationToken.None);
@@ -392,11 +423,12 @@ public sealed class SettingsViewModel : ObservableObject
             XboxStatusText = FormatLauncherState(GameSource.Xbox, launchers);
             BattleNetStatusText = FormatLauncherState(GameSource.BattleNet, launchers);
             UbisoftStatusText = FormatLauncherState(GameSource.Ubisoft, launchers);
+            EaAppStatusText = FormatLauncherState(GameSource.EaApp, launchers);
         }
         catch
         {
             SteamStatusText = EpicStatusText = GogStatusText = XboxStatusText =
-                BattleNetStatusText = UbisoftStatusText = "Prüfung fehlgeschlagen";
+                BattleNetStatusText = UbisoftStatusText = EaAppStatusText = "Prüfung fehlgeschlagen";
         }
     }
 
@@ -598,6 +630,47 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    public void RefreshTrackingDiagnostics()
+    {
+        var allEvents = trackingDiagnostics.GetRecentEvents();
+        var recentEvents = allEvents.Take(50).ToArray();
+        if (TrackingDiagnosticEvents.Select(item => item.Sequence).SequenceEqual(recentEvents.Select(item => item.Sequence)))
+        {
+            return;
+        }
+
+        TrackingDiagnosticEvents.Clear();
+        foreach (var trackingEvent in recentEvents)
+        {
+            var occurredAtLocal = TimeZoneInfo.ConvertTime(trackingEvent.OccurredAtUtc, TimeZoneInfo.Local);
+            TrackingDiagnosticEvents.Add(new TrackingDiagnosticEventViewModel(
+                trackingEvent.Sequence,
+                occurredAtLocal.Date == DateTime.Today
+                    ? occurredAtLocal.ToString("HH:mm:ss")
+                    : occurredAtLocal.ToString("dd.MM. HH:mm"),
+                FormatTrackingEventKind(trackingEvent.Kind),
+                trackingEvent.Title,
+                trackingEvent.Detail,
+                GetTrackingEventColor(trackingEvent.Severity),
+                GetTrackingEventGlyph(trackingEvent.Severity)));
+        }
+
+        TrackingDiagnosticsSummaryText = allEvents.Count == 0
+            ? "Noch keine Tracking-Ereignisse seit dem App-Start"
+            : allEvents.Count > recentEvents.Length
+                ? $"Neueste {recentEvents.Length} von {allEvents.Count} Ereignissen seit dem App-Start"
+                : $"{recentEvents.Length} {(recentEvents.Length == 1 ? "Ereignis" : "Ereignisse")} seit dem App-Start · neueste zuerst";
+        OnPropertyChanged(nameof(TrackingDiagnosticsVisibility));
+        OnPropertyChanged(nameof(TrackingDiagnosticsEmptyVisibility));
+    }
+
+    private void ClearTrackingDiagnostics()
+    {
+        trackingDiagnostics.Clear();
+        RefreshTrackingDiagnostics();
+        StatusMessage = "Tracking-Ereignisse wurden geleert";
+    }
+
     private void SetExportedFile(string path)
     {
         lastExportedFilePath = path;
@@ -682,8 +755,44 @@ public sealed class SettingsViewModel : ObservableObject
             ? $" · {bytes / (1024d * 1024d):0.#} MB"
             : $" · {bytes / 1024d:0.#} KB";
     }
+
+    private static string FormatTrackingEventKind(TrackingDiagnosticEventKind kind) => kind switch
+    {
+        TrackingDiagnosticEventKind.Detection => "ERKENNUNG",
+        TrackingDiagnosticEventKind.Assignment => "ZUORDNUNG",
+        TrackingDiagnosticEventKind.Exclusion => "AUSGESCHLOSSEN",
+        TrackingDiagnosticEventKind.Session => "SESSION",
+        TrackingDiagnosticEventKind.Interruption => "UNTERBRECHUNG",
+        TrackingDiagnosticEventKind.Error => "FEHLER",
+        _ => "STATUS"
+    };
+
+    private static string GetTrackingEventColor(TrackingDiagnosticSeverity severity) => severity switch
+    {
+        TrackingDiagnosticSeverity.Success => "#29E7A4",
+        TrackingDiagnosticSeverity.Warning => "#F5B942",
+        TrackingDiagnosticSeverity.Error => "#FF6B7A",
+        _ => "#3182FF"
+    };
+
+    private static string GetTrackingEventGlyph(TrackingDiagnosticSeverity severity) => severity switch
+    {
+        TrackingDiagnosticSeverity.Success => "\uE73E",
+        TrackingDiagnosticSeverity.Warning => "\uE7BA",
+        TrackingDiagnosticSeverity.Error => "\uE783",
+        _ => "\uE946"
+    };
 }
 
 public sealed record ThemeOption(AppThemePreference Value, string Label);
 
 public sealed record BackupDestinationOption(BackupDestinationKind Value, string Label);
+
+public sealed record TrackingDiagnosticEventViewModel(
+    long Sequence,
+    string TimeText,
+    string KindText,
+    string Title,
+    string Detail,
+    string AccentColor,
+    string Glyph);

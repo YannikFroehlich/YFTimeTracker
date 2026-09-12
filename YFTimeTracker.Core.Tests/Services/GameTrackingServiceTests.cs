@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
 using YFTimeTracker.Core.Services;
 
@@ -25,6 +26,7 @@ public sealed class GameTrackingServiceTests
         {
             RunningPathKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { game.ExecutablePathKey }
         };
+        var diagnostics = new TrackingDiagnosticLog(clock);
         var tracking = new GameTrackingService(
             games,
             sessions,
@@ -34,6 +36,7 @@ public sealed class GameTrackingServiceTests
             new InMemorySettingsStore(),
             new FakeSuspendNotifier(),
             clock,
+            diagnostics,
             NullLogger<GameTrackingService>.Instance);
 
         await tracking.ScanOnceAsync(CancellationToken.None);
@@ -47,6 +50,9 @@ public sealed class GameTrackingServiceTests
         Assert.HasCount(1, storedSessions);
         Assert.IsNotNull(storedSessions[0].EndedAtUtc);
         Assert.AreEqual(60, storedSessions[0].DurationSeconds);
+        Assert.IsTrue(diagnostics.GetRecentEvents().Any(entry => entry.Title == "Session gestartet"));
+        Assert.IsTrue(diagnostics.GetRecentEvents().Any(entry => entry.Title == "Session beendet"));
+        Assert.IsFalse(diagnostics.GetRecentEvents().Any(entry => entry.Detail.Contains(@"C:\Games", StringComparison.OrdinalIgnoreCase)));
     }
 
     [TestMethod]
@@ -102,6 +108,36 @@ public sealed class GameTrackingServiceTests
     }
 
     [TestMethod]
+    public async Task Ea_app_game_is_imported_and_named_in_tracking_diagnostics()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-09-12T12:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var sessions = new InMemoryGameSessionRepository(_ => null);
+        var diagnostics = new TrackingDiagnosticLog(clock);
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(@"E:\EA Games\Neon Game\game.exe"),
+            CreateInstallationProvider(
+                GameSource.EaApp,
+                "ea-neon",
+                "Neon Game",
+                @"E:\EA Games\Neon Game",
+                []),
+            clock,
+            diagnostics: diagnostics);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+        clock.UtcNow = clock.UtcNow.AddSeconds(3);
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        var storedGame = (await games.GetAllAsync(CancellationToken.None)).Single();
+        Assert.AreEqual(GameSource.EaApp, storedGame.Source);
+        var import = diagnostics.GetRecentEvents().Single(entry => entry.Title == "Spiel in die Bibliothek übernommen");
+        StringAssert.Contains(import.Detail, "EA app");
+    }
+
+    [TestMethod]
     public async Task Launcher_helper_process_is_not_imported()
     {
         var clock = new FakeClock(DateTimeOffset.Parse("2026-08-30T12:00:00Z"));
@@ -114,7 +150,8 @@ public sealed class GameTrackingServiceTests
             "Neon Game",
             @"C:\Steam\steamapps\common\NeonGame",
             []);
-        var tracking = CreateTracking(games, sessions, processSnapshot, installations, clock);
+        var diagnostics = new TrackingDiagnosticLog(clock);
+        var tracking = CreateTracking(games, sessions, processSnapshot, installations, clock, diagnostics: diagnostics);
 
         await tracking.ScanOnceAsync(CancellationToken.None);
         clock.UtcNow = clock.UtcNow.AddSeconds(3);
@@ -122,6 +159,9 @@ public sealed class GameTrackingServiceTests
 
         Assert.IsEmpty(await games.GetAllAsync(CancellationToken.None));
         Assert.IsEmpty(await sessions.GetOpenSessionsAsync(CancellationToken.None));
+        var exclusion = diagnostics.GetRecentEvents().Single(entry => entry.Title == "Hilfsprozess ausgeschlossen");
+        StringAssert.Contains(exclusion.Detail, "UnityCrashHandler64.exe");
+        Assert.IsFalse(exclusion.Detail.Contains(@"C:\Steam", StringComparison.OrdinalIgnoreCase));
     }
 
     [TestMethod]
@@ -915,7 +955,8 @@ public sealed class GameTrackingServiceTests
         FakeClock clock,
         FakeBootSessionProvider? bootSession = null,
         InMemorySettingsStore? settings = null,
-        FakeSuspendNotifier? suspendNotifier = null)
+        FakeSuspendNotifier? suspendNotifier = null,
+        ITrackingDiagnosticLog? diagnostics = null)
     {
         return new GameTrackingService(
             games,
@@ -926,6 +967,7 @@ public sealed class GameTrackingServiceTests
             settings ?? new InMemorySettingsStore(),
             suspendNotifier ?? new FakeSuspendNotifier(),
             clock,
+            diagnostics ?? new TrackingDiagnosticLog(clock),
             NullLogger<GameTrackingService>.Instance);
     }
 

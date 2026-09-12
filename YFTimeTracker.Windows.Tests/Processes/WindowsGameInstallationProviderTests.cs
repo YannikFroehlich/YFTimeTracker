@@ -72,6 +72,60 @@ public sealed class WindowsGameInstallationProviderTests
     }
 
     [TestMethod]
+    public async Task Ea_app_game_is_discovered_from_local_installation_catalog()
+    {
+        using var directory = new TemporaryDirectory();
+        var provider = new WindowsGameInstallationProvider(
+            NullLogger<WindowsGameInstallationProvider>.Instance,
+            new FakeXboxPackageCatalog([]),
+            new FakeDirectoryLinkResolver(string.Empty, string.Empty),
+            () => null,
+            new FakeEaInstallationCatalog(new EaInstallationCatalogResult(
+                true,
+                [new EaInstallationEntry("ea-fc", "EA SPORTS FC", directory.Path)])));
+
+        var result = await provider.DiscoverAsync(CancellationToken.None);
+
+        Assert.AreEqual(LauncherAvailability.Available, result.Sources[GameSource.EaApp]);
+        var game = result.Games.Single(game => game.Source == GameSource.EaApp);
+        Assert.AreEqual("ea-fc", game.ExternalGameId);
+        Assert.AreEqual("EA SPORTS FC", game.Name);
+        Assert.AreEqual(Path.GetFullPath(directory.Path), game.InstallDirectory);
+        Assert.IsEmpty(game.LaunchExecutablePaths);
+    }
+
+    [TestMethod]
+    public async Task Ea_app_registration_for_a_steam_directory_does_not_create_a_duplicate()
+    {
+        using var steamRoot = new TemporaryDirectory();
+        var steamApps = Path.Combine(steamRoot.Path, "steamapps");
+        var gameDirectory = Path.Combine(steamApps, "common", "EaGame");
+        Directory.CreateDirectory(gameDirectory);
+        await File.WriteAllTextAsync(Path.Combine(steamApps, "appmanifest_99.acf"), """
+            "AppState"
+            {
+                "appid" "99"
+                "name" "EA Game"
+                "installdir" "EaGame"
+            }
+            """);
+        var provider = new WindowsGameInstallationProvider(
+            NullLogger<WindowsGameInstallationProvider>.Instance,
+            new FakeXboxPackageCatalog([]),
+            new FakeDirectoryLinkResolver(string.Empty, string.Empty),
+            () => steamRoot.Path,
+            new FakeEaInstallationCatalog(new EaInstallationCatalogResult(
+                true,
+                [new EaInstallationEntry("ea-game", "EA Game", gameDirectory)])));
+
+        var result = await provider.DiscoverAsync(CancellationToken.None);
+
+        Assert.AreEqual(LauncherAvailability.Available, result.Sources[GameSource.EaApp]);
+        Assert.IsEmpty(result.Games.Where(game => game.Source == GameSource.EaApp));
+        Assert.HasCount(1, result.Games.Where(game => game.Source == GameSource.Steam && game.ExternalGameId == "99"));
+    }
+
+    [TestMethod]
     public async Task Xbox_package_with_game_config_is_discovered_from_effective_location()
     {
         using var directory = new TemporaryDirectory();
@@ -183,6 +237,11 @@ public sealed class WindowsGameInstallationProviderTests
     {
         public string ResolveFinalTarget(string directory) =>
             string.Equals(directory, linkDirectory, StringComparison.OrdinalIgnoreCase) ? targetDirectory : directory;
+    }
+
+    private sealed class FakeEaInstallationCatalog(EaInstallationCatalogResult result) : IEaInstallationCatalog
+    {
+        public EaInstallationCatalogResult GetInstallations() => result;
     }
 
     private sealed class FakeXboxPackageCatalog : IXboxPackageCatalog

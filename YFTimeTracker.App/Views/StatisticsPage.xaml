@@ -403,49 +403,108 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="AKTIVITÄT" />
-                        <TextBlock Margin="0,4,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Tägliche Spielzeit der letzten 26 Wochen" />
+                    <Grid ColumnSpacing="14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="KALENDER-HEATMAP" />
+                            <TextBlock Margin="0,4,0,0" Style="{StaticResource YFMutedTextStyle}" Text="{Binding CalendarDescriptionText}" />
+                        </StackPanel>
+                        <ComboBox
+                            Grid.Column="1"
+                            Width="104"
+                            VerticalAlignment="Center"
+                            ItemsSource="{Binding CalendarYears}"
+                            SelectedItem="{Binding SelectedCalendarYear, Mode=TwoWay}" />
+                    </Grid>
+
+                    <StackPanel Grid.Row="1" Margin="0,14,0,0" Spacing="3">
+                        <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource YFCyanBrush}" Text="{Binding CalendarSummaryText}" />
+                        <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding CalendarPeakText}" />
+                        <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding CalendarStreakText}" />
                     </StackPanel>
-                    <ScrollViewer Grid.Row="1" Margin="0,14,0,0" HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled" VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
-                        <ItemsControl ItemsSource="{Binding HeatmapWeeks}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" Spacing="3" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <ItemsControl ItemsSource="{Binding Days}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <StackPanel Orientation="Vertical" Spacing="3" />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border
-                                                    Width="14"
-                                                    Height="14"
-                                                    Background="{Binding ColorHex, Converter={StaticResource HexColorBrushConverter}}"
-                                                    CornerRadius="3"
-                                                    ToolTipService.ToolTip="{Binding TooltipText}" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+
+                    <ScrollViewer Grid.Row="2" Margin="0,16,0,0" HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled" VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="28" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <ItemsControl Grid.Column="1" ItemsSource="{Binding HeatmapMonths}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Width="{Binding Width}" FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding Label}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <StackPanel Grid.Row="1" Width="24" Spacing="4">
+                                <TextBlock Height="15" FontSize="9" Foreground="{ThemeResource YFMutedBrush}" Text="Mo" />
+                                <TextBlock Height="15" />
+                                <TextBlock Height="15" FontSize="9" Foreground="{ThemeResource YFMutedBrush}" Text="Mi" />
+                                <TextBlock Height="15" />
+                                <TextBlock Height="15" FontSize="9" Foreground="{ThemeResource YFMutedBrush}" Text="Fr" />
+                                <TextBlock Height="15" />
+                                <TextBlock Height="15" FontSize="9" Foreground="{ThemeResource YFMutedBrush}" Text="So" />
+                            </StackPanel>
+
+                            <ItemsControl Grid.Row="1" Grid.Column="1" ItemsSource="{Binding HeatmapWeeks}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="4" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <ItemsControl ItemsSource="{Binding Days}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Vertical" Spacing="4" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border
+                                                        Width="15"
+                                                        Height="15"
+                                                        Background="{Binding ColorHex, Converter={StaticResource HexColorBrushConverter}}"
+                                                        CornerRadius="3"
+                                                        Opacity="{Binding Opacity}"
+                                                        ToolTipService.ToolTip="{Binding TooltipText}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
                     </ScrollViewer>
-                    <StackPanel Grid.Row="2" Margin="0,12,0,0" HorizontalAlignment="Right" Orientation="Horizontal" Spacing="6">
-                        <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="Weniger" />
+
+                    <StackPanel Grid.Row="3" Margin="0,13,0,0" HorizontalAlignment="Right" Orientation="Horizontal" Spacing="6">
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="0" />
                         <Border Width="12" Height="12" Background="#1F9AA8BF" CornerRadius="3" />
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="&lt; 1 h" />
                         <Border Width="12" Height="12" Background="#33387BFF" CornerRadius="3" />
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="1–2 h" />
                         <Border Width="12" Height="12" Background="#66387BFF" CornerRadius="3" />
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="2–4 h" />
                         <Border Width="12" Height="12" Background="#99387BFF" CornerRadius="3" />
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="4 h+" />
                         <Border Width="12" Height="12" Background="#387BFF" CornerRadius="3" />
-                        <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="Mehr" />
                     </StackPanel>
                 </Grid>
             </Border>

@@ -33,6 +33,7 @@ public sealed record LauncherDiscoveryResult(
             [GameSource.Gog] = LauncherAvailability.NotInstalled,
             [GameSource.Xbox] = LauncherAvailability.NotInstalled,
             [GameSource.BattleNet] = LauncherAvailability.NotInstalled,
-            [GameSource.Ubisoft] = LauncherAvailability.NotInstalled
+            [GameSource.Ubisoft] = LauncherAvailability.NotInstalled,
+            [GameSource.EaApp] = LauncherAvailability.NotInstalled
         });
 }

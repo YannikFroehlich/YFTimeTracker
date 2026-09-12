@@ -4,12 +4,14 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using YFTimeTracker.Core.Abstractions;
+using YFTimeTracker.Core.Models;
 
 namespace YFTimeTracker.App.Services;
 
 public sealed class AppDiagnosticsService(
     IAppPathProvider paths,
     IAppUpdateService appUpdateService,
+    ITrackingDiagnosticLog trackingDiagnostics,
     ILogger<AppDiagnosticsService> logger) : IAppDiagnosticsService
 {
     private const int MaximumIncludedLogs = 3;
@@ -55,6 +57,7 @@ public sealed class AppDiagnosticsService(
             paths.ExportDirectory,
             $".YFTimeTracker-Diagnose-{Guid.NewGuid():N}.tmp");
         var logFiles = GetRecentLogFiles();
+        var trackingEvents = trackingDiagnostics.GetRecentEvents();
 
         try
         {
@@ -67,7 +70,8 @@ public sealed class AppDiagnosticsService(
                 FileOptions.Asynchronous))
             using (var archive = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: false))
             {
-                await WriteSummaryAsync(archive, logFiles, cancellationToken);
+                await WriteSummaryAsync(archive, logFiles, trackingEvents.Count, cancellationToken);
+                await WriteTrackingEventsAsync(archive, trackingEvents, cancellationToken);
                 foreach (var logFile in logFiles)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -112,6 +116,7 @@ public sealed class AppDiagnosticsService(
     private async Task WriteSummaryAsync(
         ZipArchive archive,
         IReadOnlyCollection<FileInfo> logFiles,
+        int trackingEventCount,
         CancellationToken cancellationToken)
     {
         var snapshot = GetSnapshot();
@@ -137,6 +142,7 @@ public sealed class AppDiagnosticsService(
             $"Datenbankstatus:    {databaseInfo}",
             string.Empty,
             $"Enthaltene Logs: {logFiles.Count}",
+            $"Tracking-Ereignisse: {trackingEventCount}",
             "Die Datenbank, Backups, Exporte und Spielsessions sind nicht im Archiv enthalten.",
             "Logdateien können lokale Dateipfade und Namen erkannter Spiele enthalten."
         };
@@ -146,6 +152,36 @@ public sealed class AppDiagnosticsService(
         await using var writer = new StreamWriter(stream, new UTF8Encoding(false));
         await writer.WriteAsync(string.Join(Environment.NewLine, lines).AsMemory(), cancellationToken);
     }
+
+    private static async Task WriteTrackingEventsAsync(
+        ZipArchive archive,
+        IReadOnlyList<TrackingDiagnosticEvent> events,
+        CancellationToken cancellationToken)
+    {
+        var entry = archive.CreateEntry("tracking-events.txt", CompressionLevel.Optimal);
+        await using var stream = entry.Open();
+        await using var writer = new StreamWriter(stream, new UTF8Encoding(false));
+        await writer.WriteLineAsync("YFTimeTracker – verständliche Tracking-Ereignisse".AsMemory(), cancellationToken);
+        await writer.WriteLineAsync("Vollständige Dateipfade werden in dieser Übersicht nicht erfasst.".AsMemory(), cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        await writer.WriteLineAsync();
+
+        foreach (var trackingEvent in events.OrderBy(entry => entry.Sequence))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var localTime = TimeZoneInfo.ConvertTime(trackingEvent.OccurredAtUtc, TimeZoneInfo.Local);
+            var line = $"{localTime:yyyy-MM-dd HH:mm:ss} | {FormatSeverity(trackingEvent.Severity),-7} | {trackingEvent.Title} | {trackingEvent.Detail}";
+            await writer.WriteLineAsync(line.AsMemory(), cancellationToken);
+        }
+    }
+
+    private static string FormatSeverity(TrackingDiagnosticSeverity severity) => severity switch
+    {
+        TrackingDiagnosticSeverity.Success => "ERFOLG",
+        TrackingDiagnosticSeverity.Warning => "WARNUNG",
+        TrackingDiagnosticSeverity.Error => "FEHLER",
+        _ => "INFO"
+    };
 
     private static async Task AddLogFileAsync(
         ZipArchive archive,

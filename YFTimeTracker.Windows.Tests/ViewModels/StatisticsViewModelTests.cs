@@ -41,8 +41,12 @@ public sealed class StatisticsViewModelTests
         Assert.HasCount(2, viewModel.GameShares);
         Assert.AreEqual("Alpha Game", viewModel.GameShares[0].Name);
         Assert.AreEqual("75 %", viewModel.GameShares[0].ShareText);
-        Assert.HasCount(26, viewModel.HeatmapWeeks);
+        Assert.HasCount(53, viewModel.HeatmapWeeks);
         Assert.HasCount(7, viewModel.HeatmapWeeks[0].Days);
+        Assert.HasCount(12, viewModel.HeatmapMonths);
+        Assert.AreEqual("1 aktiver Tag · 45 min", viewModel.CalendarSummaryText);
+        Assert.AreEqual("Aktivster Tag: 30.08. · 45 min", viewModel.CalendarPeakText);
+        Assert.AreEqual("Längste Serie: 1 Tag", viewModel.CalendarStreakText);
     }
 
     [TestMethod]
@@ -90,7 +94,7 @@ public sealed class StatisticsViewModelTests
         Assert.IsEmpty(viewModel.TopGames);
         Assert.AreEqual("Noch keine Daten", viewModel.TopGameText);
         Assert.IsEmpty(viewModel.GameShares);
-        Assert.HasCount(26, viewModel.HeatmapWeeks);
+        Assert.HasCount(53, viewModel.HeatmapWeeks);
     }
 
     [TestMethod]
@@ -217,15 +221,20 @@ public sealed class StatisticsViewModelTests
             TimeZoneInfo localTimeZone,
             CancellationToken cancellationToken) => throw new NotSupportedException();
 
-        public Task<IReadOnlyList<DailyPlaytimeInfo>> GetActivityHeatmapAsync(
-            int weekCount,
+        public Task<CalendarHeatmapStatistics> GetCalendarHeatmapAsync(
+            int year,
             TimeZoneInfo localTimeZone,
-            CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<DailyPlaytimeInfo>>(
-                Enumerable.Range(0, weekCount * 7)
+            CancellationToken cancellationToken) => Task.FromResult(
+                new CalendarHeatmapStatistics(
+                    year,
+                    [year, year - 1],
+                    Enumerable.Range(0, DateTime.IsLeapYear(year) ? 366 : 365)
                     .Select(offset => new DailyPlaytimeInfo(
-                        new DateOnly(2026, 8, 30).AddDays(offset - (weekCount * 7 - 1)),
-                        offset == weekCount * 7 - 1 ? TimeSpan.FromMinutes(45) : TimeSpan.Zero))
-                    .ToArray());
+                        new DateOnly(year, 1, 1).AddDays(offset),
+                        new DateOnly(year, 1, 1).AddDays(offset) == new DateOnly(2026, 8, 30)
+                            ? TimeSpan.FromMinutes(45)
+                            : TimeSpan.Zero))
+                    .ToArray()));
     }
 
     private sealed class FakeFilePicker(string? exportPath = null) : IFilePickerService

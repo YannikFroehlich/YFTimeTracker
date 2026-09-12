@@ -17,5 +17,5 @@ public interface IPlaytimeStatisticsService
 
     Task<TimeSpan> GetDurationForGameAndLocalRangeAsync(long gameId, DateOnly localStart, DateOnly localEndExclusive, TimeZoneInfo localTimeZone, CancellationToken cancellationToken);
 
-    Task<IReadOnlyList<DailyPlaytimeInfo>> GetActivityHeatmapAsync(int weekCount, TimeZoneInfo localTimeZone, CancellationToken cancellationToken);
+    Task<CalendarHeatmapStatistics> GetCalendarHeatmapAsync(int year, TimeZoneInfo localTimeZone, CancellationToken cancellationToken);
 }

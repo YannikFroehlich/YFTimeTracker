@@ -8,6 +8,7 @@ using Windows.Foundation;
 using YFTimeTracker.App.Services;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
+using YFTimeTracker.Core.Services;
 
 namespace YFTimeTracker.App.ViewModels;
 
@@ -26,16 +27,18 @@ public sealed class StatisticsViewModel : ObservableObject
     private const double DonutRadius = 50;
     private const double DonutGapDegrees = 3;
     private const int DonutTopGameCount = 5;
-    private const int HeatmapWeekCount = 26;
+    private const double HeatmapWeekWidth = 19;
 
     private readonly IPlaytimeStatisticsService statistics;
     private readonly IClock clock;
     private readonly IFilePickerService filePicker;
     private readonly IExplorerService explorerService;
     private StatisticsPeriodOption selectedPeriod;
+    private int selectedCalendarYear;
     private PlaytimeStatistics? lastReport;
     private string? lastExportedFilePath;
     private int refreshVersion;
+    private int calendarRefreshVersion;
     private string periodDescription = "Die letzten 30 Tage";
     private string totalDurationText = "0 min";
     private string sessionCountText = "Keine Sessions";
@@ -61,6 +64,11 @@ public sealed class StatisticsViewModel : ObservableObject
     private string topGameShareText = "–";
     private bool isExportEnabled;
     private bool isExportFolderAvailable;
+    private string calendarDescriptionText = "Tägliche Spielzeit im Kalenderjahr";
+    private string calendarSummaryText = "Keine aktiven Tage";
+    private string calendarPeakText = "Noch kein aktivster Tag";
+    private string calendarStreakText = "Noch keine Serie";
+    private IReadOnlyList<int> calendarYears;
 
     public StatisticsViewModel(
         IPlaytimeStatisticsService statistics,
@@ -80,6 +88,8 @@ public sealed class StatisticsViewModel : ObservableObject
             new StatisticsPeriodOption(StatisticsPeriodKind.AllTime, "Gesamte Zeit")
         ];
         selectedPeriod = Periods[1];
+        selectedCalendarYear = TimeZoneInfo.ConvertTime(clock.UtcNow, TimeZoneInfo.Local).Year;
+        calendarYears = [selectedCalendarYear];
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         ExportCsvCommand = new AsyncRelayCommand(ExportCsvAsync);
         OpenExportFolderCommand = new RelayCommand(OpenExportFolder);
@@ -100,6 +110,18 @@ public sealed class StatisticsViewModel : ObservableObject
     }
 
     public string PeriodDescription { get => periodDescription; private set => SetProperty(ref periodDescription, value); }
+
+    public int SelectedCalendarYear
+    {
+        get => selectedCalendarYear;
+        set
+        {
+            if (value > 0 && SetProperty(ref selectedCalendarYear, value))
+            {
+                _ = RefreshCalendarAsync(value);
+            }
+        }
+    }
 
     public string TotalDurationText { get => totalDurationText; private set => SetProperty(ref totalDurationText, value); }
 
@@ -149,6 +171,14 @@ public sealed class StatisticsViewModel : ObservableObject
 
     public bool IsExportFolderAvailable { get => isExportFolderAvailable; private set => SetProperty(ref isExportFolderAvailable, value); }
 
+    public string CalendarDescriptionText { get => calendarDescriptionText; private set => SetProperty(ref calendarDescriptionText, value); }
+
+    public string CalendarSummaryText { get => calendarSummaryText; private set => SetProperty(ref calendarSummaryText, value); }
+
+    public string CalendarPeakText { get => calendarPeakText; private set => SetProperty(ref calendarPeakText, value); }
+
+    public string CalendarStreakText { get => calendarStreakText; private set => SetProperty(ref calendarStreakText, value); }
+
     public ObservableCollection<StatisticsTrendPointViewModel> Timeline { get; } = [];
 
     public ObservableCollection<TopGameStatisticsViewModel> TopGames { get; } = [];
@@ -161,6 +191,10 @@ public sealed class StatisticsViewModel : ObservableObject
 
     public ObservableCollection<HeatmapWeekViewModel> HeatmapWeeks { get; } = [];
 
+    public ObservableCollection<HeatmapMonthViewModel> HeatmapMonths { get; } = [];
+
+    public IReadOnlyList<int> CalendarYears { get => calendarYears; private set => SetProperty(ref calendarYears, value); }
+
     public IAsyncRelayCommand RefreshCommand { get; }
 
     public IAsyncRelayCommand ExportCsvCommand { get; }
@@ -170,25 +204,34 @@ public sealed class StatisticsViewModel : ObservableObject
     public async Task RefreshAsync()
     {
         var requestedVersion = Interlocked.Increment(ref refreshVersion);
+        var requestedCalendarVersion = Interlocked.Increment(ref calendarRefreshVersion);
+        var requestedCalendarYear = SelectedCalendarYear;
         StatusMessage = "Statistiken werden aktualisiert …";
 
         try
         {
-            var report = await statistics.GetStatisticsAsync(
+            var reportTask = statistics.GetStatisticsAsync(
                 SelectedPeriod.Kind,
                 TimeZoneInfo.Local,
                 CancellationToken.None);
-            var heatmapDays = await statistics.GetActivityHeatmapAsync(
-                HeatmapWeekCount,
+            var calendarTask = statistics.GetCalendarHeatmapAsync(
+                requestedCalendarYear,
                 TimeZoneInfo.Local,
                 CancellationToken.None);
+            await Task.WhenAll(reportTask, calendarTask);
+
+            var report = await reportTask;
             if (requestedVersion != Volatile.Read(ref refreshVersion))
             {
                 return;
             }
 
             ApplyReport(report);
-            UpdateHeatmap(heatmapDays);
+            if (requestedCalendarVersion == Volatile.Read(ref calendarRefreshVersion))
+            {
+                UpdateCalendarHeatmap(await calendarTask);
+            }
+
             StatusMessage = report.SessionCount == 0
                 ? "Noch keine Sessions im ausgewählten Zeitraum."
                 : $"Zuletzt aktualisiert um {TimeZoneInfo.ConvertTime(clock.UtcNow, TimeZoneInfo.Local):HH:mm}.";
@@ -198,6 +241,29 @@ public sealed class StatisticsViewModel : ObservableObject
             if (requestedVersion == Volatile.Read(ref refreshVersion))
             {
                 StatusMessage = $"Statistiken konnten nicht geladen werden: {exception.Message}";
+            }
+        }
+    }
+
+    private async Task RefreshCalendarAsync(int year)
+    {
+        var requestedVersion = Interlocked.Increment(ref calendarRefreshVersion);
+        try
+        {
+            var calendar = await statistics.GetCalendarHeatmapAsync(
+                year,
+                TimeZoneInfo.Local,
+                CancellationToken.None);
+            if (requestedVersion == Volatile.Read(ref calendarRefreshVersion))
+            {
+                UpdateCalendarHeatmap(calendar);
+            }
+        }
+        catch (Exception exception)
+        {
+            if (requestedVersion == Volatile.Read(ref calendarRefreshVersion))
+            {
+                StatusMessage = $"Kalender konnte nicht geladen werden: {exception.Message}";
             }
         }
     }
@@ -500,35 +566,56 @@ public sealed class StatisticsViewModel : ObservableObject
             DonutCenter + DonutRadius * Math.Sin(angleRadians));
     }
 
-    private void UpdateHeatmap(IReadOnlyList<DailyPlaytimeInfo> days)
+    private void UpdateCalendarHeatmap(CalendarHeatmapStatistics calendar)
     {
         HeatmapWeeks.Clear();
-        if (days.Count == 0)
-        {
-            return;
-        }
+        HeatmapMonths.Clear();
+        CalendarYears = calendar.AvailableYears;
 
-        var maximumSeconds = days.Max(day => day.Duration.TotalSeconds);
-        HeatmapWeekViewModel currentWeek = new();
-        HeatmapWeeks.Add(currentWeek);
+        CalendarDescriptionText = $"Tägliche Spielzeit im Kalenderjahr {calendar.Year}";
+        var yearStart = new DateOnly(calendar.Year, 1, 1);
+        var yearEndExclusive = yearStart.AddYears(1);
+        var gridStart = PlaytimeStatisticsService.GetIsoWeekStart(yearStart);
+        var gridEndExclusive = PlaytimeStatisticsService.GetIsoWeekStart(yearEndExclusive.AddDays(-1)).AddDays(7);
+        var daysByDate = calendar.Days.ToDictionary(day => day.Date);
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(clock.UtcNow, TimeZoneInfo.Local).Date);
 
-        for (var index = 0; index < days.Count; index++)
+        for (var weekStart = gridStart; weekStart < gridEndExclusive; weekStart = weekStart.AddDays(7))
         {
-            if (index > 0 && index % 7 == 0)
+            var week = new HeatmapWeekViewModel();
+            for (var offset = 0; offset < 7; offset++)
             {
-                currentWeek = new HeatmapWeekViewModel();
-                HeatmapWeeks.Add(currentWeek);
+                var date = weekStart.AddDays(offset);
+                if (date < yearStart || date >= yearEndExclusive)
+                {
+                    week.Days.Add(new HeatmapDayViewModel("#00000000", string.Empty, 0));
+                    continue;
+                }
+
+                var duration = daysByDate.GetValueOrDefault(date)?.Duration ?? TimeSpan.Zero;
+                var isFuture = date > today;
+                var level = isFuture ? -1 : GetHeatmapLevel(duration);
+                var tooltip = isFuture
+                    ? $"{date:dd.MM.yyyy}: noch nicht erreicht"
+                    : $"{date:dd.MM.yyyy}: {TimeFormatter.Format(duration)}";
+                week.Days.Add(new HeatmapDayViewModel(GetHeatmapColor(level), tooltip, 1));
             }
 
-            var day = days[index];
-            var level = maximumSeconds <= 0 || day.Duration <= TimeSpan.Zero
-                ? 0
-                : Math.Clamp((int)Math.Ceiling(day.Duration.TotalSeconds / maximumSeconds * 4), 1, 4);
-            currentWeek.Days.Add(new HeatmapDayViewModel(
-                GetHeatmapColor(level),
-                $"{day.Date:dd.MM.yyyy}: {TimeFormatter.Format(day.Duration)}"));
+            HeatmapWeeks.Add(week);
         }
+
+        UpdateHeatmapMonths(gridStart, gridEndExclusive, calendar.Year);
+        UpdateCalendarSummary(calendar.Days.Where(day => day.Date <= today).ToArray());
     }
+
+    private static int GetHeatmapLevel(TimeSpan duration) => duration.TotalHours switch
+    {
+        >= 4 => 4,
+        >= 2 => 3,
+        >= 1 => 2,
+        > 0 => 1,
+        _ => 0
+    };
 
     private static string GetHeatmapColor(int level) => level switch
     {
@@ -536,8 +623,73 @@ public sealed class StatisticsViewModel : ObservableObject
         3 => "#99387BFF",
         2 => "#66387BFF",
         1 => "#33387BFF",
+        -1 => "#148391A8",
         _ => "#1F9AA8BF"
     };
+
+    private void UpdateHeatmapMonths(DateOnly gridStart, DateOnly gridEndExclusive, int year)
+    {
+        int? currentMonth = null;
+        var weekCount = 0;
+        for (var weekStart = gridStart; weekStart < gridEndExclusive; weekStart = weekStart.AddDays(7))
+        {
+            var midpoint = weekStart.AddDays(3);
+            var month = midpoint.Year < year ? 1 : midpoint.Year > year ? 12 : midpoint.Month;
+            if (currentMonth == month)
+            {
+                weekCount++;
+                continue;
+            }
+
+            if (currentMonth is { } completedMonth)
+            {
+                AddHeatmapMonth(completedMonth, weekCount);
+            }
+
+            currentMonth = month;
+            weekCount = 1;
+        }
+
+        if (currentMonth is { } lastMonth)
+        {
+            AddHeatmapMonth(lastMonth, weekCount);
+        }
+    }
+
+    private void AddHeatmapMonth(int month, int weekCount)
+    {
+        var label = GermanCulture.DateTimeFormat.GetAbbreviatedMonthName(month).TrimEnd('.');
+        HeatmapMonths.Add(new HeatmapMonthViewModel(label, weekCount * HeatmapWeekWidth));
+    }
+
+    private void UpdateCalendarSummary(IReadOnlyList<DailyPlaytimeInfo> elapsedDays)
+    {
+        var activeDays = elapsedDays.Where(day => day.Duration > TimeSpan.Zero).ToArray();
+        var totalDuration = TimeSpan.FromTicks(activeDays.Sum(day => day.Duration.Ticks));
+        CalendarSummaryText = activeDays.Length == 0
+            ? "Keine aktiven Tage"
+            : $"{activeDays.Length} {(activeDays.Length == 1 ? "aktiver Tag" : "aktive Tage")} · {TimeFormatter.Format(totalDuration)}";
+
+        var peakDay = activeDays
+            .OrderByDescending(day => day.Duration)
+            .ThenBy(day => day.Date)
+            .FirstOrDefault();
+        CalendarPeakText = peakDay is null
+            ? "Noch kein aktivster Tag"
+            : $"Aktivster Tag: {peakDay.Date:dd.MM.} · {TimeFormatter.Format(peakDay.Duration)}";
+
+        var longestStreak = 0;
+        var currentStreak = 0;
+        foreach (var day in elapsedDays.OrderBy(day => day.Date))
+        {
+            currentStreak = day.Duration > TimeSpan.Zero ? currentStreak + 1 : 0;
+            longestStreak = Math.Max(longestStreak, currentStreak);
+        }
+
+        CalendarStreakText = longestStreak == 0
+            ? "Noch keine Serie"
+            : $"Längste Serie: {longestStreak} {(longestStreak == 1 ? "Tag" : "Tage")}";
+    }
 
     private void UpdateWeekdays(PlaytimeStatistics report)
     {
@@ -642,6 +794,7 @@ public sealed class StatisticsViewModel : ObservableObject
         GameSource.Xbox => "XBOX",
         GameSource.BattleNet => "BATTLE.NET",
         GameSource.Ubisoft => "UBISOFT",
+        GameSource.EaApp => "EA APP",
         _ => "MANUELL"
     };
 
@@ -702,4 +855,6 @@ public sealed class HeatmapWeekViewModel
     public ObservableCollection<HeatmapDayViewModel> Days { get; } = [];
 }
 
-public sealed record HeatmapDayViewModel(string ColorHex, string TooltipText);
+public sealed record HeatmapMonthViewModel(string Label, double Width);
+
+public sealed record HeatmapDayViewModel(string ColorHex, string TooltipText, double Opacity);

@@ -8,7 +8,7 @@ Diese Prüfung deckt Windows-Abläufe ab, die nicht vollständig durch Unit-Test
 2. Unter **Einstellungen → Sicherung** ein Backup erstellen.
 3. Unter **Einstellungen → Diagnose & Support** den Daten- und Logordner kontrollieren.
 4. Tracking und Launcher-Erkennung aktivieren.
-5. Für Launcher-Tests mindestens ein installiertes Steam-, Epic-, GOG- oder Xbox-/Microsoft-Store-Spiel bereithalten.
+5. Für Launcher-Tests mindestens ein installiertes Spiel eines unterstützten Launchers bereithalten.
 
 ## Ersteinrichtung
 
@@ -29,7 +29,7 @@ Diese Prüfung deckt Windows-Abläufe ab, die nicht vollständig durch Unit-Test
 
 ## Pro Launcher
 
-Die Schritte einmal mit einem installierten Steam-, Epic-, GOG- beziehungsweise Xbox-/Microsoft-Store-Spiel durchführen:
+Die Schritte einmal mit einem installierten Steam-, Epic-, GOG-, Xbox-/Microsoft-Store-, Battle.net-, Ubisoft-Connect- beziehungsweise EA-app-Spiel durchführen:
 
 1. Unter **Einstellungen → Launcher-Erkennung** prüfen, ob der Launcher als erkannt erscheint.
 2. Ein noch nicht importiertes Spiel starten. Falls keine eindeutige Start-EXE bekannt ist, muss es nach spätestens zwei Tracking-Scans auf dem Dashboard erscheinen.
@@ -49,6 +49,13 @@ Für Xbox-/Microsoft-Store-Spiele zusätzlich prüfen:
 3. Das Spiel über die Xbox-App oder das Startmenü starten.
 4. Prüfen, dass nicht `gamelaunchhelper.exe`, sondern der tatsächliche Spielprozess übernommen wird.
 5. Das Spiel beenden und kontrollieren, dass genau eine Session mit der Quelle **XBOX** gespeichert wurde.
+
+Für EA-app-Spiele zusätzlich prüfen:
+
+1. Unter **Einstellungen → Tracking** wird „EA app“ als erkannt angezeigt.
+2. Ein nicht mehr installierter Titel, von dem nur noch Daten unter `C:\ProgramData\EA Desktop\InstallData` vorhanden sind, darf nicht erkannt werden.
+3. Ein direkt über die EA app installiertes Spiel starten und prüfen, dass genau ein Bibliothekseintrag mit der Quelle **EA APP** entsteht.
+4. Einen über Steam oder Epic installierten EA-Titel starten. Er muss dem eigentlichen Store zugeordnet werden und darf keinen zweiten EA-app-Eintrag erzeugen.
 
 ## Pause und Unterbrechungen
 
@@ -94,6 +101,19 @@ Für Xbox-/Microsoft-Store-Spiele zusätzlich prüfen:
 6. In der globalen Suche nach `Rückblick` suchen und den Bereichstreffer öffnen. Die App muss zum **Jahresrückblick** navigieren.
 
 ## Auswertung und Fehlerbericht
+
+1. Unter **Statistiken** in der Kalender-Heatmap das aktuelle Jahr auswählen. Alle Monate und Wochentage müssen vollständig angeordnet sein; zukünftige Tage dürfen nicht als Aktivität erscheinen.
+2. Einen Tag mit bekannter Session mit der Maus überfahren. Datum und tägliche Spielzeit müssen im Hinweis mit der Sessions-Liste übereinstimmen.
+3. Zu einem älteren verfügbaren Jahr wechseln. Heatmap, aktive Tage, aktivster Tag und längste Serie müssen vollständig auf dieses Jahr wechseln.
+4. Das Fenster schmal ziehen. Die Kalender-Heatmap muss horizontal scrollbar bleiben, ohne die übrige Statistikseite zu verbreitern oder abzuschneiden.
+
+### Tracking-Diagnose
+
+1. Unter **Einstellungen → Diagnose & Support** den Bereich **Tracking-Ereignisse** öffnen und anschließend ein registriertes Spiel starten und beenden. Zu beiden Vorgängen müssen verständliche Einträge mit Spielname und EXE-Dateiname erscheinen, aber kein vollständiger Dateipfad.
+2. Ein noch nicht importiertes Launcher-Spiel mit nicht eindeutig hinterlegter Start-EXE ausführen. Die Ereignisse müssen zuerst den möglichen Prozess und nach dem zweiten Scan die bestätigte Zuordnung anzeigen.
+3. Einen bekannten Hilfsprozess wie einen Launcher oder Crash Reporter innerhalb eines Spielordners starten. Er muss einmalig mit dem Grund **Hilfsprozess ausgeschlossen** erscheinen und darf keine Session öffnen.
+4. **Diagnosebericht exportieren** wählen. Das ZIP muss `tracking-events.txt` sowie höchstens drei technische Logs enthalten, aber keine Datenbank oder Sicherung.
+5. **Liste leeren** wählen. Die sichtbaren Ereignisse müssen verschwinden; das reguläre Tracking muss unverändert weiterlaufen.
 
 Nach jedem Test die zuletzt erstellte Session in **Sessions** und die Summen in **Statistiken** kontrollieren. Bei Abweichungen unter **Einstellungen → Diagnose & Support** ein Diagnose-ZIP erstellen.
 

@@ -7,16 +7,30 @@ namespace YFTimeTracker.App.Views;
 
 public sealed partial class SettingsPage : Page
 {
+    private readonly DispatcherTimer diagnosticsRefreshTimer = new() { Interval = TimeSpan.FromSeconds(2) };
+
     public SettingsPage()
     {
         InitializeComponent();
         DataContext = App.Services.GetRequiredService<SettingsViewModel>();
+        diagnosticsRefreshTimer.Tick += DiagnosticsRefreshTimer_Tick;
     }
 
     private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
         await ((SettingsViewModel)DataContext).LoadAsync();
         UpdateLayout(SettingsRoot.ActualWidth);
+        diagnosticsRefreshTimer.Start();
+    }
+
+    private void Page_Unloaded(object sender, RoutedEventArgs e)
+    {
+        diagnosticsRefreshTimer.Stop();
+    }
+
+    private void DiagnosticsRefreshTimer_Tick(object? sender, object e)
+    {
+        ((SettingsViewModel)DataContext).RefreshTrackingDiagnostics();
     }
 
     private void SettingsRoot_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -139,5 +153,12 @@ public sealed partial class SettingsPage : Page
         DataSettingsCard.Margin = compact ? new Thickness(0, 0, 0, 12) : new Thickness(0, 14, 0, 0);
         UpdateSettingsCard.Margin = new Thickness(0, compact ? 0 : 14, 0, compact ? 12 : 0);
         DiagnosticsSettingsCard.Margin = compact ? new Thickness(0) : new Thickness(0, 14, 0, 0);
+
+        var compactDiagnostics = width < 650;
+        DiagnosticsOverviewGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+        DiagnosticsOverviewGrid.ColumnDefinitions[1].Width = compactDiagnostics ? new GridLength(0) : GridLength.Auto;
+        Grid.SetRow(DiagnosticsActions, compactDiagnostics ? 1 : 0);
+        Grid.SetColumn(DiagnosticsActions, compactDiagnostics ? 0 : 1);
+        DiagnosticsActions.Margin = compactDiagnostics ? new Thickness(0, 4, 0, 0) : new Thickness(0);
     }
 }

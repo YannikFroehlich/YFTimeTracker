@@ -245,6 +245,7 @@ public sealed class GlobalSearchViewModel(
             GameSource.Xbox => "Xbox / Microsoft Store",
             GameSource.BattleNet => "Battle.net",
             GameSource.Ubisoft => "Ubisoft Connect",
+            GameSource.EaApp => "EA app",
             _ => "Manuell"
         };
     }

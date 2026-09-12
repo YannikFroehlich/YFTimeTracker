@@ -136,7 +136,7 @@ public sealed class DashboardViewModelTests
         public Task<TimeSpan> GetDurationForGameAndLocalRangeAsync(long gameId, DateOnly localStart, DateOnly localEndExclusive, TimeZoneInfo localTimeZone, CancellationToken cancellationToken) =>
             Task.FromResult(GameDuration);
 
-        public Task<IReadOnlyList<DailyPlaytimeInfo>> GetActivityHeatmapAsync(int weekCount, TimeZoneInfo localTimeZone, CancellationToken cancellationToken) =>
+        public Task<CalendarHeatmapStatistics> GetCalendarHeatmapAsync(int year, TimeZoneInfo localTimeZone, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
     }
 

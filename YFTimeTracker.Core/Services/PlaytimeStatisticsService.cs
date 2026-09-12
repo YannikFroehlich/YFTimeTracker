@@ -184,32 +184,70 @@ public sealed class PlaytimeStatisticsService(
         return GetDurationForUtcRange(relevantSessions, rangeStartUtc, rangeEndUtc);
     }
 
-    public async Task<IReadOnlyList<DailyPlaytimeInfo>> GetActivityHeatmapAsync(int weekCount, TimeZoneInfo localTimeZone, CancellationToken cancellationToken)
+    public async Task<CalendarHeatmapStatistics> GetCalendarHeatmapAsync(
+        int year,
+        TimeZoneInfo localTimeZone,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(localTimeZone);
-        ArgumentOutOfRangeException.ThrowIfLessThan(weekCount, 1);
 
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(clock.UtcNow, localTimeZone).Date);
-        var currentWeekStart = GetIsoWeekStart(today);
-        var start = currentWeekStart.AddDays(-(weekCount - 1) * 7);
-        var endExclusive = currentWeekStart.AddDays(7);
+        if (year < 1 || year > today.Year)
+        {
+            throw new ArgumentOutOfRangeException(nameof(year), year, $"Das Kalenderjahr muss zwischen 1 und {today.Year} liegen.");
+        }
+
+        var start = new DateOnly(year, 1, 1);
+        var endExclusive = start.AddYears(1);
 
         var rangeStartUtc = LocalDateStartToUtc(start, localTimeZone);
         var rangeEndUtc = LocalDateStartToUtc(endExclusive, localTimeZone);
-        var relevantSessions = await sessions.GetSessionsAsync(rangeStartUtc, rangeEndUtc, cancellationToken);
+        var relevantSessionsTask = sessions.GetSessionsAsync(rangeStartUtc, rangeEndUtc, cancellationToken);
+        var earliestSessionTask = readRepository.GetEarliestSessionStartAsync(cancellationToken);
+        await Task.WhenAll(relevantSessionsTask, earliestSessionTask);
 
-        var days = new List<DailyPlaytimeInfo>(weekCount * 7);
-        for (var date = start; date < endExclusive; date = date.AddDays(1))
+        var relevantSessions = await relevantSessionsTask;
+        var earliestSessionStartUtc = await earliestSessionTask;
+        var earliestYear = earliestSessionStartUtc is null
+            ? today.Year
+            : TimeZoneInfo.ConvertTime(earliestSessionStartUtc.Value, localTimeZone).Year;
+        var firstAvailableYear = Math.Min(year, Math.Min(today.Year, earliestYear));
+        var availableYears = Enumerable.Range(firstAvailableYear, today.Year - firstAvailableYear + 1)
+            .Reverse()
+            .ToArray();
+
+        var dailyTotals = Enumerable.Range(0, endExclusive.DayNumber - start.DayNumber)
+            .Select(offset => start.AddDays(offset))
+            .ToDictionary(date => date, _ => TimeSpan.Zero);
+
+        foreach (var session in relevantSessions)
         {
-            days.Add(new DailyPlaytimeInfo(
-                date,
-                GetDurationForUtcRange(
-                    relevantSessions,
+            var sessionEnd = GetEffectiveSessionEnd(session);
+            var overlapStart = session.StartedAtUtc > rangeStartUtc ? session.StartedAtUtc : rangeStartUtc;
+            var overlapEnd = sessionEnd < rangeEndUtc ? sessionEnd : rangeEndUtc;
+            if (overlapEnd <= overlapStart)
+            {
+                continue;
+            }
+
+            var firstDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(overlapStart, localTimeZone).Date);
+            var lastDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(overlapEnd.AddTicks(-1), localTimeZone).Date);
+            for (var date = firstDate; date <= lastDate; date = date.AddDays(1))
+            {
+                dailyTotals[date] += GetOverlap(
+                    session,
                     LocalDateStartToUtc(date, localTimeZone),
-                    LocalDateStartToUtc(date.AddDays(1), localTimeZone))));
+                    LocalDateStartToUtc(date.AddDays(1), localTimeZone));
+            }
         }
 
-        return days;
+        var days = new List<DailyPlaytimeInfo>(dailyTotals.Count);
+        for (var date = start; date < endExclusive; date = date.AddDays(1))
+        {
+            days.Add(new DailyPlaytimeInfo(date, dailyTotals[date]));
+        }
+
+        return new CalendarHeatmapStatistics(year, availableYears, days);
     }
 
     public static DateOnly GetIsoWeekStart(DateOnly date)

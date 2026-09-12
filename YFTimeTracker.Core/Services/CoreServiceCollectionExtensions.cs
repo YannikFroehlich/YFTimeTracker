@@ -8,6 +8,7 @@ public static class CoreServiceCollectionExtensions
     public static IServiceCollection AddYFTimeTrackerCore(this IServiceCollection services)
     {
         services.AddSingleton<IClock, SystemClock>();
+        services.AddSingleton<ITrackingDiagnosticLog, TrackingDiagnosticLog>();
         services.AddSingleton<IGameCatalogService, GameCatalogService>();
         services.AddSingleton<IGameSessionEditor, GameSessionEditor>();
         services.AddSingleton<IPlaytimeStatisticsService, PlaytimeStatisticsService>();

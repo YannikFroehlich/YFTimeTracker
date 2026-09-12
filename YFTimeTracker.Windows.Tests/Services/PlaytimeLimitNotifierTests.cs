@@ -282,7 +282,7 @@ public sealed class PlaytimeLimitNotifierTests
             return Task.FromResult(Duration);
         }
 
-        public Task<IReadOnlyList<DailyPlaytimeInfo>> GetActivityHeatmapAsync(int weekCount, TimeZoneInfo localTimeZone, CancellationToken cancellationToken)
+        public Task<CalendarHeatmapStatistics> GetCalendarHeatmapAsync(int year, TimeZoneInfo localTimeZone, CancellationToken cancellationToken)
             => throw new NotSupportedException();
     }
 

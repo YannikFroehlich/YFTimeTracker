@@ -24,16 +24,27 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
     private readonly IXboxPackageCatalog xboxPackages;
     private readonly IDirectoryLinkResolver directoryLinks;
     private readonly Func<string?> steamRootLocator;
+    private readonly IEaInstallationCatalog eaInstallations;
 
     public WindowsGameInstallationProvider(ILogger<WindowsGameInstallationProvider> logger)
-        : this(logger, new WindowsXboxPackageCatalog(), new WindowsDirectoryLinkResolver(), LocateSteamRoot)
+        : this(
+            logger,
+            new WindowsXboxPackageCatalog(),
+            new WindowsDirectoryLinkResolver(),
+            LocateSteamRoot,
+            new WindowsEaInstallationCatalog())
     {
     }
 
     internal WindowsGameInstallationProvider(
         ILogger<WindowsGameInstallationProvider> logger,
         IXboxPackageCatalog xboxPackages)
-        : this(logger, xboxPackages, new WindowsDirectoryLinkResolver(), LocateSteamRoot)
+        : this(
+            logger,
+            xboxPackages,
+            new WindowsDirectoryLinkResolver(),
+            LocateSteamRoot,
+            new WindowsEaInstallationCatalog())
     {
     }
 
@@ -42,11 +53,22 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
         IXboxPackageCatalog xboxPackages,
         IDirectoryLinkResolver directoryLinks,
         Func<string?> steamRootLocator)
+        : this(logger, xboxPackages, directoryLinks, steamRootLocator, new WindowsEaInstallationCatalog())
+    {
+    }
+
+    internal WindowsGameInstallationProvider(
+        ILogger<WindowsGameInstallationProvider> logger,
+        IXboxPackageCatalog xboxPackages,
+        IDirectoryLinkResolver directoryLinks,
+        Func<string?> steamRootLocator,
+        IEaInstallationCatalog eaInstallations)
     {
         this.logger = logger;
         this.xboxPackages = xboxPackages;
         this.directoryLinks = directoryLinks;
         this.steamRootLocator = steamRootLocator;
+        this.eaInstallations = eaInstallations;
     }
 
     public Task<LauncherDiscoveryResult> DiscoverAsync(CancellationToken cancellationToken)
@@ -60,6 +82,15 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
         DiscoverSafely(GameSource.Xbox, () => DiscoverXbox(games, cancellationToken), sources);
         DiscoverSafely(GameSource.BattleNet, () => DiscoverBattleNet(games, cancellationToken), sources);
         DiscoverSafely(GameSource.Ubisoft, () => DiscoverUbisoft(games, cancellationToken), sources);
+        DiscoverSafely(GameSource.EaApp, () => DiscoverEaApp(games, cancellationToken), sources);
+
+        // Einige bei Steam oder Epic gekaufte EA-Spiele registrieren sich zusätzlich bei der EA app.
+        // In diesem Fall bleibt der eigentliche Store die Quelle und es entsteht kein zweiter Katalogeintrag.
+        var thirdPartyDirectoryKeys = games
+            .Where(game => game.Source != GameSource.EaApp)
+            .Select(game => game.InstallDirectoryKey)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        games.RemoveAll(game => game.Source == GameSource.EaApp && thirdPartyDirectoryKeys.Contains(game.InstallDirectoryKey));
 
         // Ein Spiel kann in mehreren Ordnern liegen (etwa zusätzlich als einzeln geladenes
         // Steam-Depot); die Einträge teilen sich dieselbe ExternalGameId und landen daher später
@@ -72,6 +103,24 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
             .ToArray();
 
         return Task.FromResult(new LauncherDiscoveryResult(distinctGames, sources));
+    }
+
+    private bool DiscoverEaApp(ICollection<GameInstallationInfo> games, CancellationToken cancellationToken)
+    {
+        var result = eaInstallations.GetInstallations();
+        foreach (var game in result.Games)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            AddInstallation(
+                games,
+                GameSource.EaApp,
+                game.ExternalId,
+                game.Name,
+                game.InstallDirectory,
+                []);
+        }
+
+        return result.IsLauncherInstalled;
     }
 
     private void DiscoverSafely(
