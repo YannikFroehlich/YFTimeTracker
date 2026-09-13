@@ -2,6 +2,12 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.5.0 – 2026-09-13
+- Neu: In den Einstellungen lassen sich einzelne EXE-Dateien oder vollständige Ordner von der automatischen Spielerkennung ausschließen. Bereits laufende Sessions werden beim nächsten Scan beendet, wenn ihr Prozess von einer neuen Regel erfasst wird.
+- Neu: Für jedes Spiel kann in den Spieldetails ein eigenes lokales PNG- oder JPEG-Cover ausgewählt und wieder entfernt werden. Das Cover erscheint in Dashboard, Bibliothek, Suche, Sessions und Jahresrückblick; ohne eigenes Cover bleibt das bisherige EXE-Icon aktiv.
+- Neu: Die Statistikseite zeigt zusätzlich Median-Session, bevorzugte Tageszeit, Rekordtag sowie direkte Vergleiche der letzten 7, 30 und 365 Tage mit dem jeweils vorherigen Zeitraum.
+- Verbessert: Sicherungen enthalten jetzt auch eigene Cover und Erkennungsausschlüsse. Sicherungen der bisherigen Formatversionen bleiben importierbar.
+
 ## 1.4.1 – 2026-09-12
 - Verbessert: GitHub Actions sowie Entity Framework Core und die zugehörigen Microsoft.Extensions-Pakete wurden aktualisiert.
 - Behoben: Der Release-Ablauf bricht jetzt ab, wenn die berechnete Version nicht dem obersten Changelog-Eintrag entspricht, statt ein Release mit unpassenden Versionshinweisen zu veröffentlichen.
