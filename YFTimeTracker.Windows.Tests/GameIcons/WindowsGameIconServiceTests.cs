@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using YFTimeTracker.Core.Abstractions;
+using YFTimeTracker.Core.Models;
 using YFTimeTracker.Windows.GameIcons;
 
 namespace YFTimeTracker.Windows.Tests.GameIcons;
@@ -53,6 +54,49 @@ public sealed class WindowsGameIconServiceTests
         Assert.AreEqual(0, extractor.CallCount);
     }
 
+    [TestMethod]
+    public async Task Custom_cover_is_stored_materialized_and_removed()
+    {
+        using var paths = new TempAppPathProvider();
+        var sourcePath = Path.Combine(paths.DataDirectory, "cover.png");
+        await File.WriteAllBytesAsync(sourcePath, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3]);
+        var artworks = new FakeArtworkRepository();
+        var service = new WindowsGameIconService(
+            paths,
+            new FakeIconExtractor(),
+            NullLogger<WindowsGameIconService>.Instance,
+            artworks);
+
+        var coverPath = await service.SetCustomCoverAsync(42, sourcePath, CancellationToken.None);
+
+        Assert.IsTrue(File.Exists(coverPath));
+        Assert.IsTrue(await service.HasCustomCoverAsync(42, CancellationToken.None));
+        Assert.AreEqual(
+            coverPath,
+            await service.GetGameImagePathAsync(42, null, CancellationToken.None));
+        Assert.AreEqual("image/png", artworks.Artwork?.ContentType);
+
+        await service.RemoveCustomCoverAsync(42, CancellationToken.None);
+        Assert.IsFalse(await service.HasCustomCoverAsync(42, CancellationToken.None));
+        Assert.IsFalse(File.Exists(coverPath));
+    }
+
+    [TestMethod]
+    public async Task Invalid_custom_cover_is_rejected()
+    {
+        using var paths = new TempAppPathProvider();
+        var sourcePath = Path.Combine(paths.DataDirectory, "cover.png");
+        await File.WriteAllTextAsync(sourcePath, "not an image");
+        var service = new WindowsGameIconService(
+            paths,
+            new FakeIconExtractor(),
+            NullLogger<WindowsGameIconService>.Instance,
+            new FakeArtworkRepository());
+
+        await Assert.ThrowsAsync<InvalidDataException>(() =>
+            service.SetCustomCoverAsync(42, sourcePath, CancellationToken.None));
+    }
+
     private sealed class FakeIconExtractor : IExecutableIconExtractor
     {
         public int CallCount { get; private set; }
@@ -65,6 +109,35 @@ public sealed class WindowsGameIconServiceTests
             CallCount++;
             await File.WriteAllBytesAsync(destinationPath, [0x89, 0x50, 0x4E, 0x47], cancellationToken);
             return true;
+        }
+    }
+
+    private sealed class FakeArtworkRepository : IGameArtworkRepository
+    {
+        public GameArtwork? Artwork { get; private set; }
+
+        public Task<GameArtwork?> GetByGameIdAsync(long gameId, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(Artwork?.GameId == gameId ? Artwork : null);
+        }
+
+        public Task UpsertAsync(GameArtwork artwork, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Artwork = artwork;
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(long gameId, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (Artwork?.GameId == gameId)
+            {
+                Artwork = null;
+            }
+
+            return Task.CompletedTask;
         }
     }
 

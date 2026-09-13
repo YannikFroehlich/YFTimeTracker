@@ -9,6 +9,7 @@ public static class CoreServiceCollectionExtensions
     {
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<ITrackingDiagnosticLog, TrackingDiagnosticLog>();
+        services.AddSingleton<ITrackingExclusionService, TrackingExclusionService>();
         services.AddSingleton<IGameCatalogService, GameCatalogService>();
         services.AddSingleton<IGameSessionEditor, GameSessionEditor>();
         services.AddSingleton<IPlaytimeStatisticsService, PlaytimeStatisticsService>();

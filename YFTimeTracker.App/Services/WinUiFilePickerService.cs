@@ -18,6 +18,36 @@ public sealed class WinUiFilePickerService(IAppPathProvider paths) : IFilePicker
         return file?.Path;
     }
 
+    public async Task<string?> PickGameCoverAsync(CancellationToken cancellationToken)
+    {
+        var picker = new FileOpenPicker
+        {
+            SuggestedStartLocation = PickerLocationId.PicturesLibrary
+        };
+        InitializePicker(picker);
+        picker.FileTypeFilter.Add(".png");
+        picker.FileTypeFilter.Add(".jpg");
+        picker.FileTypeFilter.Add(".jpeg");
+
+        var file = await picker.PickSingleFileAsync();
+        cancellationToken.ThrowIfCancellationRequested();
+        return file?.Path;
+    }
+
+    public async Task<string?> PickTrackingExclusionFolderAsync(CancellationToken cancellationToken)
+    {
+        var picker = new FolderPicker
+        {
+            SuggestedStartLocation = PickerLocationId.ComputerFolder
+        };
+        InitializePicker(picker);
+        picker.FileTypeFilter.Add("*");
+
+        var folder = await picker.PickSingleFolderAsync();
+        cancellationToken.ThrowIfCancellationRequested();
+        return folder?.Path;
+    }
+
     public async Task<string?> PickExportArchiveAsync(CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(paths.ExportDirectory);

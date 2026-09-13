@@ -81,6 +81,14 @@ public sealed partial class SettingsPage : Page
         }
     }
 
+    private async void RemoveTrackingExclusion_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: long id })
+        {
+            await ((SettingsViewModel)DataContext).RemoveTrackingExclusionAsync(id);
+        }
+    }
+
     private async Task<bool> ConfirmAsync(string title, string message, string primaryButtonText)
     {
         var dialog = new ContentDialog
@@ -130,6 +138,7 @@ public sealed partial class SettingsPage : Page
 
     private void UpdateLayout(double width)
     {
+        ExclusionActions.Orientation = width < 560 ? Orientation.Vertical : Orientation.Horizontal;
         var compact = width < 900;
         SettingsGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
         SettingsGrid.ColumnDefinitions[1].Width = compact ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
@@ -140,16 +149,20 @@ public sealed partial class SettingsPage : Page
         Grid.SetRow(WindowsSettingsCard, compact ? 1 : 0);
         Grid.SetColumn(DataSettingsCard, 0);
         Grid.SetColumnSpan(DataSettingsCard, compact ? 1 : 2);
-        Grid.SetRow(DataSettingsCard, compact ? 2 : 1);
+        Grid.SetRow(DataSettingsCard, compact ? 3 : 2);
+        Grid.SetColumn(ExclusionSettingsCard, 0);
+        Grid.SetColumnSpan(ExclusionSettingsCard, compact ? 1 : 2);
+        Grid.SetRow(ExclusionSettingsCard, compact ? 2 : 1);
         Grid.SetColumn(UpdateSettingsCard, 0);
         Grid.SetColumnSpan(UpdateSettingsCard, compact ? 1 : 2);
-        Grid.SetRow(UpdateSettingsCard, compact ? 3 : 2);
+        Grid.SetRow(UpdateSettingsCard, compact ? 4 : 3);
         Grid.SetColumn(DiagnosticsSettingsCard, 0);
         Grid.SetColumnSpan(DiagnosticsSettingsCard, compact ? 1 : 2);
-        Grid.SetRow(DiagnosticsSettingsCard, compact ? 4 : 3);
+        Grid.SetRow(DiagnosticsSettingsCard, compact ? 5 : 4);
 
         TrackingSettingsCard.Margin = compact ? new Thickness(0, 0, 0, 12) : new Thickness(0);
         WindowsSettingsCard.Margin = compact ? new Thickness(0, 0, 0, 12) : new Thickness(14, 0, 0, 0);
+        ExclusionSettingsCard.Margin = compact ? new Thickness(0, 0, 0, 12) : new Thickness(0, 14, 0, 0);
         DataSettingsCard.Margin = compact ? new Thickness(0, 0, 0, 12) : new Thickness(0, 14, 0, 0);
         UpdateSettingsCard.Margin = new Thickness(0, compact ? 0 : 14, 0, compact ? 12 : 0);
         DiagnosticsSettingsCard.Margin = compact ? new Thickness(0) : new Thickness(0, 14, 0, 0);

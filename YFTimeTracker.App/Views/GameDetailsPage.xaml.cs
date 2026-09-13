@@ -79,6 +79,7 @@ public sealed partial class GameDetailsPage : Page
 
     private void UpdateResponsiveLayout(double width)
     {
+        CoverActions.Orientation = width < 620 ? Orientation.Vertical : Orientation.Horizontal;
         var compactHero = width < 900;
         HeroGrid.ColumnDefinitions[0].Width = new GridLength(94);
         HeroGrid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);

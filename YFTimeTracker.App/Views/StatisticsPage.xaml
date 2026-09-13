@@ -23,6 +23,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <Grid x:Name="HeaderGrid" Margin="0,0,0,14">
@@ -397,7 +398,108 @@
                 </Border>
             </Grid>
 
-            <Border x:Name="HeatmapCard" Grid.Row="4" Margin="0,14,0,0" Style="{StaticResource YFCardStyle}">
+            <Grid x:Name="AdvancedGrid" Grid.Row="4" Margin="0,14,0,0" ColumnSpacing="14" RowSpacing="14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0.8*" />
+                    <ColumnDefinition Width="1.2*" />
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="ComparisonCard" MinHeight="348" Style="{StaticResource YFCardStyle}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="ZEITRAUMVERGLEICH" />
+                        <TextBlock Margin="0,4,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Die letzten 7, 30 und 365 Tage jeweils gegen den gleich langen Zeitraum davor" TextWrapping="Wrap" />
+                        <ItemsControl Margin="0,16,0,0" ItemsSource="{Binding RollingComparisons}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,9" Padding="13,11" Background="{ThemeResource YFButtonBackgroundBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Style="{StaticResource YFCaptionStyle}" Text="{Binding Label}" />
+                                                <TextBlock Margin="0,3,0,0" Style="{StaticResource YFMutedTextStyle}" Text="{Binding PreviousDurationText}" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" HorizontalAlignment="Right" FontFamily="Segoe UI Variable Display" FontSize="19" FontWeight="SemiBold" Text="{Binding CurrentDurationText}" />
+                                            <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Margin="0,7,0,0" FontSize="11" Foreground="{Binding ChangeColor, Converter={StaticResource HexColorBrushConverter}}" Text="{Binding ChangeText}" TextWrapping="Wrap" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="HabitsCard" Grid.Column="1" MinHeight="348" Style="{StaticResource YFCardStyle}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SPIELMUSTER &amp; REKORDE" />
+                        <TextBlock Margin="0,4,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Spielzeit nach Tageszeit und zusätzliche Bestwerte im ausgewählten Zeitraum" TextWrapping="Wrap" />
+                        <ItemsControl Margin="0,16,0,0" ItemsSource="{Binding TimesOfDay}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,9" ColumnSpacing="10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="86" />
+                                            <ColumnDefinition Width="76" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="78" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Text="{Binding Name}" />
+                                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding RangeText}" />
+                                        <ProgressBar Grid.Column="2" Height="7" Maximum="100" Background="{ThemeResource YFButtonBackgroundBrush}" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Value="{Binding Progress}" />
+                                        <TextBlock Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Text="{Binding DurationText}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Border Height="1" Margin="0,5,0,13" Background="{ThemeResource YFStrokeBrush}" />
+                        <Grid x:Name="HabitHighlightsGrid" ColumnSpacing="9" RowSpacing="9">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="MedianHabit" Padding="11" Background="#152E55" CornerRadius="9">
+                                <StackPanel Spacing="5">
+                                    <TextBlock Style="{StaticResource YFCaptionStyle}" Text="MEDIAN-SESSION" />
+                                    <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding MedianDurationText}" />
+                                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Die mittlere Session" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                            <Border x:Name="PreferredTimeHabit" Grid.Column="1" Padding="11" Background="#2C2054" CornerRadius="9">
+                                <StackPanel Spacing="5">
+                                    <TextBlock Style="{StaticResource YFCaptionStyle}" Text="LIEBLINGSZEIT" />
+                                    <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding PreferredTimeOfDayText}" TextWrapping="Wrap" />
+                                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding PreferredTimeOfDayDetailText}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                            <Border x:Name="RecordDayHabit" Grid.Column="2" Padding="11" Background="#0C3946" CornerRadius="9">
+                                <StackPanel Spacing="5">
+                                    <TextBlock Style="{StaticResource YFCaptionStyle}" Text="REKORDTAG" />
+                                    <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding RecordDayText}" TextWrapping="Wrap" />
+                                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding RecordDayDetailText}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border x:Name="HeatmapCard" Grid.Row="5" Margin="0,14,0,0" Style="{StaticResource YFCardStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -509,7 +611,7 @@
                 </Grid>
             </Border>
 
-            <Border x:Name="TagSharesCard" Grid.Row="5" Margin="0,14,0,0" Style="{StaticResource YFCardStyle}" Visibility="{Binding TagSharesVisibility}">
+            <Border x:Name="TagSharesCard" Grid.Row="6" Margin="0,14,0,0" Style="{StaticResource YFCardStyle}" Visibility="{Binding TagSharesVisibility}">
                 <Grid ColumnSpacing="24">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -556,7 +658,7 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Row="6" Margin="0,14,0,0" Padding="12,9" Background="{ThemeResource YFStatusBarBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
+            <Border Grid.Row="7" Margin="0,14,0,0" Padding="12,9" Background="{ThemeResource YFStatusBarBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
                 <Grid ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />

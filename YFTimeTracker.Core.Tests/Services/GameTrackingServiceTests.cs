@@ -37,6 +37,7 @@ public sealed class GameTrackingServiceTests
             new FakeSuspendNotifier(),
             clock,
             diagnostics,
+            new TrackingExclusionService(new InMemoryTrackingExclusionRepository(), clock),
             NullLogger<GameTrackingService>.Instance);
 
         await tracking.ScanOnceAsync(CancellationToken.None);
@@ -947,6 +948,65 @@ public sealed class GameTrackingServiceTests
         Assert.IsEmpty(await sessions.GetOpenSessionsAsync(CancellationToken.None));
     }
 
+    [TestMethod]
+    public async Task User_excluded_executable_does_not_start_a_known_game_session()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-09-13T10:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var path = @"C:\Games\Ignored\game.exe";
+        var game = await AddManualGameAsync(games, "Ignored", clock.UtcNow, path);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var exclusionService = new TrackingExclusionService(new InMemoryTrackingExclusionRepository(), clock);
+        await exclusionService.AddAsync(TrackingExclusionKind.Executable, path, CancellationToken.None);
+        var diagnostics = new TrackingDiagnosticLog(clock);
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(path),
+            new FakeGameInstallationProvider(),
+            clock,
+            diagnostics: diagnostics,
+            exclusions: exclusionService);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        Assert.IsEmpty(await sessions.GetOpenSessionsAsync(CancellationToken.None));
+        Assert.IsTrue(diagnostics.GetRecentEvents().Any(item =>
+            item.Kind == TrackingDiagnosticEventKind.Exclusion
+            && item.Title == "Benutzerdefiniert ausgeschlossen"));
+    }
+
+    [TestMethod]
+    public async Task User_excluded_directory_prevents_launcher_import()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-09-13T10:00:00Z"));
+        var games = new InMemoryGameRepository();
+        var sessions = new InMemoryGameSessionRepository(_ => null);
+        var installDirectory = @"C:\Steam\steamapps\common\Ignored";
+        var path = Path.Combine(installDirectory, "game.exe");
+        var installations = CreateInstallationProvider(
+            GameSource.Steam,
+            "123",
+            "Ignored",
+            installDirectory,
+            [path]);
+        var exclusionService = new TrackingExclusionService(new InMemoryTrackingExclusionRepository(), clock);
+        await exclusionService.AddAsync(TrackingExclusionKind.Directory, installDirectory, CancellationToken.None);
+        var tracking = CreateTracking(
+            games,
+            sessions,
+            CreateProcessSnapshot(path),
+            installations,
+            clock,
+            exclusions: exclusionService);
+
+        await tracking.ScanOnceAsync(CancellationToken.None);
+        await tracking.ScanOnceAsync(CancellationToken.None);
+
+        Assert.IsEmpty(await games.GetAllAsync(CancellationToken.None));
+        Assert.IsEmpty(await sessions.GetOpenSessionsAsync(CancellationToken.None));
+    }
+
     private static GameTrackingService CreateTracking(
         InMemoryGameRepository games,
         InMemoryGameSessionRepository sessions,
@@ -956,7 +1016,8 @@ public sealed class GameTrackingServiceTests
         FakeBootSessionProvider? bootSession = null,
         InMemorySettingsStore? settings = null,
         FakeSuspendNotifier? suspendNotifier = null,
-        ITrackingDiagnosticLog? diagnostics = null)
+        ITrackingDiagnosticLog? diagnostics = null,
+        ITrackingExclusionService? exclusions = null)
     {
         return new GameTrackingService(
             games,
@@ -968,6 +1029,7 @@ public sealed class GameTrackingServiceTests
             suspendNotifier ?? new FakeSuspendNotifier(),
             clock,
             diagnostics ?? new TrackingDiagnosticLog(clock),
+            exclusions ?? new TrackingExclusionService(new InMemoryTrackingExclusionRepository(), clock),
             NullLogger<GameTrackingService>.Instance);
     }
 

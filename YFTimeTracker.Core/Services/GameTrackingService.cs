@@ -14,6 +14,7 @@ public sealed class GameTrackingService(
     ISystemSuspendNotifier suspendNotifier,
     IClock clock,
     ITrackingDiagnosticLog diagnostics,
+    ITrackingExclusionService exclusions,
     ILogger<GameTrackingService> logger) : IGameTrackingService
 {
     private const int MinScanIntervalSeconds = 1;
@@ -47,6 +48,7 @@ public sealed class GameTrackingService(
     private readonly SemaphoreSlim gate = new(1, 1);
     private readonly Dictionary<string, DiscoveryCandidate> discoveryCandidates = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> reportedExcludedCandidates = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> reportedUserExcludedProcesses = new(StringComparer.OrdinalIgnoreCase);
     private CancellationTokenSource? runCancellation;
     private Task? runTask;
     private LauncherDiscoveryResult launcherCatalog = LauncherDiscoveryResult.Empty;
@@ -149,6 +151,7 @@ public sealed class GameTrackingService(
             await CloseAllOpenSessionsAsync(clock.UtcNow, cancellationToken);
             discoveryCandidates.Clear();
             reportedExcludedCandidates.Clear();
+            reportedUserExcludedProcesses.Clear();
             await PublishStateAsync(false, cancellationToken);
             diagnostics.Record(
                 TrackingDiagnosticEventKind.Status,
@@ -418,7 +421,7 @@ public sealed class GameTrackingService(
         }
 
         var currentBootId = bootSessionProvider.GetCurrentBootSessionId();
-        var runningProcesses = await processSnapshotProvider.GetRunningProcessesAsync(cancellationToken);
+        var runningProcesses = await GetTrackableRunningProcessesAsync(cancellationToken);
         var runningPathKeys = runningProcesses.Select(process => process.ExecutablePathKey).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         foreach (var session in openSessions)
@@ -474,7 +477,7 @@ public sealed class GameTrackingService(
             previousSuccessfulScanAtUtc = now;
         }
 
-        var runningProcesses = await processSnapshotProvider.GetRunningProcessesAsync(cancellationToken);
+        var runningProcesses = await GetTrackableRunningProcessesAsync(cancellationToken);
         var runningPathKeys = runningProcesses.Select(process => process.ExecutablePathKey).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var sessionStartOverrides = new Dictionary<long, DateTimeOffset>();
         var scanInterval = await RefreshScanIntervalAsync(cancellationToken);
@@ -650,6 +653,52 @@ public sealed class GameTrackingService(
         }
 
         lastSuccessfulScanAtUtc = now;
+    }
+
+    private async Task<IReadOnlyList<RunningProcessInfo>> GetTrackableRunningProcessesAsync(
+        CancellationToken cancellationToken)
+    {
+        var runningProcesses = await processSnapshotProvider.GetRunningProcessesAsync(cancellationToken);
+        var rules = await exclusions.GetRulesAsync(cancellationToken);
+        if (rules.Count == 0)
+        {
+            reportedUserExcludedProcesses.Clear();
+            return runningProcesses;
+        }
+
+        var included = new List<RunningProcessInfo>(runningProcesses.Count);
+        var seenExcludedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var process in runningProcesses)
+        {
+            var rule = exclusions.FindMatch(process, rules);
+            if (rule is null)
+            {
+                included.Add(process);
+                continue;
+            }
+
+            var reportKey = $"{rule.Id}:{process.ExecutablePathKey}";
+            seenExcludedKeys.Add(reportKey);
+            if (reportedUserExcludedProcesses.Add(reportKey))
+            {
+                diagnostics.Record(
+                    TrackingDiagnosticEventKind.Exclusion,
+                    TrackingDiagnosticSeverity.Information,
+                    "Benutzerdefiniert ausgeschlossen",
+                    rule.Kind == TrackingExclusionKind.Executable
+                        ? $"{Path.GetFileName(process.ExecutablePath)} wird wegen einer EXE-Regel nicht getrackt."
+                        : $"{Path.GetFileName(process.ExecutablePath)} wird wegen einer Ordnerregel nicht getrackt.");
+            }
+        }
+
+        foreach (var staleKey in reportedUserExcludedProcesses
+                     .Where(key => !seenExcludedKeys.Contains(key))
+                     .ToArray())
+        {
+            reportedUserExcludedProcesses.Remove(staleKey);
+        }
+
+        return included;
     }
 
     private async Task RefreshLauncherCatalogIfNeededAsync(DateTimeOffset now, CancellationToken cancellationToken)

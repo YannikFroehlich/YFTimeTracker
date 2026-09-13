@@ -352,7 +352,7 @@ public sealed class DashboardViewModel : ObservableObject
         var tasks = games.Select(async game => new
         {
             game.GameId,
-            IconPath = await gameIcons.GetIconPathAsync(game.ExecutablePath, CancellationToken.None)
+            IconPath = await gameIcons.GetGameImagePathAsync(game.GameId, game.ExecutablePath, CancellationToken.None)
         });
         var resolved = await Task.WhenAll(tasks);
         return resolved.ToDictionary(item => item.GameId, item => item.IconPath);

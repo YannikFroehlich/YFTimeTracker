@@ -612,7 +612,8 @@ public sealed class SessionsViewModel : ObservableObject
         var tasks = games.Select(async game => new
         {
             game.Id,
-            IconPath = await gameIcons.GetIconPathAsync(
+            IconPath = await gameIcons.GetGameImagePathAsync(
+                game.Id,
                 game.PrimaryExecutable?.ExecutablePath,
                 CancellationToken.None)
         });

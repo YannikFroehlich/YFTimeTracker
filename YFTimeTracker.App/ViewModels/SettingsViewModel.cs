@@ -24,6 +24,7 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly IAppUpdateService appUpdateService;
     private readonly IAppDiagnosticsService diagnosticsService;
     private readonly ITrackingDiagnosticLog trackingDiagnostics;
+    private readonly ITrackingExclusionService? trackingExclusions;
     private readonly DispatcherQueue dispatcherQueue;
     private bool trackingEnabled = true;
     private bool launcherDiscoveryEnabled = true;
@@ -72,7 +73,8 @@ public sealed class SettingsViewModel : ObservableObject
         IGameInstallationProvider installationProvider,
         IAppUpdateService appUpdateService,
         IAppDiagnosticsService diagnosticsService,
-        ITrackingDiagnosticLog trackingDiagnostics)
+        ITrackingDiagnosticLog trackingDiagnostics,
+        ITrackingExclusionService? trackingExclusions = null)
     {
         this.settings = settings;
         this.startupService = startupService;
@@ -85,6 +87,7 @@ public sealed class SettingsViewModel : ObservableObject
         this.appUpdateService = appUpdateService;
         this.diagnosticsService = diagnosticsService;
         this.trackingDiagnostics = trackingDiagnostics;
+        this.trackingExclusions = trackingExclusions;
         dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         ThemeOptions =
@@ -112,6 +115,8 @@ public sealed class SettingsViewModel : ObservableObject
         ClearTrackingDiagnosticsCommand = new RelayCommand(ClearTrackingDiagnostics);
         OpenExportFolderCommand = new RelayCommand(OpenExportFolder);
         ChooseBackupFolderCommand = new AsyncRelayCommand(ChooseBackupFolderAsync);
+        AddExecutableExclusionCommand = new AsyncRelayCommand(AddExecutableExclusionAsync);
+        AddDirectoryExclusionCommand = new AsyncRelayCommand(AddDirectoryExclusionAsync);
 
         ApplyUpdateState(appUpdateService.State);
         appUpdateService.StateChanged += AppUpdateService_StateChanged;
@@ -362,6 +367,20 @@ public sealed class SettingsViewModel : ObservableObject
 
     public ObservableCollection<TrackingDiagnosticEventViewModel> TrackingDiagnosticEvents { get; } = [];
 
+    public ObservableCollection<TrackingExclusionRuleViewModel> TrackingExclusionRules { get; } = [];
+
+    public Visibility TrackingExclusionsVisibility => TrackingExclusionRules.Count == 0
+        ? Visibility.Collapsed
+        : Visibility.Visible;
+
+    public Visibility TrackingExclusionsEmptyVisibility => TrackingExclusionRules.Count == 0
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public IAsyncRelayCommand AddExecutableExclusionCommand { get; }
+
+    public IAsyncRelayCommand AddDirectoryExclusionCommand { get; }
+
     public BackupListItemViewModel? SelectedBackup
     {
         get => selectedBackup;
@@ -393,6 +412,7 @@ public sealed class SettingsViewModel : ObservableObject
         ApplyUpdateState(appUpdateService.State);
         ApplyDiagnosticsSnapshot(diagnosticsService.GetSnapshot());
         RefreshTrackingDiagnostics();
+        await RefreshTrackingExclusionsAsync();
         TrackingEnabled = await settings.GetBoolAsync(AppSettingKeys.TrackingEnabled, true, CancellationToken.None);
         LauncherDiscoveryEnabled = await settings.GetBoolAsync(AppSettingKeys.LauncherDiscoveryEnabled, true, CancellationToken.None);
         MinimizeOnClose = await settings.GetBoolAsync(AppSettingKeys.MinimizeOnClose, true, CancellationToken.None);
@@ -491,6 +511,99 @@ public sealed class SettingsViewModel : ObservableObject
         {
             ExternalBackupFolderPath = path;
         }
+    }
+
+    private async Task AddExecutableExclusionAsync()
+    {
+        if (trackingExclusions is null)
+        {
+            StatusMessage = "Erkennungsausschlüsse sind momentan nicht verfügbar.";
+            return;
+        }
+
+        var path = await filePicker.PickExecutableAsync(CancellationToken.None);
+        if (path is null)
+        {
+            return;
+        }
+
+        await AddTrackingExclusionAsync(TrackingExclusionKind.Executable, path);
+    }
+
+    private async Task AddDirectoryExclusionAsync()
+    {
+        if (trackingExclusions is null)
+        {
+            StatusMessage = "Erkennungsausschlüsse sind momentan nicht verfügbar.";
+            return;
+        }
+
+        var path = await filePicker.PickTrackingExclusionFolderAsync(CancellationToken.None);
+        if (path is null)
+        {
+            return;
+        }
+
+        await AddTrackingExclusionAsync(TrackingExclusionKind.Directory, path);
+    }
+
+    private async Task AddTrackingExclusionAsync(TrackingExclusionKind kind, string path)
+    {
+        try
+        {
+            await trackingExclusions!.AddAsync(kind, path, CancellationToken.None);
+            await RefreshTrackingExclusionsAsync();
+            await trackingService.ScanOnceAsync(CancellationToken.None);
+            StatusMessage = kind == TrackingExclusionKind.Executable
+                ? "EXE wird ab sofort nicht mehr getrackt"
+                : "Prozesse in diesem Ordner werden ab sofort nicht mehr getrackt";
+        }
+        catch (YFTimeTrackerException exception)
+        {
+            StatusMessage = exception.Message;
+        }
+        catch (Exception exception)
+        {
+            StatusMessage = $"Ausschluss konnte nicht gespeichert werden: {exception.Message}";
+        }
+    }
+
+    public async Task RemoveTrackingExclusionAsync(long id)
+    {
+        if (trackingExclusions is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await trackingExclusions.DeleteAsync(id, CancellationToken.None);
+            await RefreshTrackingExclusionsAsync();
+            await trackingService.ScanOnceAsync(CancellationToken.None);
+            StatusMessage = "Erkennungsausschluss entfernt";
+        }
+        catch (Exception exception)
+        {
+            StatusMessage = $"Ausschluss konnte nicht entfernt werden: {exception.Message}";
+        }
+    }
+
+    private async Task RefreshTrackingExclusionsAsync()
+    {
+        TrackingExclusionRules.Clear();
+        if (trackingExclusions is not null)
+        {
+            foreach (var rule in await trackingExclusions.GetRulesAsync(CancellationToken.None))
+            {
+                TrackingExclusionRules.Add(new TrackingExclusionRuleViewModel(
+                    rule.Id,
+                    rule.Kind == TrackingExclusionKind.Executable ? "EXE" : "ORDNER",
+                    rule.Value));
+            }
+        }
+
+        OnPropertyChanged(nameof(TrackingExclusionsVisibility));
+        OnPropertyChanged(nameof(TrackingExclusionsEmptyVisibility));
     }
 
     public async Task ImportAsync(string archivePath)
@@ -796,3 +909,5 @@ public sealed record TrackingDiagnosticEventViewModel(
     string Detail,
     string AccentColor,
     string Glyph);
+
+public sealed record TrackingExclusionRuleViewModel(long Id, string KindText, string Path);

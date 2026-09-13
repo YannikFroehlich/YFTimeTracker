@@ -104,6 +104,25 @@ public sealed partial class StatisticsPage : Page
         Grid.SetColumn(LongestInsight, stackInsights ? 0 : 2);
         WeekdayInsight.Margin = stackInsights ? new Thickness(0, 10, 0, 0) : new Thickness(0);
         LongestInsight.Margin = stackInsights ? new Thickness(0, 10, 0, 0) : new Thickness(0);
+
+        var stackAdvanced = width < 980;
+        AdvancedGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+        AdvancedGrid.ColumnDefinitions[1].Width = stackAdvanced ? new GridLength(0) : new GridLength(1.2, GridUnitType.Star);
+        Grid.SetRow(ComparisonCard, 0);
+        Grid.SetColumn(ComparisonCard, 0);
+        Grid.SetRow(HabitsCard, stackAdvanced ? 1 : 0);
+        Grid.SetColumn(HabitsCard, stackAdvanced ? 0 : 1);
+
+        var stackHabitHighlights = width < 700;
+        HabitHighlightsGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+        HabitHighlightsGrid.ColumnDefinitions[1].Width = stackHabitHighlights ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+        HabitHighlightsGrid.ColumnDefinitions[2].Width = stackHabitHighlights ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+        Grid.SetRow(MedianHabit, 0);
+        Grid.SetColumn(MedianHabit, 0);
+        Grid.SetRow(PreferredTimeHabit, stackHabitHighlights ? 1 : 0);
+        Grid.SetColumn(PreferredTimeHabit, stackHabitHighlights ? 0 : 1);
+        Grid.SetRow(RecordDayHabit, stackHabitHighlights ? 2 : 0);
+        Grid.SetColumn(RecordDayHabit, stackHabitHighlights ? 0 : 2);
     }
 
     private void PositionSummaryCards(double width)

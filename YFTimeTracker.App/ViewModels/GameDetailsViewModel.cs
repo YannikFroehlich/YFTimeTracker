@@ -23,9 +23,11 @@ public sealed class GameDetailsViewModel : ObservableObject
     private readonly IClock clock;
     private readonly IGameIconService? gameIcons;
     private readonly IGameLaunchService? gameLaunchService;
+    private readonly IFilePickerService? filePicker;
     private readonly AsyncRelayCommand saveGameCommand;
     private readonly AsyncRelayCommand saveSessionCommand;
     private readonly RelayCommand launchGameCommand;
+    private readonly AsyncRelayCommand removeCoverCommand;
     private Game? loadedGame;
     private long gameId;
     private SessionListItemViewModel? selectedSession;
@@ -33,6 +35,7 @@ public sealed class GameDetailsViewModel : ObservableObject
     private string gameName = "Spiel";
     private string initials = "YF";
     private string? iconPath;
+    private bool hasCustomCover;
     private string sourceLabel = "MANUELL";
     private string sourceDetail = "Lokal hinzugefügt";
     private string installDirectory = "Kein Installationsordner hinterlegt";
@@ -75,7 +78,8 @@ public sealed class GameDetailsViewModel : ObservableObject
         IGameSessionEditor sessionEditor,
         IClock clock,
         IGameIconService? gameIcons = null,
-        IGameLaunchService? gameLaunchService = null)
+        IGameLaunchService? gameLaunchService = null,
+        IFilePickerService? filePicker = null)
     {
         this.games = games;
         this.catalog = catalog;
@@ -84,6 +88,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         this.clock = clock;
         this.gameIcons = gameIcons;
         this.gameLaunchService = gameLaunchService;
+        this.filePicker = filePicker;
 
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         saveGameCommand = new AsyncRelayCommand(SaveGameAsync, () => loadedGame is not null);
@@ -93,6 +98,9 @@ public sealed class GameDetailsViewModel : ObservableObject
         SaveSessionCommand = saveSessionCommand;
         launchGameCommand = new RelayCommand(LaunchGame, () => loadedGame?.PrimaryExecutable is not null);
         LaunchGameCommand = launchGameCommand;
+        ChooseCoverCommand = new AsyncRelayCommand(ChooseCoverAsync);
+        removeCoverCommand = new AsyncRelayCommand(RemoveCoverAsync, () => HasCustomCover);
+        RemoveCoverCommand = removeCoverCommand;
         ResetEditorTimes();
     }
 
@@ -111,6 +119,21 @@ public sealed class GameDetailsViewModel : ObservableObject
     public string Initials { get => initials; private set => SetProperty(ref initials, value); }
 
     public string? IconPath { get => iconPath; private set => SetProperty(ref iconPath, value); }
+
+    public bool HasCustomCover
+    {
+        get => hasCustomCover;
+        private set
+        {
+            if (SetProperty(ref hasCustomCover, value))
+            {
+                OnPropertyChanged(nameof(RemoveCoverVisibility));
+                removeCoverCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public Visibility RemoveCoverVisibility => HasCustomCover ? Visibility.Visible : Visibility.Collapsed;
 
     public string SourceLabel { get => sourceLabel; private set => SetProperty(ref sourceLabel, value); }
 
@@ -252,6 +275,10 @@ public sealed class GameDetailsViewModel : ObservableObject
 
     public IRelayCommand LaunchGameCommand { get; }
 
+    public IAsyncRelayCommand ChooseCoverCommand { get; }
+
+    public IAsyncRelayCommand RemoveCoverCommand { get; }
+
     public async Task LoadAsync(long requestedGameId)
     {
         gameId = requestedGameId;
@@ -278,10 +305,14 @@ public sealed class GameDetailsViewModel : ObservableObject
             var storedSessions = await sessionRepository.GetSessionsForGameAsync(gameId, CancellationToken.None);
             var resolvedIconPath = gameIcons is null
                 ? null
-                : await gameIcons.GetIconPathAsync(
+                : await gameIcons.GetGameImagePathAsync(
+                    game.Id,
                     game.PrimaryExecutable?.ExecutablePath,
                     CancellationToken.None);
+            var hasCustomCover = gameIcons is not null
+                && await gameIcons.HasCustomCoverAsync(game.Id, CancellationToken.None);
             loadedGame = game;
+            HasCustomCover = hasCustomCover;
             ApplyGame(game, resolvedIconPath);
             ApplySessions(storedSessions);
             UpdateLimitProgress(game, storedSessions);
@@ -295,6 +326,56 @@ public sealed class GameDetailsViewModel : ObservableObject
         catch (Exception exception)
         {
             ShowError($"Spieldetails konnten nicht geladen werden: {exception.Message}");
+        }
+    }
+
+    private async Task ChooseCoverAsync()
+    {
+        if (loadedGame is null || gameIcons is null || filePicker is null)
+        {
+            StatusMessage = "Eigene Cover sind momentan nicht verfügbar.";
+            return;
+        }
+
+        var path = await filePicker.PickGameCoverAsync(CancellationToken.None);
+        if (path is null)
+        {
+            return;
+        }
+
+        try
+        {
+            IconPath = await gameIcons.SetCustomCoverAsync(loadedGame.Id, path, CancellationToken.None);
+            HasCustomCover = true;
+            ApplySessions(Sessions.Select(session => session.Model).ToArray());
+            StatusMessage = "Eigenes Cover gespeichert";
+        }
+        catch (Exception exception) when (exception is ArgumentException or IOException or UnauthorizedAccessException)
+        {
+            StatusMessage = $"Cover konnte nicht gespeichert werden: {exception.Message}";
+        }
+    }
+
+    private async Task RemoveCoverAsync()
+    {
+        if (loadedGame is null || gameIcons is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await gameIcons.RemoveCustomCoverAsync(loadedGame.Id, CancellationToken.None);
+            IconPath = await gameIcons.GetIconPathAsync(
+                loadedGame.PrimaryExecutable?.ExecutablePath,
+                CancellationToken.None);
+            HasCustomCover = false;
+            ApplySessions(Sessions.Select(session => session.Model).ToArray());
+            StatusMessage = "Eigenes Cover entfernt; das EXE-Icon wird wieder verwendet";
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            StatusMessage = $"Cover konnte nicht entfernt werden: {exception.Message}";
         }
     }
 

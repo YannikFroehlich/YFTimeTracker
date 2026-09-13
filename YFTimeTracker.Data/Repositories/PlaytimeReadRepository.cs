@@ -55,7 +55,7 @@ public sealed class PlaytimeReadRepository(IDbContextFactory<YFTimeTrackerDbCont
             ? []
             : await context.GameSessions
                 .Where(session => recentGameIds.Contains(session.GameId) && session.DurationSeconds == null)
-                .Select(session => new SessionTiming(
+                .Select(session => new GameSessionTiming(
                     session.GameId,
                     session.StartedAtUtc,
                     session.EndedAtUtc))
@@ -94,6 +94,20 @@ public sealed class PlaytimeReadRepository(IDbContextFactory<YFTimeTrackerDbCont
             .MinAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<PlaytimeSessionTiming>> GetSessionTimingsAsync(
+        DateTimeOffset fromUtc,
+        DateTimeOffset toUtc,
+        CancellationToken cancellationToken)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        return await context.GameSessions
+            .AsNoTracking()
+            .Where(session => session.StartedAtUtc < toUtc)
+            .Where(session => session.EndedAtUtc == null || session.EndedAtUtc > fromUtc)
+            .Select(session => new PlaytimeSessionTiming(session.StartedAtUtc, session.EndedAtUtc))
+            .ToListAsync(cancellationToken);
+    }
+
     private static async Task<long> GetTotalDurationSecondsAsync(
         YFTimeTrackerDbContext context,
         DateTimeOffset nowUtc,
@@ -104,7 +118,7 @@ public sealed class PlaytimeReadRepository(IDbContextFactory<YFTimeTrackerDbCont
             .SumAsync(session => session.DurationSeconds ?? 0L, cancellationToken);
         var unresolvedDurations = await context.GameSessions
             .Where(session => session.DurationSeconds == null)
-            .Select(session => new SessionTiming(
+            .Select(session => new GameSessionTiming(
                 session.GameId,
                 session.StartedAtUtc,
                 session.EndedAtUtc))
@@ -125,7 +139,7 @@ public sealed class PlaytimeReadRepository(IDbContextFactory<YFTimeTrackerDbCont
             : Convert.ToInt64(Math.Floor((effectiveEnd - startedAtUtc).TotalSeconds));
     }
 
-    private sealed record SessionTiming(
+    private sealed record GameSessionTiming(
         long GameId,
         DateTimeOffset StartedAtUtc,
         DateTimeOffset? EndedAtUtc);

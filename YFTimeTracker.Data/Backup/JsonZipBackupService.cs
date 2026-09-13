@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +21,7 @@ public sealed class JsonZipBackupService(
     private const string ExternalMirrorFolderName = "YFTimeTracker Backups";
     private readonly ILogger<JsonZipBackupService> log = logger ?? NullLogger<JsonZipBackupService>.Instance;
 
-    private const string ExportVersion = "2";
+    private const string ExportVersion = "3";
     private const string DataEntryName = "yftimetracker-data.json";
     private const string DailyBackupPrefix = "auto-";
     private const string SafetyBackupPrefix = "pre-migration-";
@@ -226,6 +227,8 @@ public sealed class JsonZipBackupService(
         var sessions = await context.GameSessions.AsNoTracking().OrderBy(session => session.Id).ToListAsync(cancellationToken);
         var settings = await context.AppSettings.AsNoTracking().OrderBy(setting => setting.Key).ToListAsync(cancellationToken);
         var tags = await context.GameTags.AsNoTracking().OrderBy(tag => tag.Id).ToListAsync(cancellationToken);
+        var artworks = await context.GameArtworks.AsNoTracking().OrderBy(artwork => artwork.GameId).ToListAsync(cancellationToken);
+        var trackingExclusions = await context.TrackingExclusionRules.AsNoTracking().OrderBy(rule => rule.Id).ToListAsync(cancellationToken);
 
         var document = new BackupDocument(
             new BackupManifest("YFTimeTracker", ExportVersion, clock.UtcNow, games.Count, sessions.Count),
@@ -233,7 +236,9 @@ public sealed class JsonZipBackupService(
             executables,
             sessions,
             settings,
-            tags);
+            tags,
+            artworks,
+            trackingExclusions);
 
         await using var fileStream = File.Create(archivePath);
         using var archive = new ZipArchive(fileStream, ZipArchiveMode.Create);
@@ -263,7 +268,8 @@ public sealed class JsonZipBackupService(
             document = version switch
             {
                 "1" => UpgradeLegacyBackup(json.RootElement),
-                "2" => json.RootElement.Deserialize<BackupDocument>(JsonOptions)
+                "2" => UpgradeVersionTwoBackup(json.RootElement),
+                "3" => json.RootElement.Deserialize<BackupDocument>(JsonOptions)
                     ?? throw new YFTimeTrackerException("Das Archiv konnte nicht gelesen werden."),
                 _ => throw new YFTimeTrackerException("Diese Export-Version wird nicht unterstützt.")
             };
@@ -295,6 +301,8 @@ public sealed class JsonZipBackupService(
                 tempContext.GameSessions.AddRange(document.Sessions);
                 tempContext.AppSettings.AddRange(document.Settings);
                 tempContext.GameTags.AddRange(document.Tags ?? []);
+                tempContext.GameArtworks.AddRange(document.Artworks ?? []);
+                tempContext.TrackingExclusionRules.AddRange(document.TrackingExclusions ?? []);
                 await tempContext.SaveChangesAsync(cancellationToken);
             }
 
@@ -374,6 +382,36 @@ public sealed class JsonZipBackupService(
                 throw new YFTimeTrackerException("Das Archiv enthält ungültige Tag-Zuordnungen.");
             }
         }
+
+        var artworkGameIds = new HashSet<long>();
+        foreach (var artwork in document.Artworks ?? [])
+        {
+            if (!gameIds.Contains(artwork.GameId)
+                || !artworkGameIds.Add(artwork.GameId)
+                || artwork.ImageData.Length == 0
+                || artwork.ImageData.Length > 10 * 1024 * 1024
+                || (artwork.ContentType != "image/png" && artwork.ContentType != "image/jpeg")
+                || (artwork.FileExtension != ".png" && artwork.FileExtension != ".jpg")
+                || !string.Equals(
+                    artwork.Sha256,
+                    Convert.ToHexString(SHA256.HashData(artwork.ImageData)),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new YFTimeTrackerException("Das Archiv enthält ungültige Coverbilder.");
+            }
+        }
+
+        var exclusionKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var rule in document.TrackingExclusions ?? [])
+        {
+            if (string.IsNullOrWhiteSpace(rule.Value)
+                || string.IsNullOrWhiteSpace(rule.ValueKey)
+                || !Enum.IsDefined(rule.Kind)
+                || !exclusionKeys.Add($"{rule.Kind}:{rule.ValueKey}"))
+            {
+                throw new YFTimeTrackerException("Das Archiv enthält ungültige Erkennungsausschlüsse.");
+            }
+        }
     }
 
     private static BackupDocument UpgradeLegacyBackup(JsonElement root)
@@ -406,6 +444,20 @@ public sealed class JsonZipBackupService(
             executables,
             legacy.Sessions,
             legacy.Settings,
+            [],
+            [],
             []);
+    }
+
+    private static BackupDocument UpgradeVersionTwoBackup(JsonElement root)
+    {
+        var versionTwo = root.Deserialize<BackupDocument>(JsonOptions)
+            ?? throw new YFTimeTrackerException("Das Version-2-Archiv konnte nicht gelesen werden.");
+        return versionTwo with
+        {
+            Manifest = versionTwo.Manifest with { ExportVersion = ExportVersion },
+            Artworks = [],
+            TrackingExclusions = []
+        };
     }
 }

@@ -205,6 +205,24 @@ public sealed class GameRepository(IDbContextFactory<YFTimeTrackerDbContext> con
             }
         }
 
+        var sourceArtwork = await context.GameArtworks
+            .AsNoTracking()
+            .FirstOrDefaultAsync(artwork => artwork.GameId == sourceGameId, cancellationToken);
+        var targetHasArtwork = await context.GameArtworks
+            .AnyAsync(artwork => artwork.GameId == targetGameId, cancellationToken);
+        if (sourceArtwork is not null && !targetHasArtwork)
+        {
+            context.GameArtworks.Add(new GameArtwork
+            {
+                GameId = targetGameId,
+                ContentType = sourceArtwork.ContentType,
+                FileExtension = sourceArtwork.FileExtension,
+                Sha256 = sourceArtwork.Sha256,
+                ImageData = sourceArtwork.ImageData,
+                UpdatedAtUtc = sourceArtwork.UpdatedAtUtc
+            });
+        }
+
         if (await context.Games.FirstOrDefaultAsync(game => game.Id == sourceGameId, cancellationToken) is { } source)
         {
             if (source.IsPinned)

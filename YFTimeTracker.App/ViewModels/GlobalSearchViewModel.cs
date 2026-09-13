@@ -47,12 +47,14 @@ public sealed class GlobalSearchViewModel(
 
         var gameIconPaths = gameIcons is null
             ? new string?[searchResults.Games.Count]
-            : await Task.WhenAll(searchResults.Games.Select(game => gameIcons.GetIconPathAsync(
+            : await Task.WhenAll(searchResults.Games.Select(game => gameIcons.GetGameImagePathAsync(
+                game.Id,
                 game.PrimaryExecutable?.ExecutablePath,
                 cancellationToken)));
         var sessionIconPaths = gameIcons is null
             ? new string?[searchResults.Sessions.Count]
-            : await Task.WhenAll(searchResults.Sessions.Select(session => gameIcons.GetIconPathAsync(
+            : await Task.WhenAll(searchResults.Sessions.Select(session => gameIcons.GetGameImagePathAsync(
+                session.GameId,
                 session.Game?.PrimaryExecutable?.ExecutablePath,
                 cancellationToken)));
         cancellationToken.ThrowIfCancellationRequested();

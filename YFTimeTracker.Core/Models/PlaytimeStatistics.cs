@@ -14,6 +14,21 @@ public enum StatisticsBucketKind
     Month
 }
 
+public enum TimeOfDayKind
+{
+    Night,
+    Morning,
+    Afternoon,
+    Evening
+}
+
+public enum RollingComparisonKind
+{
+    Last7Days,
+    Last30Days,
+    Last365Days
+}
+
 public sealed record PlaytimeStatistics(
     StatisticsPeriodKind Period,
     DateOnly PeriodStart,
@@ -27,7 +42,12 @@ public sealed record PlaytimeStatistics(
     string? LongestSessionGameName,
     IReadOnlyList<StatisticsTimelinePoint> Timeline,
     IReadOnlyList<GamePlaytimeStatistics> Games,
-    IReadOnlyList<WeekdayPlaytimeStatistics> Weekdays);
+    IReadOnlyList<WeekdayPlaytimeStatistics> Weekdays,
+    TimeSpan MedianSessionDuration,
+    DateOnly? BusiestDay,
+    TimeSpan BusiestDayDuration,
+    IReadOnlyList<TimeOfDayPlaytimeStatistics> TimesOfDay,
+    IReadOnlyList<RollingPlaytimeComparison> RollingComparisons);
 
 public sealed record StatisticsTimelinePoint(
     DateOnly StartDate,
@@ -45,3 +65,15 @@ public sealed record GamePlaytimeStatistics(
     IReadOnlyList<string> Tags);
 
 public sealed record WeekdayPlaytimeStatistics(DayOfWeek DayOfWeek, TimeSpan Duration);
+
+public sealed record TimeOfDayPlaytimeStatistics(TimeOfDayKind Kind, TimeSpan Duration);
+
+public sealed record RollingPlaytimeComparison(
+    RollingComparisonKind Kind,
+    int DayCount,
+    TimeSpan CurrentDuration,
+    TimeSpan PreviousDuration);
+
+public sealed record PlaytimeSessionTiming(
+    DateTimeOffset StartedAtUtc,
+    DateTimeOffset? EndedAtUtc);

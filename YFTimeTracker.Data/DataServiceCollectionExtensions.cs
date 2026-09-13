@@ -18,7 +18,9 @@ public static class DataServiceCollectionExtensions
 
         services.AddSingleton<IDatabaseInitializer, SqliteDatabaseInitializer>();
         services.AddSingleton<IGameRepository, GameRepository>();
+        services.AddSingleton<IGameArtworkRepository, GameArtworkRepository>();
         services.AddSingleton<IGameSessionRepository, GameSessionRepository>();
+        services.AddSingleton<ITrackingExclusionRepository, TrackingExclusionRepository>();
         services.AddSingleton<INotificationLogRepository, NotificationLogRepository>();
         services.AddSingleton<IGlobalSearchRepository, GlobalSearchRepository>();
         services.AddSingleton<IPlaytimeReadRepository, PlaytimeReadRepository>();
