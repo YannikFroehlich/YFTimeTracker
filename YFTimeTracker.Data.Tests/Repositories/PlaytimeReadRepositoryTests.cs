@@ -39,6 +39,14 @@ public sealed class PlaytimeReadRepositoryTests
         Assert.AreEqual(@"C:\Games\Alpha.exe", overview.RecentGames[0].ExecutablePath);
         Assert.AreEqual(now.AddDays(-2), await repository.GetEarliestSessionStartAsync(CancellationToken.None));
         Assert.AreEqual(12_600L, await repository.GetTotalDurationSecondsAsync(now, CancellationToken.None));
+
+        var timings = await repository.GetSessionTimingsAsync(
+            now.AddDays(-1),
+            now,
+            CancellationToken.None);
+        Assert.HasCount(2, timings);
+        var runningTiming = timings.Single(timing => timing.EndedAtUtc is null);
+        Assert.AreEqual(now.AddMinutes(-30), runningTiming.StartedAtUtc);
     }
 
     private static Task<Game> AddGameAsync(GameRepository games, string name, DateTimeOffset now)

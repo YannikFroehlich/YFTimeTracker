@@ -36,12 +36,14 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - EA-app-Erkennung über lokale Windows-Installationsdaten; EA Play erfordert weder Anmeldung noch Web-API
 - Xbox-Erkennung über die lokale Windows-Paketverwaltung und `MicrosoftGame.config`, ohne Xbox-Anmeldung oder Web-API
 - Optionales Tages- und Wochenlimit pro Spiel mit Fortschrittsanzeige in Bibliothek, Spieldetails und Dashboard sowie einmaliger Windows-Benachrichtigung bei Erreichen
+- Benutzerdefinierte Erkennungsausschlüsse für einzelne EXE-Dateien oder komplette Ordner, direkt in den Einstellungen verwaltbar
 
 **Dashboard und Auswertung**
 
 - Dashboard mit Live-Tracking, Tages-, Wochen- und Gesamtwerten
 - Typfehlertolerante globale Suche nach Spielen, EXE-Dateien, Sessions und App-Bereichen mit Launcher- und Zeitraumfilter, lokalem Suchverlauf und `Strg+K`-Schnellzugriff
 - Statistiken für frei wählbare Zeiträume und einzelne Spiele mit CSV-Export
+- Vertiefte Statistiken mit Durchschnitt und Median pro Session, Tageszeitverteilung, Rekordtag sowie direkten 7-, 30- und 365-Tage-Vergleichen
 - Kalender-Heatmap für jedes erfasste Jahr mit täglicher Spielzeit, festen Intensitätsstufen, aktivstem Tag und längster Spielserie
 - Jahresrückblick mit Monatsverlauf, Vorjahresvergleich, Rekorden, Top-Spielen und PNG-Export
 - Donut-Auswertung „Nach Tag“, die die Spielzeit nach den in der Bibliothek vergebenen Tags gruppiert
@@ -53,6 +55,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Doppelte Einträge desselben Spiels zusammenführen, ohne Spielzeit zu verlieren
 - Spiele direkt aus den Spieldetails heraus starten
 - Lokale Spiel-Icons aus den registrierten EXE-Dateien mit datensparsamem Cache
+- Eigene lokale PNG- oder JPEG-Cover pro Spiel, angezeigt in Bibliothek, Suche, Dashboard, Sessions und Jahresrückblick; ohne eigenes Cover bleibt das EXE-Icon aktiv
 - Anlegen, Bearbeiten und Löschen manueller Sessions sowie Umhängen einer Session auf ein anderes Spiel, inklusive CSV-Export der Sessions-Liste
 - Direkter Link zum Explorer-Ordner nach einem Export
 
@@ -94,10 +97,11 @@ Alle dauerhaften Daten liegen unter `%LocalAppData%\YFTimeTracker`:
 
 | Pfad | Inhalt |
 | --- | --- |
-| `yftimetracker.db` | Spiele, EXE-Zuordnungen, Sessions und Einstellungen |
+| `yftimetracker.db` | Spiele, EXE-Zuordnungen, Sessions, eigene Cover, Erkennungsausschlüsse und Einstellungen |
 | `Backups` | automatische Sicherungen (täglich und vor Änderungen am Datenbestand), in den Einstellungen auflist- und wiederherstellbar |
 | `Exports` | vom Benutzer erstellte Exporte |
 | `GameIcons` | lokal aus Spiel-EXE-Dateien extrahierte Icon-Kopien |
+| `GameCovers` | aus der lokalen Datenbank erzeugter Cache eigener Coverbilder |
 | `Logs` | lokale Diagnoseprotokolle |
 
 Das Diagnose-ZIP enthält Systeminformationen, den begrenzten Tracking-Ereignisverlauf seit dem App-Start und höchstens drei aktuelle Logdateien, aber keine Datenbank, Backups oder Spielsessions. In der verständlichen Ereignisübersicht werden keine vollständigen EXE-Pfade erfasst; die technischen Logdateien können weiterhin lokale Pfade enthalten.
@@ -105,6 +109,8 @@ Das Diagnose-ZIP enthält Systeminformationen, den begrenzten Tracking-Ereignisv
 ## Automatisches Tracking
 
 Manuell registrierte EXE-Pfade werden direkt erkannt. Zusätzlich aktualisiert YFTimeTracker den lokalen Launcher-Katalog beim Start und anschließend alle fünf Minuten. Ist bei einer Launcher-Installation keine eindeutige Startdatei bekannt, muss ein passender Prozess innerhalb des Installationsordners in zwei aufeinanderfolgenden Scans laufen. Hilfsprogramme wie Launcher, Uninstaller, Crash Reporter und Anti-Cheat-Installer werden ausgeschlossen.
+
+Unter **Einstellungen → Erkennungsausschlüsse** lassen sich zusätzlich einzelne EXE-Dateien oder komplette Ordner ignorieren. Diese Regeln gelten sofort sowohl für manuell registrierte Spiele als auch für die Launcher-Erkennung. Eine bereits offene Session endet beim ersten Scan, in dem die neue Regel greift.
 
 Mehrere Prozesse desselben Spiels werden zu einer Session zusammengefasst. Prozessneustarts erzeugen getrennte Sessions. Nach einem App-Absturz wird eine offene Session nur dann fortgesetzt, wenn das Spiel im selben Windows-Start weiterhin läuft; andernfalls endet sie am letzten gespeicherten Lebenszeichen.
 

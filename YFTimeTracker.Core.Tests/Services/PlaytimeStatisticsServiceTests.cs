@@ -153,6 +153,8 @@ public sealed class PlaytimeStatisticsServiceTests
         var sessions = new InMemoryGameSessionRepository(id => id == alpha.Id ? alpha : id == beta.Id ? beta : null);
 
         await AddClosedSessionAsync(sessions, alpha.Id, Utc(2026, 8, 20, 8), Utc(2026, 8, 20, 12));
+        await AddClosedSessionAsync(sessions, alpha.Id, Utc(2026, 7, 15, 8), Utc(2026, 7, 15, 11));
+        await AddClosedSessionAsync(sessions, alpha.Id, Utc(2025, 8, 30, 8), Utc(2025, 8, 30, 10));
         await AddClosedSessionAsync(sessions, alpha.Id, Utc(2026, 8, 24, 8), Utc(2026, 8, 24, 10));
         await AddClosedSessionAsync(sessions, beta.Id, Utc(2026, 8, 29, 15), Utc(2026, 8, 29, 19));
         await sessions.AddAsync(new GameSession
@@ -178,6 +180,9 @@ public sealed class PlaytimeStatisticsServiceTests
         Assert.AreEqual(TimeSpan.FromMinutes(140), report.AverageSessionDuration);
         Assert.AreEqual(TimeSpan.FromHours(4), report.LongestSessionDuration);
         Assert.AreEqual("Beta", report.LongestSessionGameName);
+        Assert.AreEqual(TimeSpan.FromHours(2), report.MedianSessionDuration);
+        Assert.AreEqual(new DateOnly(2026, 8, 29), report.BusiestDay);
+        Assert.AreEqual(TimeSpan.FromHours(4), report.BusiestDayDuration);
         CollectionAssert.AreEqual(
             new[] { 2d, 0d, 0d, 0d, 0d, 4d, 1d },
             report.Timeline.Select(point => point.Duration.TotalHours).ToArray());
@@ -190,7 +195,22 @@ public sealed class PlaytimeStatisticsServiceTests
         Assert.AreEqual(
             TimeSpan.FromHours(1),
             report.Weekdays.Single(day => day.DayOfWeek == DayOfWeek.Sunday).Duration);
-        Assert.AreEqual(Utc(2026, 8, 17, 0), sessions.LastQueryFromUtc);
+        Assert.AreEqual(
+            TimeSpan.FromHours(3),
+            report.TimesOfDay.Single(item => item.Kind == TimeOfDayKind.Morning).Duration);
+        Assert.AreEqual(
+            TimeSpan.FromHours(3),
+            report.TimesOfDay.Single(item => item.Kind == TimeOfDayKind.Afternoon).Duration);
+        Assert.AreEqual(
+            TimeSpan.FromHours(1),
+            report.TimesOfDay.Single(item => item.Kind == TimeOfDayKind.Evening).Duration);
+        Assert.AreEqual(TimeSpan.FromHours(7), report.RollingComparisons.Single(item => item.Kind == RollingComparisonKind.Last7Days).CurrentDuration);
+        Assert.AreEqual(TimeSpan.FromHours(4), report.RollingComparisons.Single(item => item.Kind == RollingComparisonKind.Last7Days).PreviousDuration);
+        Assert.AreEqual(TimeSpan.FromHours(11), report.RollingComparisons.Single(item => item.Kind == RollingComparisonKind.Last30Days).CurrentDuration);
+        Assert.AreEqual(TimeSpan.FromHours(3), report.RollingComparisons.Single(item => item.Kind == RollingComparisonKind.Last30Days).PreviousDuration);
+        Assert.AreEqual(TimeSpan.FromHours(14), report.RollingComparisons.Single(item => item.Kind == RollingComparisonKind.Last365Days).CurrentDuration);
+        Assert.AreEqual(TimeSpan.FromHours(2), report.RollingComparisons.Single(item => item.Kind == RollingComparisonKind.Last365Days).PreviousDuration);
+        Assert.AreEqual(Utc(2024, 8, 31, 0), sessions.LastQueryFromUtc);
         Assert.AreEqual(Utc(2026, 8, 31, 0), sessions.LastQueryToUtc);
     }
 
@@ -222,6 +242,33 @@ public sealed class PlaytimeStatisticsServiceTests
     }
 
     [TestMethod]
+    public async Task GetStatisticsAsync_calculates_even_median_and_splits_sessions_at_time_of_day_boundaries()
+    {
+        var clock = new FakeClock(Utc(2026, 8, 30, 12));
+        var games = new InMemoryGameRepository();
+        var game = await AddGameAsync(games, "Grenzspiel", clock.UtcNow);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+
+        await AddClosedSessionAsync(sessions, game.Id, Utc(2026, 8, 29, 5), Utc(2026, 8, 29, 7));
+        await AddClosedSessionAsync(sessions, game.Id, Utc(2026, 8, 29, 17), Utc(2026, 8, 29, 21));
+
+        var service = CreateService(sessions, clock);
+        var report = await service.GetStatisticsAsync(
+            StatisticsPeriodKind.Last7Days,
+            TimeZoneInfo.Utc,
+            CancellationToken.None);
+
+        Assert.AreEqual(TimeSpan.FromHours(3), report.AverageSessionDuration);
+        Assert.AreEqual(TimeSpan.FromHours(3), report.MedianSessionDuration);
+        Assert.AreEqual(TimeSpan.FromHours(1), report.TimesOfDay.Single(item => item.Kind == TimeOfDayKind.Night).Duration);
+        Assert.AreEqual(TimeSpan.FromHours(1), report.TimesOfDay.Single(item => item.Kind == TimeOfDayKind.Morning).Duration);
+        Assert.AreEqual(TimeSpan.FromHours(1), report.TimesOfDay.Single(item => item.Kind == TimeOfDayKind.Afternoon).Duration);
+        Assert.AreEqual(TimeSpan.FromHours(3), report.TimesOfDay.Single(item => item.Kind == TimeOfDayKind.Evening).Duration);
+        Assert.AreEqual(new DateOnly(2026, 8, 29), report.BusiestDay);
+        Assert.AreEqual(TimeSpan.FromHours(6), report.BusiestDayDuration);
+    }
+
+    [TestMethod]
     public async Task GetStatisticsAsync_returns_stable_empty_all_time_report()
     {
         var clock = new FakeClock(Utc(2026, 8, 30, 12));
@@ -237,8 +284,13 @@ public sealed class PlaytimeStatisticsServiceTests
         Assert.AreEqual(0, report.SessionCount);
         Assert.AreEqual(0, report.GamesPlayedCount);
         Assert.IsNull(report.PreviousPeriodDuration);
+        Assert.AreEqual(TimeSpan.Zero, report.MedianSessionDuration);
+        Assert.IsNull(report.BusiestDay);
+        Assert.AreEqual(TimeSpan.Zero, report.BusiestDayDuration);
         Assert.HasCount(1, report.Timeline);
         Assert.HasCount(7, report.Weekdays);
+        Assert.HasCount(4, report.TimesOfDay);
+        Assert.HasCount(3, report.RollingComparisons);
         Assert.IsEmpty(report.Games);
     }
 

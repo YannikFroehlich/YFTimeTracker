@@ -88,7 +88,17 @@ public sealed class PlaytimeStatisticsService(
         var queryStartUtc = range.PreviousStart is { } queryPreviousStart
             ? LocalDateStartToUtc(queryPreviousStart, localTimeZone)
             : rangeStartUtc;
-        var relevantSessions = await sessions.GetSessionsAsync(queryStartUtc, rangeEndUtc, cancellationToken);
+        var comparisonStart = today.AddDays(-(365 * 2 - 1));
+        var comparisonStartUtc = LocalDateStartToUtc(comparisonStart, localTimeZone);
+        var comparisonEndUtc = LocalDateStartToUtc(today.AddDays(1), localTimeZone);
+        var relevantSessionsTask = sessions.GetSessionsAsync(queryStartUtc, rangeEndUtc, cancellationToken);
+        var comparisonSessionsTask = readRepository.GetSessionTimingsAsync(
+            comparisonStartUtc,
+            comparisonEndUtc,
+            cancellationToken);
+        await Task.WhenAll(relevantSessionsTask, comparisonSessionsTask);
+
+        var relevantSessions = await relevantSessionsTask;
 
         var contributions = relevantSessions
             .Select(session => new SessionContribution(
@@ -105,6 +115,12 @@ public sealed class PlaytimeStatisticsService(
         var longest = contributions
             .OrderByDescending(contribution => contribution.Duration)
             .FirstOrDefault();
+        var medianDuration = CalculateMedianDuration(contributions);
+        var activityDistribution = CreateActivityDistribution(
+            contributions,
+            rangeStartUtc,
+            rangeEndUtc,
+            localTimeZone);
 
         var timeline = CreateTimeline(range, relevantSessions, localTimeZone);
         var games = contributions
@@ -147,7 +163,15 @@ public sealed class PlaytimeStatisticsService(
             longest?.Session.Game?.Name,
             timeline,
             games,
-            CreateWeekdayDistribution(contributions, rangeStartUtc, rangeEndUtc, localTimeZone));
+            CreateWeekdayDistribution(contributions, rangeStartUtc, rangeEndUtc, localTimeZone),
+            medianDuration,
+            activityDistribution.BusiestDay,
+            activityDistribution.BusiestDayDuration,
+            activityDistribution.TimesOfDay,
+            CreateRollingComparisons(
+                await comparisonSessionsTask,
+                today,
+                localTimeZone));
     }
 
     public async Task<TimeSpan> GetTotalDurationAsync(CancellationToken cancellationToken)
@@ -397,6 +421,117 @@ public sealed class PlaytimeStatisticsService(
             .ToArray();
     }
 
+    private ActivityDistribution CreateActivityDistribution(
+        IReadOnlyList<SessionContribution> contributions,
+        DateTimeOffset rangeStartUtc,
+        DateTimeOffset rangeEndUtc,
+        TimeZoneInfo localTimeZone)
+    {
+        var dailyTotals = new Dictionary<DateOnly, TimeSpan>();
+        var timeOfDayTotals = Enum.GetValues<TimeOfDayKind>()
+            .ToDictionary(kind => kind, _ => TimeSpan.Zero);
+
+        foreach (var contribution in contributions)
+        {
+            var effectiveEnd = GetEffectiveSessionEnd(contribution.Session);
+            var overlapStart = contribution.Session.StartedAtUtc > rangeStartUtc
+                ? contribution.Session.StartedAtUtc
+                : rangeStartUtc;
+            var overlapEnd = effectiveEnd < rangeEndUtc ? effectiveEnd : rangeEndUtc;
+            var firstDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(overlapStart, localTimeZone).Date);
+            var lastDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(overlapEnd.AddTicks(-1), localTimeZone).Date);
+
+            for (var date = firstDate; date <= lastDate; date = date.AddDays(1))
+            {
+                var dayStartUtc = LocalDateStartToUtc(date, localTimeZone);
+                var dayEndUtc = LocalDateStartToUtc(date.AddDays(1), localTimeZone);
+                var dayDuration = GetOverlap(contribution.Session, dayStartUtc, dayEndUtc);
+                dailyTotals[date] = dailyTotals.GetValueOrDefault(date) + dayDuration;
+
+                AddTimeOfDayDuration(TimeOfDayKind.Night, date, 0, 6);
+                AddTimeOfDayDuration(TimeOfDayKind.Morning, date, 6, 12);
+                AddTimeOfDayDuration(TimeOfDayKind.Afternoon, date, 12, 18);
+                AddTimeOfDayDuration(TimeOfDayKind.Evening, date, 18, 24);
+            }
+
+            void AddTimeOfDayDuration(TimeOfDayKind kind, DateOnly date, int startHour, int endHour)
+            {
+                var bucketStartUtc = LocalDateTimeToUtc(date, startHour, localTimeZone);
+                var bucketEndUtc = endHour == 24
+                    ? LocalDateStartToUtc(date.AddDays(1), localTimeZone)
+                    : LocalDateTimeToUtc(date, endHour, localTimeZone);
+                timeOfDayTotals[kind] += GetOverlap(contribution.Session, bucketStartUtc, bucketEndUtc);
+            }
+        }
+
+        var busiestDay = dailyTotals
+            .Where(item => item.Value > TimeSpan.Zero)
+            .OrderByDescending(item => item.Value)
+            .ThenBy(item => item.Key)
+            .Select(item => new { Date = (DateOnly?)item.Key, Duration = item.Value })
+            .FirstOrDefault();
+
+        return new ActivityDistribution(
+            busiestDay?.Date,
+            busiestDay?.Duration ?? TimeSpan.Zero,
+            Enum.GetValues<TimeOfDayKind>()
+                .Select(kind => new TimeOfDayPlaytimeStatistics(kind, timeOfDayTotals[kind]))
+                .ToArray());
+    }
+
+    private IReadOnlyList<RollingPlaytimeComparison> CreateRollingComparisons(
+        IReadOnlyList<PlaytimeSessionTiming> relevantSessions,
+        DateOnly today,
+        TimeZoneInfo localTimeZone)
+    {
+        return new[]
+        {
+            CreateRollingComparison(RollingComparisonKind.Last7Days, 7),
+            CreateRollingComparison(RollingComparisonKind.Last30Days, 30),
+            CreateRollingComparison(RollingComparisonKind.Last365Days, 365)
+        };
+
+        RollingPlaytimeComparison CreateRollingComparison(RollingComparisonKind kind, int dayCount)
+        {
+            var currentStart = today.AddDays(-(dayCount - 1));
+            var currentEnd = today.AddDays(1);
+            var previousStart = currentStart.AddDays(-dayCount);
+            return new RollingPlaytimeComparison(
+                kind,
+                dayCount,
+                GetDurationForUtcRange(
+                    relevantSessions,
+                    LocalDateStartToUtc(currentStart, localTimeZone),
+                    LocalDateStartToUtc(currentEnd, localTimeZone)),
+                GetDurationForUtcRange(
+                    relevantSessions,
+                    LocalDateStartToUtc(previousStart, localTimeZone),
+                    LocalDateStartToUtc(currentStart, localTimeZone)));
+        }
+    }
+
+    private static TimeSpan CalculateMedianDuration(IReadOnlyList<SessionContribution> contributions)
+    {
+        if (contributions.Count == 0)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var orderedTicks = contributions
+            .Select(contribution => contribution.Duration.Ticks)
+            .Order()
+            .ToArray();
+        var middle = orderedTicks.Length / 2;
+        if (orderedTicks.Length % 2 == 1)
+        {
+            return TimeSpan.FromTicks(orderedTicks[middle]);
+        }
+
+        var lower = orderedTicks[middle - 1];
+        var upper = orderedTicks[middle];
+        return TimeSpan.FromTicks(lower + ((upper - lower) / 2));
+    }
+
     private TimeSpan GetOverlap(
         GameSession session,
         DateTimeOffset rangeStartUtc,
@@ -410,6 +545,8 @@ public sealed class PlaytimeStatisticsService(
 
     private DateTimeOffset GetEffectiveSessionEnd(GameSession session) => session.EndedAtUtc ?? clock.UtcNow;
 
+    private DateTimeOffset GetEffectiveSessionEnd(PlaytimeSessionTiming session) => session.EndedAtUtc ?? clock.UtcNow;
+
     private TimeSpan GetDurationForUtcRange(
         IEnumerable<GameSession> relevantSessions,
         DateTimeOffset rangeStartUtc,
@@ -422,6 +559,36 @@ public sealed class PlaytimeStatisticsService(
         }
 
         return total;
+    }
+
+    private TimeSpan GetDurationForUtcRange(
+        IEnumerable<PlaytimeSessionTiming> relevantSessions,
+        DateTimeOffset rangeStartUtc,
+        DateTimeOffset rangeEndUtc)
+    {
+        var total = TimeSpan.Zero;
+        foreach (var session in relevantSessions)
+        {
+            var sessionEnd = GetEffectiveSessionEnd(session);
+            var overlapStart = session.StartedAtUtc > rangeStartUtc ? session.StartedAtUtc : rangeStartUtc;
+            var overlapEnd = sessionEnd < rangeEndUtc ? sessionEnd : rangeEndUtc;
+            if (overlapEnd > overlapStart)
+            {
+                total += overlapEnd - overlapStart;
+            }
+        }
+
+        return total;
+    }
+
+    private static DateTimeOffset LocalDateTimeToUtc(
+        DateOnly localDate,
+        int hour,
+        TimeZoneInfo localTimeZone)
+    {
+        var localDateTime = localDate.ToDateTime(new TimeOnly(hour, 0), DateTimeKind.Unspecified);
+        var offset = localTimeZone.GetUtcOffset(localDateTime);
+        return new DateTimeOffset(localDateTime, offset).ToUniversalTime();
     }
 
     private int CountSessionsInUtcRange(
@@ -445,4 +612,9 @@ public sealed class PlaytimeStatisticsService(
         DateOnly? PreviousEndExclusive);
 
     private sealed record SessionContribution(GameSession Session, TimeSpan Duration);
+
+    private sealed record ActivityDistribution(
+        DateOnly? BusiestDay,
+        TimeSpan BusiestDayDuration,
+        IReadOnlyList<TimeOfDayPlaytimeStatistics> TimesOfDay);
 }

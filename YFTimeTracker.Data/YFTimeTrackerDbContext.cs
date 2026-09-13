@@ -20,11 +20,15 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
 
     public DbSet<GameTag> GameTags => Set<GameTag>();
 
+    public DbSet<GameArtwork> GameArtworks => Set<GameArtwork>();
+
     public DbSet<GameSession> GameSessions => Set<GameSession>();
 
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
     public DbSet<NotificationLogEntry> NotificationLogEntries => Set<NotificationLogEntry>();
+
+    public DbSet<TrackingExclusionRule> TrackingExclusionRules => Set<TrackingExclusionRule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -84,6 +88,21 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
             entity.HasIndex(tag => new { tag.GameId, tag.Tag }).IsUnique();
         });
 
+        modelBuilder.Entity<GameArtwork>(entity =>
+        {
+            entity.ToTable("GameArtworks");
+            entity.HasKey(artwork => artwork.GameId);
+            entity.Property(artwork => artwork.ContentType).HasMaxLength(40).IsRequired();
+            entity.Property(artwork => artwork.FileExtension).HasMaxLength(8).IsRequired();
+            entity.Property(artwork => artwork.Sha256).HasMaxLength(64).IsRequired();
+            entity.Property(artwork => artwork.ImageData).IsRequired();
+            entity.Property(artwork => artwork.UpdatedAtUtc).HasConversion(DateTimeOffsetConverter).IsRequired();
+            entity.HasOne(artwork => artwork.Game)
+                .WithOne()
+                .HasForeignKey<GameArtwork>(artwork => artwork.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<GameSession>(entity =>
         {
             entity.ToTable("GameSessions");
@@ -127,6 +146,17 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
             entity.HasIndex(notification => notification.CreatedAtUtc);
             entity.HasIndex(notification => new { notification.Kind, notification.ReferenceKey })
                 .HasFilter("ReferenceKey IS NOT NULL");
+        });
+
+        modelBuilder.Entity<TrackingExclusionRule>(entity =>
+        {
+            entity.ToTable("TrackingExclusionRules");
+            entity.HasKey(rule => rule.Id);
+            entity.Property(rule => rule.Kind).IsRequired();
+            entity.Property(rule => rule.Value).HasMaxLength(1024).IsRequired();
+            entity.Property(rule => rule.ValueKey).HasMaxLength(1024).IsRequired();
+            entity.Property(rule => rule.AddedAtUtc).HasConversion(DateTimeOffsetConverter).IsRequired();
+            entity.HasIndex(rule => new { rule.Kind, rule.ValueKey }).IsUnique();
         });
     }
 }

@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using YFTimeTracker.Core.Models;
@@ -13,7 +14,58 @@ namespace YFTimeTracker.Data.Tests.Backup;
 public sealed class JsonZipBackupServiceTests
 {
     [TestMethod]
-    public async Task Version2_export_and_import_preserve_xbox_launcher_executables()
+    public async Task Version3_export_and_import_preserve_cover_and_tracking_exclusions()
+    {
+        using var paths = new TestRepositories.TempAppPathProvider();
+        var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var clock = new TestRepositories.TestClock(DateTimeOffset.Parse("2026-09-13T12:00:00Z"));
+        var settings = new SettingsStore(factory, clock);
+        var game = await new GameRepository(factory).AddAsync(new Game
+        {
+            Name = "Covered Game",
+            ExecutablePath = @"C:\Games\Covered\game.exe",
+            ExecutablePathKey = @"C:\GAMES\COVERED\GAME.EXE",
+            ExecutableName = "game.exe",
+            AddedAtUtc = clock.UtcNow
+        }, CancellationToken.None);
+        await new GameArtworkRepository(factory).UpsertAsync(new GameArtwork
+        {
+            GameId = game.Id,
+            ContentType = "image/png",
+            FileExtension = ".png",
+            Sha256 = Convert.ToHexString(SHA256.HashData([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])),
+            ImageData = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
+            UpdatedAtUtc = clock.UtcNow
+        }, CancellationToken.None);
+        await new TrackingExclusionRepository(factory).AddAsync(new TrackingExclusionRule
+        {
+            Kind = TrackingExclusionKind.Directory,
+            Value = @"C:\Games\Ignored",
+            ValueKey = @"C:\GAMES\IGNORED",
+            AddedAtUtc = clock.UtcNow
+        }, CancellationToken.None);
+
+        var backup = new JsonZipBackupService(factory, paths, clock, settings);
+        var archivePath = Path.Combine(paths.ExportDirectory, "v3.zip");
+        await backup.ExportAsync(archivePath, CancellationToken.None);
+        await backup.ImportAsync(archivePath, CancellationToken.None);
+
+        var artwork = await new GameArtworkRepository(factory).GetByGameIdAsync(game.Id, CancellationToken.None);
+        var exclusion = (await new TrackingExclusionRepository(factory).GetAllAsync(CancellationToken.None)).Single();
+        Assert.IsNotNull(artwork);
+        CollectionAssert.AreEqual(
+            new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A },
+            artwork.ImageData);
+        Assert.AreEqual(@"C:\GAMES\IGNORED", exclusion.ValueKey);
+    }
+
+    [TestMethod]
+    public async Task Current_export_and_import_preserve_xbox_launcher_executables()
     {
         using var paths = new TestRepositories.TempAppPathProvider();
         var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
@@ -46,7 +98,7 @@ public sealed class JsonZipBackupServiceTests
         }, CancellationToken.None);
 
         var backup = new JsonZipBackupService(factory, paths, clock, settings);
-        var archivePath = Path.Combine(paths.ExportDirectory, "v2.zip");
+        var archivePath = Path.Combine(paths.ExportDirectory, "current.zip");
         await backup.ExportAsync(archivePath, CancellationToken.None);
         await backup.ImportAsync(archivePath, CancellationToken.None);
 
@@ -111,7 +163,7 @@ public sealed class JsonZipBackupServiceTests
     }
 
     [TestMethod]
-    public async Task Version2_export_and_import_preserve_tags_and_pinned_state()
+    public async Task Current_export_and_import_preserve_tags_and_pinned_state()
     {
         using var paths = new TestRepositories.TempAppPathProvider();
         var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
@@ -135,7 +187,7 @@ public sealed class JsonZipBackupServiceTests
         await repository.SetTagsAsync(game.Id, ["Shooter", "Multiplayer"], CancellationToken.None);
 
         var backup = new JsonZipBackupService(factory, paths, clock, settings);
-        var archivePath = Path.Combine(paths.ExportDirectory, "v2-tags.zip");
+        var archivePath = Path.Combine(paths.ExportDirectory, "current-tags.zip");
         await backup.ExportAsync(archivePath, CancellationToken.None);
         await backup.ImportAsync(archivePath, CancellationToken.None);
 

@@ -4,6 +4,16 @@ public interface IFilePickerService
 {
     Task<string?> PickExecutableAsync(CancellationToken cancellationToken);
 
+    Task<string?> PickGameCoverAsync(CancellationToken cancellationToken)
+    {
+        return Task.FromResult<string?>(null);
+    }
+
+    Task<string?> PickTrackingExclusionFolderAsync(CancellationToken cancellationToken)
+    {
+        return Task.FromResult<string?>(null);
+    }
+
     Task<string?> PickExportArchiveAsync(CancellationToken cancellationToken);
 
     Task<string?> PickDiagnosticsArchiveAsync(CancellationToken cancellationToken);

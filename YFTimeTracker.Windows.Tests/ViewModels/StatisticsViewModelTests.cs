@@ -37,6 +37,18 @@ public sealed class StatisticsViewModelTests
         Assert.AreEqual("Alpha Game", viewModel.TopGameText);
         Assert.AreEqual("Montag", viewModel.FavoriteWeekdayText);
         Assert.AreEqual("3 h 00 min", viewModel.LongestSessionText);
+        Assert.AreEqual("2 h 00 min", viewModel.MedianDurationText);
+        Assert.AreEqual("Abend", viewModel.PreferredTimeOfDayText);
+        Assert.AreEqual("18–24 Uhr · 8 h 00 min", viewModel.PreferredTimeOfDayDetailText);
+        Assert.AreEqual("24.08.2026", viewModel.RecordDayText);
+        Assert.AreEqual("8 h 00 min an einem Tag", viewModel.RecordDayDetailText);
+        Assert.HasCount(4, viewModel.TimesOfDay);
+        Assert.AreEqual(100d, viewModel.TimesOfDay.Single(item => item.Name == "Abend").Progress);
+        Assert.HasCount(3, viewModel.RollingComparisons);
+        Assert.AreEqual("7 TAGE", viewModel.RollingComparisons[0].Label);
+        Assert.AreEqual("8 h 00 min", viewModel.RollingComparisons[0].CurrentDurationText);
+        Assert.AreEqual("Vorher 4 h 00 min", viewModel.RollingComparisons[0].PreviousDurationText);
+        Assert.AreEqual("+100 % zur Vorperiode", viewModel.RollingComparisons[0].ChangeText);
         Assert.HasCount(7, viewModel.TrendLinePoints);
         Assert.HasCount(2, viewModel.GameShares);
         Assert.AreEqual("Alpha Game", viewModel.GameShares[0].Name);
@@ -93,6 +105,10 @@ public sealed class StatisticsViewModelTests
         Assert.AreEqual("0 min", viewModel.TotalDurationText);
         Assert.IsEmpty(viewModel.TopGames);
         Assert.AreEqual("Noch keine Daten", viewModel.TopGameText);
+        Assert.AreEqual("Noch keine Daten", viewModel.PreferredTimeOfDayText);
+        Assert.AreEqual("Noch keine Daten", viewModel.RecordDayText);
+        Assert.HasCount(4, viewModel.TimesOfDay);
+        Assert.HasCount(3, viewModel.RollingComparisons);
         Assert.IsEmpty(viewModel.GameShares);
         Assert.HasCount(53, viewModel.HeatmapWeeks);
     }
@@ -187,7 +203,20 @@ public sealed class StatisticsViewModelTests
                 .Select(offset => new WeekdayPlaytimeStatistics(
                     (DayOfWeek)(((int)DayOfWeek.Monday + offset) % 7),
                     offset == 0 ? total : TimeSpan.Zero))
-                .ToArray());
+                .ToArray(),
+            sessionCount == 0 ? TimeSpan.Zero : TimeSpan.FromHours(2),
+            sessionCount == 0 ? null : start,
+            sessionCount == 0 ? TimeSpan.Zero : total,
+            Enum.GetValues<TimeOfDayKind>()
+                .Select(kind => new TimeOfDayPlaytimeStatistics(
+                    kind,
+                    kind == TimeOfDayKind.Evening ? total : TimeSpan.Zero))
+                .ToArray(),
+            [
+                new RollingPlaytimeComparison(RollingComparisonKind.Last7Days, 7, total, previous ?? TimeSpan.Zero),
+                new RollingPlaytimeComparison(RollingComparisonKind.Last30Days, 30, total, previous ?? TimeSpan.Zero),
+                new RollingPlaytimeComparison(RollingComparisonKind.Last365Days, 365, total, previous ?? TimeSpan.Zero)
+            ]);
     }
 
     private sealed class FixedClock(DateTimeOffset now) : IClock

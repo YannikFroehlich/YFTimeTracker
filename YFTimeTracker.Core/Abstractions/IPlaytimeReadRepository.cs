@@ -9,4 +9,9 @@ public interface IPlaytimeReadRepository
     Task<long> GetTotalDurationSecondsAsync(DateTimeOffset nowUtc, CancellationToken cancellationToken);
 
     Task<DateTimeOffset?> GetEarliestSessionStartAsync(CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<PlaytimeSessionTiming>> GetSessionTimingsAsync(
+        DateTimeOffset fromUtc,
+        DateTimeOffset toUtc,
+        CancellationToken cancellationToken);
 }

@@ -171,7 +171,8 @@ public sealed class YearReviewViewModel : ObservableObject
             var visibleGames = report.Games.Take(8).ToArray();
             var iconPaths = gameIcons is null
                 ? new string?[visibleGames.Length]
-                : await Task.WhenAll(visibleGames.Select(game => gameIcons.GetIconPathAsync(
+                : await Task.WhenAll(visibleGames.Select(game => gameIcons.GetGameImagePathAsync(
+                    game.GameId,
                     game.ExecutablePath,
                     CancellationToken.None)));
             if (currentRefresh != Volatile.Read(ref refreshVersion))

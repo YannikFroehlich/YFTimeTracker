@@ -91,6 +91,42 @@ internal sealed class InMemorySettingsStore : ISettingsStore
     }
 }
 
+internal sealed class InMemoryTrackingExclusionRepository : ITrackingExclusionRepository
+{
+    private readonly List<TrackingExclusionRule> rules = [];
+    private long nextId = 1;
+
+    public Task<IReadOnlyList<TrackingExclusionRule>> GetAllAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult<IReadOnlyList<TrackingExclusionRule>>(rules.Select(Clone).ToArray());
+    }
+
+    public Task<TrackingExclusionRule> AddAsync(TrackingExclusionRule rule, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        rule.Id = nextId++;
+        rules.Add(Clone(rule));
+        return Task.FromResult(Clone(rule));
+    }
+
+    public Task DeleteAsync(long id, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        rules.RemoveAll(rule => rule.Id == id);
+        return Task.CompletedTask;
+    }
+
+    private static TrackingExclusionRule Clone(TrackingExclusionRule rule) => new()
+    {
+        Id = rule.Id,
+        Kind = rule.Kind,
+        Value = rule.Value,
+        ValueKey = rule.ValueKey,
+        AddedAtUtc = rule.AddedAtUtc
+    };
+}
+
 internal sealed class InMemoryGameRepository : IGameRepository
 {
     private readonly List<Game> games = [];
@@ -414,6 +450,17 @@ internal sealed class InMemoryPlaytimeReadRepository(IGameSessionRepository sess
     {
         var allSessions = await sessions.GetSessionsAsync(null, null, cancellationToken);
         return allSessions.Count == 0 ? null : allSessions.Min(session => session.StartedAtUtc);
+    }
+
+    public async Task<IReadOnlyList<PlaytimeSessionTiming>> GetSessionTimingsAsync(
+        DateTimeOffset fromUtc,
+        DateTimeOffset toUtc,
+        CancellationToken cancellationToken)
+    {
+        var matchingSessions = await sessions.GetSessionsAsync(fromUtc, toUtc, cancellationToken);
+        return matchingSessions
+            .Select(session => new PlaytimeSessionTiming(session.StartedAtUtc, session.EndedAtUtc))
+            .ToArray();
     }
 
     private static long GetEffectiveSeconds(GameSession session, DateTimeOffset nowUtc)

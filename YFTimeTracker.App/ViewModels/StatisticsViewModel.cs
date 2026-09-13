@@ -55,6 +55,11 @@ public sealed class StatisticsViewModel : ObservableObject
     private string favoriteWeekdayDetailText = "Dein aktivster Wochentag erscheint hier.";
     private string longestSessionText = "0 min";
     private string longestSessionDetailText = "Noch keine abgeschlossene Spielzeit";
+    private string medianDurationText = "0 min";
+    private string preferredTimeOfDayText = "Noch keine Daten";
+    private string preferredTimeOfDayDetailText = "Deine bevorzugte Tageszeit erscheint hier.";
+    private string recordDayText = "Noch keine Daten";
+    private string recordDayDetailText = "Dein spielstärkster Kalendertag erscheint hier.";
     private string statusMessage = "Statistiken werden aus deinen lokalen Sessions berechnet.";
     private Visibility dataVisibility = Visibility.Collapsed;
     private Visibility emptyVisibility = Visibility.Visible;
@@ -153,6 +158,16 @@ public sealed class StatisticsViewModel : ObservableObject
 
     public string LongestSessionDetailText { get => longestSessionDetailText; private set => SetProperty(ref longestSessionDetailText, value); }
 
+    public string MedianDurationText { get => medianDurationText; private set => SetProperty(ref medianDurationText, value); }
+
+    public string PreferredTimeOfDayText { get => preferredTimeOfDayText; private set => SetProperty(ref preferredTimeOfDayText, value); }
+
+    public string PreferredTimeOfDayDetailText { get => preferredTimeOfDayDetailText; private set => SetProperty(ref preferredTimeOfDayDetailText, value); }
+
+    public string RecordDayText { get => recordDayText; private set => SetProperty(ref recordDayText, value); }
+
+    public string RecordDayDetailText { get => recordDayDetailText; private set => SetProperty(ref recordDayDetailText, value); }
+
     public string StatusMessage { get => statusMessage; private set => SetProperty(ref statusMessage, value); }
 
     public Visibility DataVisibility { get => dataVisibility; private set => SetProperty(ref dataVisibility, value); }
@@ -188,6 +203,10 @@ public sealed class StatisticsViewModel : ObservableObject
     public ObservableCollection<GameShareSliceViewModel> TagShares { get; } = [];
 
     public ObservableCollection<WeekdayStatisticsViewModel> Weekdays { get; } = [];
+
+    public ObservableCollection<TimeOfDayStatisticsViewModel> TimesOfDay { get; } = [];
+
+    public ObservableCollection<RollingComparisonViewModel> RollingComparisons { get; } = [];
 
     public ObservableCollection<HeatmapWeekViewModel> HeatmapWeeks { get; } = [];
 
@@ -350,6 +369,7 @@ public sealed class StatisticsViewModel : ObservableObject
         UpdateTagShares(report);
         UpdateWeekdays(report);
         UpdateInsights(report);
+        UpdateAdvancedStatistics(report);
 
         DataVisibility = report.SessionCount == 0 ? Visibility.Collapsed : Visibility.Visible;
         EmptyVisibility = report.SessionCount == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -729,6 +749,75 @@ public sealed class StatisticsViewModel : ObservableObject
             : report.LongestSessionGameName;
     }
 
+    private void UpdateAdvancedStatistics(PlaytimeStatistics report)
+    {
+        MedianDurationText = TimeFormatter.Format(report.MedianSessionDuration);
+        RecordDayText = report.BusiestDay is { } busiestDay
+            ? busiestDay.ToString("dd.MM.yyyy", GermanCulture)
+            : "Noch keine Daten";
+        RecordDayDetailText = report.BusiestDay is null
+            ? "Dein spielstärkster Kalendertag erscheint hier."
+            : $"{TimeFormatter.Format(report.BusiestDayDuration)} an einem Tag";
+
+        TimesOfDay.Clear();
+        var maximumSeconds = report.TimesOfDay.Count == 0
+            ? 0
+            : report.TimesOfDay.Max(item => item.Duration.TotalSeconds);
+        var preferred = report.TimesOfDay
+            .Where(item => item.Duration > TimeSpan.Zero)
+            .OrderByDescending(item => item.Duration)
+            .ThenBy(item => item.Kind)
+            .FirstOrDefault();
+        foreach (var item in report.TimesOfDay)
+        {
+            TimesOfDay.Add(new TimeOfDayStatisticsViewModel(
+                FormatTimeOfDay(item.Kind),
+                FormatTimeOfDayRange(item.Kind),
+                TimeFormatter.Format(item.Duration),
+                maximumSeconds <= 0 ? 0 : item.Duration.TotalSeconds / maximumSeconds * 100,
+                item.Kind == preferred?.Kind ? CyanColor : BlueColor));
+        }
+
+        PreferredTimeOfDayText = preferred is null
+            ? "Noch keine Daten"
+            : FormatTimeOfDay(preferred.Kind);
+        PreferredTimeOfDayDetailText = preferred is null
+            ? "Deine bevorzugte Tageszeit erscheint hier."
+            : $"{FormatTimeOfDayRange(preferred.Kind)} · {TimeFormatter.Format(preferred.Duration)}";
+
+        RollingComparisons.Clear();
+        foreach (var comparison in report.RollingComparisons)
+        {
+            var (changeText, changeColor) = FormatComparison(
+                comparison.CurrentDuration,
+                comparison.PreviousDuration);
+            RollingComparisons.Add(new RollingComparisonViewModel(
+                $"{comparison.DayCount} TAGE",
+                TimeFormatter.Format(comparison.CurrentDuration),
+                $"Vorher {TimeFormatter.Format(comparison.PreviousDuration)}",
+                changeText,
+                changeColor));
+        }
+    }
+
+    private static string FormatTimeOfDay(TimeOfDayKind kind) => kind switch
+    {
+        TimeOfDayKind.Night => "Nacht",
+        TimeOfDayKind.Morning => "Morgen",
+        TimeOfDayKind.Afternoon => "Nachmittag",
+        TimeOfDayKind.Evening => "Abend",
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
+    };
+
+    private static string FormatTimeOfDayRange(TimeOfDayKind kind) => kind switch
+    {
+        TimeOfDayKind.Night => "00–06 Uhr",
+        TimeOfDayKind.Morning => "06–12 Uhr",
+        TimeOfDayKind.Afternoon => "12–18 Uhr",
+        TimeOfDayKind.Evening => "18–24 Uhr",
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
+    };
+
     private static string FormatPeriodDescription(PlaytimeStatistics report)
     {
         var lastDay = report.PeriodEndExclusive.AddDays(-1);
@@ -840,6 +929,20 @@ public sealed record WeekdayStatisticsViewModel(
     string DurationText,
     double Progress,
     string AccentColor);
+
+public sealed record TimeOfDayStatisticsViewModel(
+    string Name,
+    string RangeText,
+    string DurationText,
+    double Progress,
+    string AccentColor);
+
+public sealed record RollingComparisonViewModel(
+    string Label,
+    string CurrentDurationText,
+    string PreviousDurationText,
+    string ChangeText,
+    string ChangeColor);
 
 public sealed record GameShareSliceViewModel(
     Point ArcStart,
