@@ -32,19 +32,16 @@ public sealed partial class GameIcon : UserControl
         new PropertyMetadata(new Thickness(4)));
 
     private int loadVersion;
+    private int requestedDecodePixelWidth;
+    private XamlRoot? observedXamlRoot;
 
     public GameIcon()
     {
         InitializeComponent();
         Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["YFTextBrush"];
-        Loaded += (_, _) =>
-        {
-            if (IconImage.Source is null)
-            {
-                _ = LoadIconAsync(IconPath);
-            }
-        };
-        Unloaded += (_, _) => Interlocked.Increment(ref loadVersion);
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+        SizeChanged += (_, _) => RefreshIconResolution();
     }
 
     public string? IconPath
@@ -79,23 +76,62 @@ public sealed partial class GameIcon : UserControl
         }
     }
 
-    private int GetDecodePixelWidth()
+    private void OnLoaded(object sender, RoutedEventArgs args)
     {
-        var size = Math.Max(ActualWidth, ActualHeight);
-        if (size <= 0)
+        observedXamlRoot = XamlRoot;
+        if (observedXamlRoot is not null)
         {
-            size = 96;
+            observedXamlRoot.Changed += OnXamlRootChanged;
         }
 
-        return (int)Math.Round(Math.Clamp(size, 32, 256));
+        if (IconImage.Source is null)
+        {
+            _ = LoadIconAsync(IconPath);
+        }
+        else
+        {
+            RefreshIconResolution();
+        }
     }
 
-    private async Task LoadIconAsync(string? iconPath)
+    private void OnUnloaded(object sender, RoutedEventArgs args)
+    {
+        if (observedXamlRoot is not null)
+        {
+            observedXamlRoot.Changed -= OnXamlRootChanged;
+            observedXamlRoot = null;
+        }
+
+        Interlocked.Increment(ref loadVersion);
+        requestedDecodePixelWidth = 0;
+    }
+
+    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => RefreshIconResolution();
+
+    private int GetDecodePixelWidth() => IconDecodeSize.ForLogicalSize(
+        ActualWidth,
+        ActualHeight,
+        XamlRoot?.RasterizationScale ?? 1);
+
+    private void RefreshIconResolution()
+    {
+        if (IsLoaded && IconImage.Source is not null && GetDecodePixelWidth() > requestedDecodePixelWidth)
+        {
+            _ = LoadIconAsync(IconPath, preserveCurrentImage: true);
+        }
+    }
+
+    private async Task LoadIconAsync(string? iconPath, bool preserveCurrentImage = false)
     {
         var currentVersion = Interlocked.Increment(ref loadVersion);
-        IconImage.Source = null;
-        IconImage.Visibility = Visibility.Collapsed;
-        FallbackText.Visibility = Visibility.Visible;
+        requestedDecodePixelWidth = GetDecodePixelWidth();
+        var decodePixelWidth = requestedDecodePixelWidth;
+        if (!preserveCurrentImage)
+        {
+            IconImage.Source = null;
+            IconImage.Visibility = Visibility.Collapsed;
+            FallbackText.Visibility = Visibility.Visible;
+        }
 
         if (string.IsNullOrWhiteSpace(iconPath))
         {
@@ -108,8 +144,8 @@ public sealed partial class GameIcon : UserControl
             using var stream = await file.OpenReadAsync();
             var image = new BitmapImage
             {
-                DecodePixelType = DecodePixelType.Logical,
-                DecodePixelWidth = GetDecodePixelWidth(),
+                DecodePixelType = DecodePixelType.Physical,
+                DecodePixelWidth = decodePixelWidth,
             };
             await image.SetSourceAsync(stream);
             if (currentVersion != Volatile.Read(ref loadVersion)
@@ -121,10 +157,11 @@ public sealed partial class GameIcon : UserControl
             IconImage.Source = image;
             IconImage.Visibility = Visibility.Visible;
             FallbackText.Visibility = Visibility.Collapsed;
+            RefreshIconResolution();
         }
         catch (Exception)
         {
-            if (currentVersion == Volatile.Read(ref loadVersion))
+            if (currentVersion == Volatile.Read(ref loadVersion) && !preserveCurrentImage)
             {
                 IconImage.Source = null;
                 IconImage.Visibility = Visibility.Collapsed;

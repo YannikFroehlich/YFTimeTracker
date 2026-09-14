@@ -91,6 +91,16 @@ Für EA-app-Spiele zusätzlich prüfen:
 3. Die App neu starten. Bereits extrahierte Icons müssen ohne sichtbare Verzögerung aus dem lokalen Cache geladen werden.
 4. Die primäre EXE eines Spiels in der Bibliothek ändern. Nach dem Speichern muss das Icon der neuen Datei angezeigt werden.
 
+## Darstellung und Skalierung
+
+1. Dashboard, Bibliothek, Spieldetails, Sessions, Statistiken, Jahresrückblick und Einstellungen in einem breiten und einem schmalen Fenster prüfen. Positionen, Umbrüche und Scrollbereiche müssen unverändert funktionieren; Texte und Konturen dürfen nicht abgeschnitten sein.
+2. Helles und dunkles Design prüfen. Karten, farbige Icon-Flächen, Hinweise sowie normale, hervorgehobene und deaktivierte Schaltflächen müssen lesbar bleiben. Die Kopfzeile muss zur Hintergrundfarbe passen.
+3. Schaltflächen mit Maus und Tabulatortaste fokussieren. Hover-Übergänge müssen weich und kurz sein; der Tastaturfokus muss sichtbar bleiben und darf nichts verschieben.
+4. Bei 100 %, 125 %, 150 % und 200 % Windows-Anzeigeskalierung Schrift, Kartenränder, Diagrammlinien, EXE-Icons und eigene Cover kontrollieren. Die Anwendung darf nicht als vergrößertes unscharfes Fenster erscheinen. Gering aufgelöste Quelldateien können dabei keine zusätzlichen Details liefern.
+5. Falls zwei unterschiedlich skalierte Bildschirme verfügbar sind, das Fenster zwischen ihnen verschieben. Icons und Cover müssen bei höherer Skalierung in passender Auflösung nachladen; dabei dürfen weder Initialen aufblitzen noch die Bilder vorübergehend verschwinden.
+6. Mit sichtbaren Covern das Fenster mehrfach vergrößern und verkleinern sowie zwischen den Seiten wechseln. Fehlende Dateien müssen weiterhin ihre Initialen zeigen, und verspätet geladene Bilder dürfen keinem anderen Spiel zugeordnet werden.
+7. Auch die Diagramme mit vorhandenen Sessions und die leeren Ansichten ohne erfasste Sessions prüfen. Die geglättete Darstellung darf Datenpunkte, Balkenhöhen oder Summen nicht verändern. Nach der Prüfung die ursprüngliche Design- und Anzeigeskalierung wiederherstellen.
+
 ## Jahresrückblick
 
 1. **Jahresrückblick** in der Navigation öffnen. Das aktuelle Jahr muss vorausgewählt sein und Gesamtspielzeit, Spieltage, Spiele und Sessions mit den Statistiken übereinstimmen.

@@ -37,14 +37,7 @@
 
         <Grid Grid.Row="1">
             <StackPanel x:Name="WelcomeStep" Spacing="18">
-                <Border Padding="24" BorderBrush="{ThemeResource YFStrokeBrightBrush}" BorderThickness="1" CornerRadius="16">
-                    <Border.Background>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                            <GradientStop Color="#123C78" Offset="0" />
-                            <GradientStop Color="#241858" Offset="0.62" />
-                            <GradientStop Color="#091323" Offset="1" />
-                        </LinearGradientBrush>
-                    </Border.Background>
+                <Border Padding="24" Background="{ThemeResource YFBlueCardGradientBrush}" BorderBrush="{ThemeResource YFBlueCardBorderBrush}" BorderThickness="1" CornerRadius="16">
                     <Grid ColumnSpacing="22">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="112" />
@@ -66,8 +59,8 @@
                             <ColumnDefinition Width="42" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Border Width="40" Height="40" Background="#0B3039" CornerRadius="11">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE72E;" />
+                        <Border Width="40" Height="40" Background="{ThemeResource YFCyanTintBrush}" CornerRadius="11">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Foreground="{ThemeResource YFCyanTextBrush}" Glyph="&#xE72E;" />
                         </Border>
                         <StackPanel Grid.Column="1" Spacing="4">
                             <TextBlock FontWeight="SemiBold" Text="Deine Daten bleiben auf diesem Computer" />
@@ -93,8 +86,8 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Border Width="44" Height="44" Background="#102B50" CornerRadius="12">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE823;" />
+                        <Border Width="44" Height="44" Background="{ThemeResource YFBlueTintBrush}" CornerRadius="12">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{ThemeResource YFBlueTextBrush}" Glyph="&#xE823;" />
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                             <TextBlock FontWeight="SemiBold" Text="Spielzeit automatisch erfassen" />
@@ -111,8 +104,8 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Border Width="44" Height="44" Background="#291B52" CornerRadius="12">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="#B18CFF" Glyph="&#xE7FC;" />
+                        <Border Width="44" Height="44" Background="{ThemeResource YFPurpleTintBrush}" CornerRadius="12">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{ThemeResource YFPurpleTextBrush}" Glyph="&#xE7FC;" />
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                             <TextBlock FontWeight="SemiBold" Text="Steam, Epic, GOG, Xbox, EA app und weitere erkennen" TextWrapping="Wrap" />
@@ -128,7 +121,7 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <FontIcon FontSize="15" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE946;" />
+                        <FontIcon FontSize="15" Foreground="{ThemeResource YFCyanTextBrush}" Glyph="&#xE946;" />
                         <TextBlock Grid.Column="1" Style="{StaticResource YFMutedTextStyle}" Text="Launcher-Anmeldedaten werden weder gelesen noch benötigt. Es werden keine Web-APIs kontaktiert." TextWrapping="Wrap" />
                     </Grid>
                 </Border>
@@ -148,8 +141,8 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Border Width="44" Height="44" Background="#0B3039" CornerRadius="12">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE7E8;" />
+                        <Border Width="44" Height="44" Background="{ThemeResource YFCyanTintBrush}" CornerRadius="12">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{ThemeResource YFCyanTextBrush}" Glyph="&#xE7E8;" />
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                             <TextBlock FontWeight="SemiBold" Text="Beim Schließen im Tray behalten" />
@@ -166,8 +159,8 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Border Width="44" Height="44" Background="#291B52" CornerRadius="12">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="#B18CFF" Glyph="&#xE7F4;" />
+                        <Border Width="44" Height="44" Background="{ThemeResource YFPurpleTintBrush}" CornerRadius="12">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{ThemeResource YFPurpleTextBrush}" Glyph="&#xE7F4;" />
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                             <TextBlock FontWeight="SemiBold" Text="Mit Windows starten" />
@@ -190,17 +183,10 @@
             </StackPanel>
 
             <StackPanel x:Name="ReadyStep" Visibility="Collapsed" Spacing="18">
-                <Border Padding="24" BorderBrush="{ThemeResource YFStrokeBrightBrush}" BorderThickness="1" CornerRadius="16">
-                    <Border.Background>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                            <GradientStop Color="#0B3342" Offset="0" />
-                            <GradientStop Color="#162B59" Offset="0.55" />
-                            <GradientStop Color="#17113A" Offset="1" />
-                        </LinearGradientBrush>
-                    </Border.Background>
+                <Border Padding="24" Background="{ThemeResource YFTrackingCardGradientBrush}" BorderBrush="{ThemeResource YFCyanCardBorderBrush}" BorderThickness="1" CornerRadius="16">
                     <StackPanel HorizontalAlignment="Center" Spacing="10">
-                        <Border Width="76" Height="76" Background="#102A42" CornerRadius="38">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="34" Foreground="{StaticResource YFGreenBrush}" Glyph="&#xE73E;" />
+                        <Border Width="76" Height="76" Background="{ThemeResource YFBlueTintBrush}" CornerRadius="38">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="34" Foreground="{ThemeResource YFGreenTextBrush}" Glyph="&#xE73E;" />
                         </Border>
                         <TextBlock HorizontalAlignment="Center" FontFamily="Segoe UI Variable Display" FontSize="27" FontWeight="SemiBold" Text="Bereit für deine erste Session" />
                         <TextBlock MaxWidth="500" HorizontalTextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="Prüfe deine Auswahl. Mit „Einrichtung abschließen“ werden die Einstellungen gespeichert und das Dashboard geöffnet." TextWrapping="Wrap" />
@@ -227,7 +213,7 @@
             <TextBlock
                 x:Name="ErrorText"
                 Margin="0,0,0,12"
-                Foreground="{StaticResource YFRedBrush}"
+                Foreground="{ThemeResource YFDangerTextBrush}"
                 Text="Die Einstellungen konnten nicht gespeichert werden. Bitte erneut versuchen."
                 TextWrapping="Wrap"
                 Visibility="Collapsed" />

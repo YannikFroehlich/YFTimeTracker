@@ -2,6 +2,11 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.5.1 – 2026-09-14
+- Verbessert: Das Design verwendet ruhigere dunkle Flächen, dezente Kartenverläufe, klarere Schaltflächen und feinere Icon-Konturen. Akzenttexte und farbige Flächen sind auf das helle und dunkle Design abgestimmt. Anordnung, Abstände und Bedienung bleiben unverändert.
+- Verbessert: Einheitliche Rundungen, dezente Lichtkanten und weiche Hover-Übergänge verfeinern die Oberfläche. Diagrammlinien erhalten abgerundete Enden.
+- Verbessert: Die App verwendet monitorabhängige DPI-Skalierung. Spiel-Icons und Cover werden passend zur Fenstergröße und Bildschirmauflösung geladen; beim Nachladen einer höheren Auflösung bleibt das bisherige Bild sichtbar.
+
 ## 1.5.0 – 2026-09-13
 - Neu: In den Einstellungen lassen sich einzelne EXE-Dateien oder vollständige Ordner von der automatischen Spielerkennung ausschließen. Bereits laufende Sessions werden beim nächsten Scan beendet, wenn ihr Prozess von einer neuen Regel erfasst wird.
 - Neu: Für jedes Spiel kann in den Spieldetails ein eigenes lokales PNG- oder JPEG-Cover ausgewählt und wieder entfernt werden. Das Cover erscheint in Dashboard, Bibliothek, Suche, Sessions und Jahresrückblick; ohne eigenes Cover bleibt das bisherige EXE-Icon aktiv.
