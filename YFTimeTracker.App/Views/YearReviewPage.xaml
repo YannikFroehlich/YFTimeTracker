@@ -78,25 +78,25 @@
                         Margin="0,0,0,14"
                         Padding="24"
                         Background="{ThemeResource YFBlueCardGradientBrush}"
-                        BorderBrush="#285CA7"
+                        BorderBrush="{ThemeResource YFBlueCardBorderBrush}"
                         BorderThickness="1"
                         CornerRadius="16">
                         <Grid>
-                            <Ellipse Width="260" Height="260" Margin="0,-150,-80,0" HorizontalAlignment="Right" VerticalAlignment="Top" Fill="#172C67" Opacity="0.55" />
-                            <Ellipse Width="180" Height="180" Margin="0,0,70,-125" HorizontalAlignment="Right" VerticalAlignment="Bottom" Stroke="#5C8BDB" StrokeThickness="1" Opacity="0.3" />
+                            <Ellipse Width="260" Height="260" Margin="0,-150,-80,0" HorizontalAlignment="Right" VerticalAlignment="Top" Fill="{ThemeResource YFBlueTintBrush}" Opacity="0.55" />
+                            <Ellipse Width="180" Height="180" Margin="0,0,70,-125" HorizontalAlignment="Right" VerticalAlignment="Bottom" Stroke="{ThemeResource YFBlueTextBrush}" StrokeThickness="1" Opacity="0.2" />
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center" Spacing="5">
-                                    <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource YFCyanBrush}" Text="{Binding YearTitle}" />
+                                    <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{ThemeResource YFCyanTextBrush}" Text="{Binding YearTitle}" />
                                     <TextBlock FontFamily="Segoe UI Variable Display" FontSize="46" FontWeight="SemiBold" Text="{Binding TotalPlaytimeText}" />
                                     <TextBlock FontSize="13" Foreground="{Binding ComparisonColor}" Text="{Binding ComparisonText}" />
                                     <TextBlock Margin="0,4,0,0" Style="{StaticResource YFMutedTextStyle}" Text="{Binding YearSubtitle}" />
                                 </StackPanel>
-                                <Border Grid.Column="1" Width="86" Height="86" VerticalAlignment="Center" Background="#122D58" BorderBrush="#417AC2" BorderThickness="1" CornerRadius="43">
-                                    <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="34" Foreground="#8BC8FF" Glyph="&#xE787;" />
+                                <Border Grid.Column="1" Width="86" Height="86" VerticalAlignment="Center" Background="{ThemeResource YFBlueTintBrush}" BorderBrush="{ThemeResource YFBlueCardBorderBrush}" BorderThickness="1" CornerRadius="43">
+                                    <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="34" Foreground="{ThemeResource YFBlueTextBrush}" Glyph="&#xE787;" />
                                 </Border>
                             </Grid>
                         </Grid>
@@ -117,7 +117,7 @@
                             <StackPanel Spacing="7">
                                 <Grid>
                                     <TextBlock Style="{StaticResource YFCaptionStyle}" Text="SPIELTAGE" />
-                                    <FontIcon HorizontalAlignment="Right" FontSize="18" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE8F1;" />
+                                    <FontIcon HorizontalAlignment="Right" FontSize="18" Foreground="{ThemeResource YFCyanTextBrush}" Glyph="&#xE8F1;" />
                                 </Grid>
                                 <TextBlock FontFamily="Segoe UI Variable Display" FontSize="27" FontWeight="SemiBold" Text="{Binding ActiveDaysText}" />
                                 <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Tage mit erfasster Spielzeit" />
@@ -127,7 +127,7 @@
                             <StackPanel Spacing="7">
                                 <Grid>
                                     <TextBlock Style="{StaticResource YFCaptionStyle}" Text="GESPIELT" />
-                                    <FontIcon HorizontalAlignment="Right" FontSize="18" Foreground="{StaticResource YFPurpleBrush}" Glyph="&#xE7FC;" />
+                                    <FontIcon HorizontalAlignment="Right" FontSize="18" Foreground="{ThemeResource YFPurpleTextBrush}" Glyph="&#xE7FC;" />
                                 </Grid>
                                 <TextBlock FontFamily="Segoe UI Variable Display" FontSize="27" FontWeight="SemiBold" Text="{Binding GamesPlayedText}" />
                                 <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Unterschiedliche Spiele" />
@@ -137,7 +137,7 @@
                             <StackPanel Spacing="7">
                                 <Grid>
                                     <TextBlock Style="{StaticResource YFCaptionStyle}" Text="SESSIONS" />
-                                    <FontIcon HorizontalAlignment="Right" FontSize="18" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE916;" />
+                                    <FontIcon HorizontalAlignment="Right" FontSize="18" Foreground="{ThemeResource YFBlueTextBrush}" Glyph="&#xE916;" />
                                 </Grid>
                                 <TextBlock FontFamily="Segoe UI Variable Display" FontSize="27" FontWeight="SemiBold" Text="{Binding SessionCountText}" />
                                 <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Erfasste Spielstarts" />
@@ -216,8 +216,8 @@
                                             <ColumnDefinition Width="46" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <Border Width="42" Height="42" Background="#12394A" CornerRadius="11">
-                                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Foreground="{StaticResource YFCyanBrush}" Glyph="&#xE823;" />
+                                        <Border Width="42" Height="42" Background="{ThemeResource YFCyanTintBrush}" CornerRadius="11">
+                                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Foreground="{ThemeResource YFCyanTextBrush}" Glyph="&#xE823;" />
                                         </Border>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                                             <TextBlock Style="{StaticResource YFCaptionStyle}" Text="AKTIVSTER MONAT" />
@@ -232,8 +232,8 @@
                                             <ColumnDefinition Width="46" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <Border Width="42" Height="42" Background="#251B43" CornerRadius="11">
-                                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Foreground="{StaticResource YFPurpleBrush}" Glyph="&#xE787;" />
+                                        <Border Width="42" Height="42" Background="{ThemeResource YFPurpleTintBrush}" CornerRadius="11">
+                                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Foreground="{ThemeResource YFPurpleTextBrush}" Glyph="&#xE787;" />
                                         </Border>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                                             <TextBlock Style="{StaticResource YFCaptionStyle}" Text="LÄNGSTE SESSION" />
@@ -280,13 +280,13 @@
                                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="5">
                                                     <StackPanel Orientation="Horizontal" Spacing="7">
                                                         <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                                        <TextBlock FontSize="9" Foreground="{StaticResource YFCyanBrush}" Text="{Binding Source}" />
+                                                        <TextBlock FontSize="9" Foreground="{ThemeResource YFCyanTextBrush}" Text="{Binding Source}" />
                                                     </StackPanel>
-                                                    <ProgressBar Height="5" Maximum="100" Background="{ThemeResource YFButtonBackgroundBrush}" Foreground="{StaticResource YFBlueBrush}" Value="{Binding Progress}" />
+                                                    <ProgressBar Height="5" Maximum="100" Background="{ThemeResource YFButtonBackgroundBrush}" Foreground="{ThemeResource YFBlueTextBrush}" Value="{Binding Progress}" />
                                                     <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding SessionText}" />
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                                    <TextBlock HorizontalAlignment="Right" FontSize="13" FontWeight="SemiBold" Foreground="#8BB7FF" Text="{Binding DurationText}" />
+                                                    <TextBlock HorizontalAlignment="Right" FontSize="13" FontWeight="SemiBold" Foreground="{ThemeResource YFBlueTextBrush}" Text="{Binding DurationText}" />
                                                     <TextBlock HorizontalAlignment="Right" FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding ShareText}" />
                                                 </StackPanel>
                                             </Grid>
@@ -297,10 +297,10 @@
                         </Grid>
                     </Border>
 
-                    <Border Grid.Row="2" Grid.RowSpan="2" MinHeight="260" Background="{ThemeResource YFEmptyStatePanelBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="14" Visibility="{Binding EmptyVisibility}">
+                    <Border Grid.Row="2" Grid.RowSpan="2" MinHeight="260" Background="{ThemeResource YFEmptyStatePanelBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="{StaticResource YFCardCornerRadius}" Visibility="{Binding EmptyVisibility}">
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
                             <Border Width="72" Height="72" Background="{ThemeResource YFEmptyStateIconBrush}" BorderBrush="{ThemeResource YFEmptyStateIconBorderBrush}" BorderThickness="1" CornerRadius="36">
-                                <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="28" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE787;" />
+                                <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="28" Foreground="{ThemeResource YFBlueTextBrush}" Glyph="&#xE787;" />
                             </Border>
                             <TextBlock HorizontalAlignment="Center" FontSize="18" FontWeight="SemiBold" Text="Noch keine Spielzeit in diesem Jahr" />
                             <TextBlock MaxWidth="480" HorizontalAlignment="Center" TextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="Sobald Sessions erfasst wurden, erscheinen hier Monatsverlauf, Rekorde und deine meistgespielten Spiele." TextWrapping="Wrap" />

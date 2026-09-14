@@ -65,7 +65,8 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Tray-Betrieb, Tracking-Pause, optionaler Autostart und Einzelinstanz-Schutz
 - Eigenes Tray-Symbol je Zustand (aktiv, pausiert, Spiel läuft) und die aktuelle Sessiondauer in der Tray-Kurzinfo
 - Optional minimierter Start direkt im Tray, sowohl beim manuellen Start als auch über den Windows-Autostart
-- Helles und dunkles Design, umschaltbar in den Einstellungen
+- Helles und dunkles Design mit dezenten Kartenverläufen, einheitlichen Konturen und auf das Design abgestimmten Akzenttexten, umschaltbar in den Einstellungen
+- Monitorabhängige DPI-Skalierung und an die Anzeigegröße angepasste Spiel-Icons und Cover, auch beim Wechsel zwischen unterschiedlich skalierten Bildschirmen
 - Lokales Profil mit editierbarem Anzeigename und Akzentfarbe (nur auf diesem Gerät gespeichert)
 - Benachrichtigungsverlauf (erreichte Zeitlimits, verfügbare Updates) über das Glocken-Icon im Header
 

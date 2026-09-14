@@ -10,51 +10,67 @@
 
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Default">
-                    <Color x:Key="YFBackgroundColor">#050B16</Color>
-                    <Color x:Key="YFNavigationColor">#040912</Color>
-                    <Color x:Key="YFSurfaceColor">#091323</Color>
-                    <Color x:Key="YFSurfaceRaisedColor">#0C192B</Color>
-                    <Color x:Key="YFStrokeColor">#1B2B43</Color>
-                    <Color x:Key="YFStrokeBrightColor">#27518A</Color>
-                    <Color x:Key="YFTextColor">#F4F7FF</Color>
-                    <Color x:Key="YFMutedColor">#9AA8BF</Color>
-                    <Color x:Key="YFButtonBackgroundColor">#122039</Color>
-                    <Color x:Key="YFOutlineButtonBackgroundColor">#091526</Color>
-                    <Color x:Key="YFOutlineButtonHoverBackgroundColor">#122844</Color>
-                    <Color x:Key="YFOutlineButtonPressedBackgroundColor">#0D1F38</Color>
-                    <Color x:Key="YFDangerButtonBackgroundColor">#28101B</Color>
-                    <Color x:Key="YFDangerButtonHoverBackgroundColor">#3A1826</Color>
-                    <Color x:Key="YFDangerButtonPressedBackgroundColor">#210D16</Color>
-                    <Color x:Key="YFStatusBarColor">#0A1728</Color>
-                    <Color x:Key="YFEmptyStatePanelColor">#07101E</Color>
-                    <Color x:Key="YFEmptyStateIconColor">#101E35</Color>
-                    <Color x:Key="YFEmptyStateIconBorderColor">#24446D</Color>
-                    <Color x:Key="YFListRowBackgroundColor">#091628</Color>
-                    <Color x:Key="YFListRowBorderColor">#172B46</Color>
-                    <Color x:Key="YFListRowBackgroundHoverColor">#10243F</Color>
-                    <Color x:Key="YFListRowBackgroundPressedColor">#17345A</Color>
-                    <Color x:Key="YFListRowBackgroundSelectedColor">#132D64</Color>
-                    <Color x:Key="YFListRowBackgroundSelectedHoverColor">#173875</Color>
-                    <Color x:Key="YFListRowBackgroundSelectedPressedColor">#1B4388</Color>
-                    <Color x:Key="YFNavItemForegroundColor">#A9B5C9</Color>
-                    <Color x:Key="YFNavItemForegroundHoverColor">#F4F7FF</Color>
-                    <Color x:Key="YFNavItemForegroundSelectedColor">#F4F7FF</Color>
-                    <Color x:Key="YFNavItemBackgroundHoverColor">#0D1B30</Color>
-                    <Color x:Key="YFNavItemBackgroundSelectedColor">#132D64</Color>
-                    <Color x:Key="YFNavItemBackgroundSelectedHoverColor">#173875</Color>
-                    <Color x:Key="YFButtonHoverBackgroundColor">#1B2E52</Color>
-                    <Color x:Key="YFButtonPressedBackgroundColor">#142238</Color>
-                    <Color x:Key="YFButtonHoverBorderColor">#3568A8</Color>
-                    <Color x:Key="YFButtonPressedBorderColor">#2A5488</Color>
-                    <Color x:Key="YFTextBoxHoverBackgroundColor">#0D1D34</Color>
-                    <Color x:Key="YFTextBoxFocusedBackgroundColor">#0F2038</Color>
-                    <Color x:Key="YFTextBoxHoverBorderColor">#3568A8</Color>
-                    <Color x:Key="YFStatusChipSuccessBackgroundColor">#102B27</Color>
-                    <Color x:Key="YFStatusChipSuccessBorderColor">#1E795D</Color>
-                    <Color x:Key="YFStatusChipSuccessForegroundColor">#29E7A4</Color>
-                    <Color x:Key="YFStatusChipInfoBackgroundColor">#10233E</Color>
-                    <Color x:Key="YFStatusChipInfoBorderColor">#244D7E</Color>
-                    <Color x:Key="YFStatusChipInfoForegroundColor">#A8DFFF</Color>
+                    <Color x:Key="YFBackgroundColor">#0B0F17</Color>
+                    <Color x:Key="YFNavigationColor">#080C13</Color>
+                    <Color x:Key="YFSurfaceColor">#111824</Color>
+                    <Color x:Key="YFSurfaceRaisedColor">#182231</Color>
+                    <Color x:Key="YFStrokeColor">#283344</Color>
+                    <Color x:Key="YFStrokeBrightColor">#3D4F68</Color>
+                    <Color x:Key="YFTextColor">#EDF2FA</Color>
+                    <Color x:Key="YFMutedColor">#A0AFC3</Color>
+                    <Color x:Key="YFButtonBackgroundColor">#1C2737</Color>
+                    <Color x:Key="YFOutlineButtonBackgroundColor">#111925</Color>
+                    <Color x:Key="YFOutlineButtonHoverBackgroundColor">#202D40</Color>
+                    <Color x:Key="YFOutlineButtonPressedBackgroundColor">#162131</Color>
+                    <Color x:Key="YFDangerButtonBackgroundColor">#2B1B26</Color>
+                    <Color x:Key="YFDangerButtonHoverBackgroundColor">#3E2431</Color>
+                    <Color x:Key="YFDangerButtonPressedBackgroundColor">#241721</Color>
+                    <Color x:Key="YFStatusBarColor">#101722</Color>
+                    <Color x:Key="YFEmptyStatePanelColor">#0F1621</Color>
+                    <Color x:Key="YFEmptyStateIconColor">#18283F</Color>
+                    <Color x:Key="YFEmptyStateIconBorderColor">#324C70</Color>
+                    <Color x:Key="YFListRowBackgroundColor">#141D2A</Color>
+                    <Color x:Key="YFListRowBorderColor">#293649</Color>
+                    <Color x:Key="YFListRowBackgroundHoverColor">#202D40</Color>
+                    <Color x:Key="YFListRowBackgroundPressedColor">#182539</Color>
+                    <Color x:Key="YFListRowBackgroundSelectedColor">#203752</Color>
+                    <Color x:Key="YFListRowBackgroundSelectedHoverColor">#294360</Color>
+                    <Color x:Key="YFListRowBackgroundSelectedPressedColor">#1B304A</Color>
+                    <Color x:Key="YFNavItemForegroundColor">#A0AFC3</Color>
+                    <Color x:Key="YFNavItemForegroundHoverColor">#EDF2FA</Color>
+                    <Color x:Key="YFNavItemForegroundSelectedColor">#A8CDFF</Color>
+                    <Color x:Key="YFNavItemBackgroundHoverColor">#172130</Color>
+                    <Color x:Key="YFNavItemBackgroundSelectedColor">#1A2B42</Color>
+                    <Color x:Key="YFNavItemBackgroundSelectedHoverColor">#223750</Color>
+                    <Color x:Key="YFButtonHoverBackgroundColor">#29394F</Color>
+                    <Color x:Key="YFButtonPressedBackgroundColor">#182333</Color>
+                    <Color x:Key="YFButtonHoverBorderColor">#587293</Color>
+                    <Color x:Key="YFButtonPressedBorderColor">#425A77</Color>
+                    <Color x:Key="YFTextBoxHoverBackgroundColor">#172231</Color>
+                    <Color x:Key="YFTextBoxFocusedBackgroundColor">#101A28</Color>
+                    <Color x:Key="YFTextBoxHoverBorderColor">#526987</Color>
+                    <Color x:Key="YFStatusChipSuccessBackgroundColor">#152E2A</Color>
+                    <Color x:Key="YFStatusChipSuccessBorderColor">#315F50</Color>
+                    <Color x:Key="YFStatusChipSuccessForegroundColor">#74DEB5</Color>
+                    <Color x:Key="YFStatusChipInfoBackgroundColor">#1A2D43</Color>
+                    <Color x:Key="YFStatusChipInfoBorderColor">#375777</Color>
+                    <Color x:Key="YFStatusChipInfoForegroundColor">#A8CDFF</Color>
+
+                    <!-- Theme-aware ink and tints; brand colors remain stable for charts and profile swatches. -->
+                    <SolidColorBrush x:Key="YFBlueTextBrush" Color="#91BDFF" />
+                    <SolidColorBrush x:Key="YFCyanTextBrush" Color="#71DDE6" />
+                    <SolidColorBrush x:Key="YFPurpleTextBrush" Color="#BBA0F5" />
+                    <SolidColorBrush x:Key="YFGreenTextBrush" Color="#74DEB5" />
+                    <SolidColorBrush x:Key="YFDangerTextBrush" Color="#FF9AAB" />
+                    <SolidColorBrush x:Key="YFWarningTextBrush" Color="#F3C67B" />
+                    <SolidColorBrush x:Key="YFSectionTextBrush" Color="#CAD6E7" />
+                    <SolidColorBrush x:Key="YFBlueTintBrush" Color="#1A2C45" />
+                    <SolidColorBrush x:Key="YFPurpleTintBrush" Color="#29233F" />
+                    <SolidColorBrush x:Key="YFCyanTintBrush" Color="#16323C" />
+                    <SolidColorBrush x:Key="YFWarningTintBrush" Color="#352B20" />
+                    <SolidColorBrush x:Key="YFBlueCardBorderBrush" Color="#354E70" />
+                    <SolidColorBrush x:Key="YFPurpleCardBorderBrush" Color="#4A3E66" />
+                    <SolidColorBrush x:Key="YFCyanCardBorderBrush" Color="#315461" />
 
                     <SolidColorBrush x:Key="YFBackgroundBrush" Color="{StaticResource YFBackgroundColor}" />
                     <SolidColorBrush x:Key="YFNavigationBrush" Color="{StaticResource YFNavigationColor}" />
@@ -104,63 +120,73 @@
                     <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="{StaticResource YFMutedColor}" />
                     <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="{StaticResource YFMutedColor}" />
 
+                    <LinearGradientBrush x:Key="YFCardStrokeBrush" StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#42536C" Offset="0" />
+                        <GradientStop Color="#2B394E" Offset="0.3" />
+                        <GradientStop Color="#222D3F" Offset="1" />
+                    </LinearGradientBrush>
+                    <LinearGradientBrush x:Key="YFTrendFillBrush" StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#302CE5F3" Offset="0" />
+                        <GradientStop Color="#002CE5F3" Offset="1" />
+                    </LinearGradientBrush>
+
                     <LinearGradientBrush x:Key="YFCardGradientBrush" StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#0C1A2D" Offset="0" />
-                        <GradientStop Color="#08111F" Offset="1" />
+                        <GradientStop Color="#182231" Offset="0" />
+                        <GradientStop Color="#111925" Offset="1" />
                     </LinearGradientBrush>
                     <LinearGradientBrush x:Key="YFBlueCardGradientBrush" StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#102D68" Offset="0" />
-                        <GradientStop Color="#0A1730" Offset="0.62" />
-                        <GradientStop Color="#08111F" Offset="1" />
+                        <GradientStop Color="#1A2C46" Offset="0" />
+                        <GradientStop Color="#162131" Offset="0.62" />
+                        <GradientStop Color="#121B28" Offset="1" />
                     </LinearGradientBrush>
                     <LinearGradientBrush x:Key="YFPurpleCardGradientBrush" StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#2C1764" Offset="0" />
-                        <GradientStop Color="#10152B" Offset="0.62" />
-                        <GradientStop Color="#08111F" Offset="1" />
+                        <GradientStop Color="#2A2440" Offset="0" />
+                        <GradientStop Color="#1C2030" Offset="0.62" />
+                        <GradientStop Color="#141B28" Offset="1" />
                     </LinearGradientBrush>
                     <LinearGradientBrush x:Key="YFCyanCardGradientBrush" StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#063C4F" Offset="0" />
-                        <GradientStop Color="#0A1C2C" Offset="0.62" />
-                        <GradientStop Color="#08111F" Offset="1" />
+                        <GradientStop Color="#16323C" Offset="0" />
+                        <GradientStop Color="#16252F" Offset="0.62" />
+                        <GradientStop Color="#121C28" Offset="1" />
                     </LinearGradientBrush>
                     <LinearGradientBrush x:Key="YFTrackingCardGradientBrush" StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#0C2336" Offset="0" />
-                        <GradientStop Color="#15103B" Offset="0.64" />
-                        <GradientStop Color="#070D1A" Offset="1" />
+                        <GradientStop Color="#172B35" Offset="0" />
+                        <GradientStop Color="#1C2235" Offset="0.64" />
+                        <GradientStop Color="#111924" Offset="1" />
                     </LinearGradientBrush>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Light">
-                    <Color x:Key="YFBackgroundColor">#F3F5FA</Color>
-                    <Color x:Key="YFNavigationColor">#EAEDF5</Color>
+                    <Color x:Key="YFBackgroundColor">#F2F5FA</Color>
+                    <Color x:Key="YFNavigationColor">#EAF0F7</Color>
                     <Color x:Key="YFSurfaceColor">#FFFFFF</Color>
-                    <Color x:Key="YFSurfaceRaisedColor">#FFFFFF</Color>
-                    <Color x:Key="YFStrokeColor">#D8DEEA</Color>
-                    <Color x:Key="YFStrokeBrightColor">#B9C6E0</Color>
-                    <Color x:Key="YFTextColor">#111726</Color>
-                    <Color x:Key="YFMutedColor">#5B6B85</Color>
-                    <Color x:Key="YFButtonBackgroundColor">#E7ECF7</Color>
-                    <Color x:Key="YFOutlineButtonBackgroundColor">#EFF3FA</Color>
-                    <Color x:Key="YFOutlineButtonHoverBackgroundColor">#E4EDFB</Color>
-                    <Color x:Key="YFOutlineButtonPressedBackgroundColor">#D3E2F7</Color>
+                    <Color x:Key="YFSurfaceRaisedColor">#F7F9FD</Color>
+                    <Color x:Key="YFStrokeColor">#D6DFEB</Color>
+                    <Color x:Key="YFStrokeBrightColor">#ADBED3</Color>
+                    <Color x:Key="YFTextColor">#172438</Color>
+                    <Color x:Key="YFMutedColor">#52647C</Color>
+                    <Color x:Key="YFButtonBackgroundColor">#E7EDF6</Color>
+                    <Color x:Key="YFOutlineButtonBackgroundColor">#F9FBFE</Color>
+                    <Color x:Key="YFOutlineButtonHoverBackgroundColor">#EAF1FA</Color>
+                    <Color x:Key="YFOutlineButtonPressedBackgroundColor">#DCE7F4</Color>
                     <Color x:Key="YFDangerButtonBackgroundColor">#FBE3E7</Color>
                     <Color x:Key="YFDangerButtonHoverBackgroundColor">#F7D0D8</Color>
                     <Color x:Key="YFDangerButtonPressedBackgroundColor">#F2BCC7</Color>
-                    <Color x:Key="YFStatusBarColor">#EEF1F8</Color>
-                    <Color x:Key="YFEmptyStatePanelColor">#F2F4F9</Color>
-                    <Color x:Key="YFEmptyStateIconColor">#DCE8FF</Color>
-                    <Color x:Key="YFEmptyStateIconBorderColor">#AFC9F5</Color>
-                    <Color x:Key="YFListRowBackgroundColor">#F6F8FC</Color>
-                    <Color x:Key="YFListRowBorderColor">#E1E7F2</Color>
-                    <Color x:Key="YFListRowBackgroundHoverColor">#E4E9F5</Color>
+                    <Color x:Key="YFStatusBarColor">#EAF0F7</Color>
+                    <Color x:Key="YFEmptyStatePanelColor">#F5F8FC</Color>
+                    <Color x:Key="YFEmptyStateIconColor">#E7EFFB</Color>
+                    <Color x:Key="YFEmptyStateIconBorderColor">#B7CAE6</Color>
+                    <Color x:Key="YFListRowBackgroundColor">#F7F9FC</Color>
+                    <Color x:Key="YFListRowBorderColor">#DCE4EF</Color>
+                    <Color x:Key="YFListRowBackgroundHoverColor">#EDF2FA</Color>
                     <Color x:Key="YFListRowBackgroundPressedColor">#D7E1F5</Color>
-                    <Color x:Key="YFListRowBackgroundSelectedColor">#DCE8FF</Color>
+                    <Color x:Key="YFListRowBackgroundSelectedColor">#E0ECFC</Color>
                     <Color x:Key="YFListRowBackgroundSelectedHoverColor">#CFE0FF</Color>
                     <Color x:Key="YFListRowBackgroundSelectedPressedColor">#BFD4FF</Color>
                     <Color x:Key="YFNavItemForegroundColor">#46536B</Color>
                     <Color x:Key="YFNavItemForegroundHoverColor">#111726</Color>
-                    <Color x:Key="YFNavItemForegroundSelectedColor">#0B3A91</Color>
+                    <Color x:Key="YFNavItemForegroundSelectedColor">#215EAA</Color>
                     <Color x:Key="YFNavItemBackgroundHoverColor">#E4E9F5</Color>
-                    <Color x:Key="YFNavItemBackgroundSelectedColor">#DCE8FF</Color>
+                    <Color x:Key="YFNavItemBackgroundSelectedColor">#DCE9FA</Color>
                     <Color x:Key="YFNavItemBackgroundSelectedHoverColor">#CFE0FF</Color>
                     <Color x:Key="YFButtonHoverBackgroundColor">#DCE6F7</Color>
                     <Color x:Key="YFButtonPressedBackgroundColor">#CFDCF2</Color>
@@ -171,10 +197,26 @@
                     <Color x:Key="YFTextBoxHoverBorderColor">#8FAEDD</Color>
                     <Color x:Key="YFStatusChipSuccessBackgroundColor">#DFF6EA</Color>
                     <Color x:Key="YFStatusChipSuccessBorderColor">#3FAE7C</Color>
-                    <Color x:Key="YFStatusChipSuccessForegroundColor">#128A5E</Color>
+                    <Color x:Key="YFStatusChipSuccessForegroundColor">#176C4C</Color>
                     <Color x:Key="YFStatusChipInfoBackgroundColor">#DCEBFF</Color>
                     <Color x:Key="YFStatusChipInfoBorderColor">#7FB0EE</Color>
                     <Color x:Key="YFStatusChipInfoForegroundColor">#0B5FB8</Color>
+
+                    <!-- Theme-aware ink and tints; brand colors remain stable for charts and profile swatches. -->
+                    <SolidColorBrush x:Key="YFBlueTextBrush" Color="#245EAC" />
+                    <SolidColorBrush x:Key="YFCyanTextBrush" Color="#0B6D7B" />
+                    <SolidColorBrush x:Key="YFPurpleTextBrush" Color="#6A43B2" />
+                    <SolidColorBrush x:Key="YFGreenTextBrush" Color="#176C4C" />
+                    <SolidColorBrush x:Key="YFDangerTextBrush" Color="#AD2845" />
+                    <SolidColorBrush x:Key="YFWarningTextBrush" Color="#825407" />
+                    <SolidColorBrush x:Key="YFSectionTextBrush" Color="#334B68" />
+                    <SolidColorBrush x:Key="YFBlueTintBrush" Color="#E7EFFB" />
+                    <SolidColorBrush x:Key="YFPurpleTintBrush" Color="#EEE8FA" />
+                    <SolidColorBrush x:Key="YFCyanTintBrush" Color="#E2F1F4" />
+                    <SolidColorBrush x:Key="YFWarningTintBrush" Color="#FBF0DD" />
+                    <SolidColorBrush x:Key="YFBlueCardBorderBrush" Color="#BFCEE4" />
+                    <SolidColorBrush x:Key="YFPurpleCardBorderBrush" Color="#D1C6E4" />
+                    <SolidColorBrush x:Key="YFCyanCardBorderBrush" Color="#B8D9DF" />
 
                     <SolidColorBrush x:Key="YFBackgroundBrush" Color="{StaticResource YFBackgroundColor}" />
                     <SolidColorBrush x:Key="YFNavigationBrush" Color="{StaticResource YFNavigationColor}" />
@@ -224,28 +266,38 @@
                     <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="{StaticResource YFMutedColor}" />
                     <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="{StaticResource YFMutedColor}" />
 
+                    <LinearGradientBrush x:Key="YFCardStrokeBrush" StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#FFFFFF" Offset="0" />
+                        <GradientStop Color="#D7E1ED" Offset="0.3" />
+                        <GradientStop Color="#C7D4E5" Offset="1" />
+                    </LinearGradientBrush>
+                    <LinearGradientBrush x:Key="YFTrendFillBrush" StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#300B6D7B" Offset="0" />
+                        <GradientStop Color="#000B6D7B" Offset="1" />
+                    </LinearGradientBrush>
+
                     <LinearGradientBrush x:Key="YFCardGradientBrush" StartPoint="0,0" EndPoint="1,1">
                         <GradientStop Color="#FFFFFF" Offset="0" />
-                        <GradientStop Color="#F3F6FC" Offset="1" />
+                        <GradientStop Color="#FAFCFF" Offset="1" />
                     </LinearGradientBrush>
                     <LinearGradientBrush x:Key="YFBlueCardGradientBrush" StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#DCE8FF" Offset="0" />
-                        <GradientStop Color="#F1F5FF" Offset="0.62" />
+                        <GradientStop Color="#EAF1FC" Offset="0" />
+                        <GradientStop Color="#F7FAFF" Offset="0.62" />
                         <GradientStop Color="#FFFFFF" Offset="1" />
                     </LinearGradientBrush>
                     <LinearGradientBrush x:Key="YFPurpleCardGradientBrush" StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#E7DBFF" Offset="0" />
-                        <GradientStop Color="#F4F0FF" Offset="0.62" />
+                        <GradientStop Color="#F0EBFA" Offset="0" />
+                        <GradientStop Color="#FAF8FE" Offset="0.62" />
                         <GradientStop Color="#FFFFFF" Offset="1" />
                     </LinearGradientBrush>
                     <LinearGradientBrush x:Key="YFCyanCardGradientBrush" StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#D8F4FA" Offset="0" />
-                        <GradientStop Color="#EFFAFC" Offset="0.62" />
+                        <GradientStop Color="#E7F4F6" Offset="0" />
+                        <GradientStop Color="#F5FBFC" Offset="0.62" />
                         <GradientStop Color="#FFFFFF" Offset="1" />
                     </LinearGradientBrush>
                     <LinearGradientBrush x:Key="YFTrackingCardGradientBrush" StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#DFF3E9" Offset="0" />
-                        <GradientStop Color="#EAF1FF" Offset="0.64" />
+                        <GradientStop Color="#EDF7F4" Offset="0" />
+                        <GradientStop Color="#F0F4FC" Offset="0.64" />
                         <GradientStop Color="#FFFFFF" Offset="1" />
                     </LinearGradientBrush>
                 </ResourceDictionary>
@@ -256,28 +308,20 @@
             <Color x:Key="YFPurpleColor">#8A4DFF</Color>
             <Color x:Key="YFGreenColor">#29E7A4</Color>
             <Color x:Key="YFRedColor">#FF5368</Color>
-            <Color x:Key="YFAccentButtonHoverBackgroundColor">#1F4A9E</Color>
-            <Color x:Key="YFAccentButtonPressedBackgroundColor">#123061</Color>
             <Color x:Key="YFAccentButtonHoverBorderColor">#4A93FF</Color>
             <Color x:Key="YFAccentButtonPressedBorderColor">#2A6FDB</Color>
             <Color x:Key="YFDangerButtonHoverBorderColor">#FF7181</Color>
             <Color x:Key="YFDangerButtonPressedBorderColor">#E23F53</Color>
-            <Color x:Key="YFOutlineButtonHoverBorderColor">#3E6FB8</Color>
-            <Color x:Key="YFOutlineButtonPressedBorderColor">#2E5C9E</Color>
 
             <SolidColorBrush x:Key="YFBlueBrush" Color="{StaticResource YFBlueColor}" />
             <SolidColorBrush x:Key="YFCyanBrush" Color="{StaticResource YFCyanColor}" />
             <SolidColorBrush x:Key="YFPurpleBrush" Color="{StaticResource YFPurpleColor}" />
             <SolidColorBrush x:Key="YFGreenBrush" Color="{StaticResource YFGreenColor}" />
             <SolidColorBrush x:Key="YFRedBrush" Color="{StaticResource YFRedColor}" />
-            <SolidColorBrush x:Key="YFAccentButtonHoverBackgroundBrush" Color="{StaticResource YFAccentButtonHoverBackgroundColor}" />
-            <SolidColorBrush x:Key="YFAccentButtonPressedBackgroundBrush" Color="{StaticResource YFAccentButtonPressedBackgroundColor}" />
             <SolidColorBrush x:Key="YFAccentButtonHoverBorderBrush" Color="{StaticResource YFAccentButtonHoverBorderColor}" />
             <SolidColorBrush x:Key="YFAccentButtonPressedBorderBrush" Color="{StaticResource YFAccentButtonPressedBorderColor}" />
             <SolidColorBrush x:Key="YFDangerButtonHoverBorderBrush" Color="{StaticResource YFDangerButtonHoverBorderColor}" />
             <SolidColorBrush x:Key="YFDangerButtonPressedBorderBrush" Color="{StaticResource YFDangerButtonPressedBorderColor}" />
-            <SolidColorBrush x:Key="YFOutlineButtonHoverBorderBrush" Color="{StaticResource YFOutlineButtonHoverBorderColor}" />
-            <SolidColorBrush x:Key="YFOutlineButtonPressedBorderBrush" Color="{StaticResource YFOutlineButtonPressedBorderColor}" />
 
             <LinearGradientBrush x:Key="YFLogoGradientBrush" StartPoint="0,0" EndPoint="1,1">
                 <GradientStop Color="#28E8F5" Offset="0" />
@@ -285,21 +329,49 @@
                 <GradientStop Color="#9948FF" Offset="1" />
             </LinearGradientBrush>
 
+            <LinearGradientBrush x:Key="YFAccentButtonGradientBrush" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#3067BD" Offset="0" />
+                <GradientStop Color="#255397" Offset="1" />
+            </LinearGradientBrush>
+
+            <FontFamily x:Key="YFBodyFontFamily">Segoe UI Variable Text</FontFamily>
+            <FontFamily x:Key="YFDisplayFontFamily">Segoe UI Variable Display</FontFamily>
+            <CornerRadius x:Key="YFCardCornerRadius">16</CornerRadius>
+            <CornerRadius x:Key="YFControlCornerRadius">10</CornerRadius>
+            <CornerRadius x:Key="YFChipCornerRadius">8</CornerRadius>
+
+            <Style x:Key="YFMetricIconStyle" TargetType="Border">
+                <Setter Property="Width" Value="66" />
+                <Setter Property="Height" Value="66" />
+                <Setter Property="HorizontalAlignment" Value="Left" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="22" />
+            </Style>
+
+            <Style TargetType="ComboBox">
+                <Setter Property="Background" Value="{ThemeResource YFOutlineButtonBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource YFStrokeBrightBrush}" />
+                <Setter Property="Foreground" Value="{ThemeResource YFTextBrush}" />
+                <Setter Property="CornerRadius" Value="{StaticResource YFControlCornerRadius}" />
+            </Style>
+
             <Style TargetType="Page">
                 <Setter Property="Background" Value="{ThemeResource YFBackgroundBrush}" />
                 <Setter Property="Foreground" Value="{ThemeResource YFTextBrush}" />
-                <Setter Property="FontFamily" Value="Segoe UI Variable Text" />
+                <Setter Property="FontFamily" Value="{StaticResource YFBodyFontFamily}" />
             </Style>
 
             <Style x:Key="YFCardStyle" TargetType="Border">
                 <Setter Property="Background" Value="{ThemeResource YFCardGradientBrush}" />
-                <Setter Property="BorderBrush" Value="{ThemeResource YFStrokeBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource YFCardStrokeBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="14" />
+                <Setter Property="CornerRadius" Value="{StaticResource YFCardCornerRadius}" />
                 <Setter Property="Padding" Value="20" />
             </Style>
 
             <Style x:Key="YFSubtleCardStyle" TargetType="Border" BasedOn="{StaticResource YFCardStyle}">
+                <Setter Property="BorderBrush" Value="{ThemeResource YFStrokeBrush}" />
                 <Setter Property="Background" Value="{ThemeResource YFSurfaceBrush}" />
                 <Setter Property="CornerRadius" Value="12" />
                 <Setter Property="Padding" Value="16" />
@@ -307,24 +379,24 @@
 
             <Style x:Key="YFChipStyle" TargetType="Border">
                 <Setter Property="Background" Value="{ThemeResource YFListRowBackgroundHoverBrush}" />
-                <Setter Property="CornerRadius" Value="7" />
+                <Setter Property="CornerRadius" Value="{StaticResource YFChipCornerRadius}" />
                 <Setter Property="Padding" Value="9,4" />
             </Style>
 
             <Style x:Key="YFChipTextStyle" TargetType="TextBlock">
-                <Setter Property="Foreground" Value="{StaticResource YFCyanBrush}" />
+                <Setter Property="Foreground" Value="{ThemeResource YFCyanTextBrush}" />
                 <Setter Property="FontSize" Value="10" />
             </Style>
 
             <Style x:Key="YFPageTitleStyle" TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{ThemeResource YFTextBrush}" />
-                <Setter Property="FontFamily" Value="Segoe UI Variable Display" />
+                <Setter Property="FontFamily" Value="{StaticResource YFDisplayFontFamily}" />
                 <Setter Property="FontSize" Value="30" />
                 <Setter Property="FontWeight" Value="SemiBold" />
             </Style>
 
             <Style x:Key="YFSectionTitleStyle" TargetType="TextBlock">
-                <Setter Property="Foreground" Value="{StaticResource YFBlueBrush}" />
+                <Setter Property="Foreground" Value="{ThemeResource YFSectionTextBrush}" />
                 <Setter Property="FontSize" Value="16" />
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="CharacterSpacing" Value="25" />
@@ -336,6 +408,7 @@
             </Style>
 
             <Style x:Key="YFCaptionStyle" TargetType="TextBlock" BasedOn="{StaticResource YFMutedTextStyle}">
+                <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="FontSize" Value="11" />
                 <Setter Property="CharacterSpacing" Value="35" />
             </Style>
@@ -347,6 +420,9 @@
                     BorderBrush="{TemplateBinding BorderBrush}"
                     BorderThickness="{TemplateBinding BorderThickness}"
                     CornerRadius="{TemplateBinding CornerRadius}">
+                    <Grid.BackgroundTransition>
+                        <BrushTransition Duration="0:0:0.12" />
+                    </Grid.BackgroundTransition>
                     <VisualStateManager.VisualStateGroups>
                         <VisualStateGroup x:Name="CommonStates">
                             <VisualState x:Name="Normal" />
@@ -375,6 +451,9 @@
                         VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
                         Content="{TemplateBinding Content}"
                         ContentTemplate="{TemplateBinding ContentTemplate}"
+                        FontFamily="{TemplateBinding FontFamily}"
+                        FontSize="{TemplateBinding FontSize}"
+                        FontWeight="{TemplateBinding FontWeight}"
                         Foreground="{TemplateBinding Foreground}" />
                 </Grid>
             </ControlTemplate>
@@ -388,16 +467,19 @@
                     CornerRadius="{TemplateBinding CornerRadius}">
                     <VisualStateManager.VisualStateGroups>
                         <VisualStateGroup x:Name="CommonStates">
+                            <VisualStateGroup.Transitions>
+                                <VisualTransition GeneratedDuration="0:0:0.12" />
+                            </VisualStateGroup.Transitions>
                             <VisualState x:Name="Normal" />
                             <VisualState x:Name="PointerOver">
                                 <VisualState.Setters>
-                                    <Setter Target="RootGrid.Background" Value="{StaticResource YFAccentButtonHoverBackgroundBrush}" />
+                                    <Setter Target="HoverOverlay.Opacity" Value="0.08" />
                                     <Setter Target="RootGrid.BorderBrush" Value="{StaticResource YFAccentButtonHoverBorderBrush}" />
                                 </VisualState.Setters>
                             </VisualState>
                             <VisualState x:Name="Pressed">
                                 <VisualState.Setters>
-                                    <Setter Target="RootGrid.Background" Value="{StaticResource YFAccentButtonPressedBackgroundBrush}" />
+                                    <Setter Target="PressedOverlay.Opacity" Value="0.18" />
                                     <Setter Target="RootGrid.BorderBrush" Value="{StaticResource YFAccentButtonPressedBorderBrush}" />
                                 </VisualState.Setters>
                             </VisualState>
@@ -408,12 +490,17 @@
                             </VisualState>
                         </VisualStateGroup>
                     </VisualStateManager.VisualStateGroups>
+                    <Border x:Name="HoverOverlay" Background="White" Opacity="0" IsHitTestVisible="False" CornerRadius="{TemplateBinding CornerRadius}" />
+                    <Border x:Name="PressedOverlay" Background="Black" Opacity="0" IsHitTestVisible="False" CornerRadius="{TemplateBinding CornerRadius}" />
                     <ContentPresenter
                         Padding="{TemplateBinding Padding}"
                         HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                         VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
                         Content="{TemplateBinding Content}"
                         ContentTemplate="{TemplateBinding ContentTemplate}"
+                        FontFamily="{TemplateBinding FontFamily}"
+                        FontSize="{TemplateBinding FontSize}"
+                        FontWeight="{TemplateBinding FontWeight}"
                         Foreground="{TemplateBinding Foreground}" />
                 </Grid>
             </ControlTemplate>
@@ -425,6 +512,9 @@
                     BorderBrush="{TemplateBinding BorderBrush}"
                     BorderThickness="{TemplateBinding BorderThickness}"
                     CornerRadius="{TemplateBinding CornerRadius}">
+                    <Grid.BackgroundTransition>
+                        <BrushTransition Duration="0:0:0.12" />
+                    </Grid.BackgroundTransition>
                     <VisualStateManager.VisualStateGroups>
                         <VisualStateGroup x:Name="CommonStates">
                             <VisualState x:Name="Normal" />
@@ -453,6 +543,9 @@
                         VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
                         Content="{TemplateBinding Content}"
                         ContentTemplate="{TemplateBinding ContentTemplate}"
+                        FontFamily="{TemplateBinding FontFamily}"
+                        FontSize="{TemplateBinding FontSize}"
+                        FontWeight="{TemplateBinding FontWeight}"
                         Foreground="{TemplateBinding Foreground}" />
                 </Grid>
             </ControlTemplate>
@@ -464,19 +557,22 @@
                     BorderBrush="{TemplateBinding BorderBrush}"
                     BorderThickness="{TemplateBinding BorderThickness}"
                     CornerRadius="{TemplateBinding CornerRadius}">
+                    <Grid.BackgroundTransition>
+                        <BrushTransition Duration="0:0:0.12" />
+                    </Grid.BackgroundTransition>
                     <VisualStateManager.VisualStateGroups>
                         <VisualStateGroup x:Name="CommonStates">
                             <VisualState x:Name="Normal" />
                             <VisualState x:Name="PointerOver">
                                 <VisualState.Setters>
                                     <Setter Target="RootGrid.Background" Value="{ThemeResource YFOutlineButtonHoverBackgroundBrush}" />
-                                    <Setter Target="RootGrid.BorderBrush" Value="{StaticResource YFOutlineButtonHoverBorderBrush}" />
+                                    <Setter Target="RootGrid.BorderBrush" Value="{ThemeResource ButtonBorderBrushPointerOver}" />
                                 </VisualState.Setters>
                             </VisualState>
                             <VisualState x:Name="Pressed">
                                 <VisualState.Setters>
                                     <Setter Target="RootGrid.Background" Value="{ThemeResource YFOutlineButtonPressedBackgroundBrush}" />
-                                    <Setter Target="RootGrid.BorderBrush" Value="{StaticResource YFOutlineButtonPressedBorderBrush}" />
+                                    <Setter Target="RootGrid.BorderBrush" Value="{ThemeResource ButtonBorderBrushPressed}" />
                                 </VisualState.Setters>
                             </VisualState>
                             <VisualState x:Name="Disabled">
@@ -492,14 +588,19 @@
                         VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
                         Content="{TemplateBinding Content}"
                         ContentTemplate="{TemplateBinding ContentTemplate}"
+                        FontFamily="{TemplateBinding FontFamily}"
+                        FontSize="{TemplateBinding FontSize}"
+                        FontWeight="{TemplateBinding FontWeight}"
                         Foreground="{TemplateBinding Foreground}" />
                 </Grid>
             </ControlTemplate>
 
             <Style x:Key="YFButtonStyle" TargetType="Button">
+                <Setter Property="FontFamily" Value="{StaticResource YFBodyFontFamily}" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
                 <Setter Property="MinHeight" Value="40" />
                 <Setter Property="Padding" Value="16,8" />
-                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="CornerRadius" Value="{StaticResource YFControlCornerRadius}" />
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="Foreground" Value="{ThemeResource YFTextBrush}" />
                 <Setter Property="Background" Value="{ThemeResource YFButtonBackgroundBrush}" />
@@ -509,7 +610,7 @@
             </Style>
 
             <Style x:Key="YFAccentButtonStyle" TargetType="Button" BasedOn="{StaticResource YFButtonStyle}">
-                <Setter Property="Background" Value="#183E88" />
+                <Setter Property="Background" Value="{StaticResource YFAccentButtonGradientBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource YFBlueBrush}" />
                 <Setter Property="Foreground" Value="White" />
                 <Setter Property="Template" Value="{StaticResource YFAccentButtonTemplate}" />
@@ -517,14 +618,14 @@
 
             <Style x:Key="YFOutlineButtonStyle" TargetType="Button" BasedOn="{StaticResource YFButtonStyle}">
                 <Setter Property="Background" Value="{ThemeResource YFOutlineButtonBackgroundBrush}" />
-                <Setter Property="BorderBrush" Value="#315B91" />
+                <Setter Property="BorderBrush" Value="{ThemeResource YFStrokeBrightBrush}" />
                 <Setter Property="Template" Value="{StaticResource YFOutlineButtonTemplate}" />
             </Style>
 
             <Style x:Key="YFDangerButtonStyle" TargetType="Button" BasedOn="{StaticResource YFButtonStyle}">
                 <Setter Property="Background" Value="{ThemeResource YFDangerButtonBackgroundBrush}" />
-                <Setter Property="BorderBrush" Value="{StaticResource YFRedBrush}" />
-                <Setter Property="Foreground" Value="#FF8794" />
+                <Setter Property="BorderBrush" Value="{ThemeResource YFDangerTextBrush}" />
+                <Setter Property="Foreground" Value="{ThemeResource YFDangerTextBrush}" />
                 <Setter Property="Template" Value="{StaticResource YFDangerButtonTemplate}" />
             </Style>
 
@@ -538,7 +639,7 @@
 
             <Style x:Key="YFTextBoxStyle" TargetType="TextBox">
                 <Setter Property="MinHeight" Value="42" />
-                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="CornerRadius" Value="{StaticResource YFControlCornerRadius}" />
                 <Setter Property="Background" Value="{ThemeResource YFOutlineButtonBackgroundBrush}" />
                 <Setter Property="BorderBrush" Value="{ThemeResource YFStrokeBrush}" />
                 <Setter Property="Foreground" Value="{ThemeResource YFTextBrush}" />

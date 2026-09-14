@@ -120,8 +120,8 @@
                                 <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Orientation="Horizontal" Spacing="7">
-                                <Border Padding="8,4" VerticalAlignment="Center" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="7">
-                                    <TextBlock FontSize="9" Foreground="{StaticResource YFBlueBrush}" Text="{Binding ResultSummary}" />
+                                <Border Padding="8,4" VerticalAlignment="Center" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="{StaticResource YFChipCornerRadius}">
+                                    <TextBlock FontSize="9" Foreground="{ThemeResource YFBlueTextBrush}" Text="{Binding ResultSummary}" />
                                 </Border>
                                 <Button
                                     Width="34"
@@ -178,7 +178,7 @@
                                             <TextBlock FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock FontSize="11" Foreground="{Binding ExecutableColor}" Text="{Binding ExecutableDisplay}" TextTrimming="CharacterEllipsis" />
                                             <StackPanel Orientation="Horizontal" Spacing="7">
-                                                <TextBlock FontSize="9" Foreground="{StaticResource YFCyanBrush}" Text="{Binding SourceLabel}" />
+                                                <TextBlock FontSize="9" Foreground="{ThemeResource YFCyanTextBrush}" Text="{Binding SourceLabel}" />
                                                 <TextBlock FontSize="10" Foreground="{Binding ActivityColor}" Text="{Binding ActivityText}" />
                                                 <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding LastPlayedText}" TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
@@ -235,7 +235,7 @@
                         </ListView>
                         <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" Visibility="{Binding EmptyVisibility}">
                             <Border Width="62" Height="62" Background="{ThemeResource YFEmptyStateIconBrush}" BorderBrush="{ThemeResource YFEmptyStateIconBorderBrush}" BorderThickness="1" CornerRadius="31">
-                                <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE7FC;" />
+                                <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" Foreground="{ThemeResource YFBlueTextBrush}" Glyph="&#xE7FC;" />
                             </Border>
                             <TextBlock HorizontalAlignment="Center" FontSize="16" FontWeight="SemiBold" Text="Keine Spiele gefunden" />
                             <TextBlock MaxWidth="290" HorizontalAlignment="Center" TextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="{Binding EmptyStateText}" TextWrapping="Wrap" />
@@ -252,7 +252,7 @@
                                 <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Ein Spiel wird anhand seines vollständigen EXE-Pfads erkannt." />
                             </StackPanel>
                             <Border Padding="9,4" HorizontalAlignment="Right" VerticalAlignment="Top" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="8">
-                                <TextBlock FontSize="10" Foreground="{StaticResource YFBlueBrush}" Text="LOKALES TRACKING" />
+                                <TextBlock FontSize="10" Foreground="{ThemeResource YFBlueTextBrush}" Text="LOKALES TRACKING" />
                             </Border>
                         </Grid>
 
@@ -362,7 +362,7 @@
                                                     </Grid.ColumnDefinitions>
                                                     <TextBlock VerticalAlignment="Center" FontSize="12" Text="{Binding StartedAt}" />
                                                     <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding EndedAt}" />
-                                                    <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource YFBlueBrush}" Text="{Binding Duration}" />
+                                                    <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{ThemeResource YFBlueTextBrush}" Text="{Binding Duration}" />
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
@@ -382,7 +382,7 @@
 
             <Border Grid.Row="3" Margin="0,12,0,0" Padding="12,9" Background="{ThemeResource YFStatusBarBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
                 <StackPanel Orientation="Horizontal" Spacing="9">
-                    <FontIcon FontSize="13" Foreground="{StaticResource YFBlueBrush}" Glyph="&#xE946;" />
+                    <FontIcon FontSize="13" Foreground="{ThemeResource YFBlueTextBrush}" Glyph="&#xE946;" />
                     <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
