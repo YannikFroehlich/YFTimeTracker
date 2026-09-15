@@ -2,6 +2,13 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.6.0 – 2026-09-15
+- Neu: Kontoabgleich mit der YFDatenbank. Das Profil oben rechts ist jetzt ein echtes Konto: nach der Anmeldung mit E-Mail und Passwort werden Spiele, EXE-Zuordnungen, Sessions, Tags, Erkennungsausschlüsse, eigene Cover sowie Anzeigename, Farbe und Einstellungen in einer Supabase-Datenbank gespeichert.
+- Neu: Meldet man sich auf einem zweiten PC mit demselben Konto an, werden beide Bestände zusammengeführt statt verdoppelt. Spiele werden dabei über Launcher-Id beziehungsweise Name erkannt, Sessions bleiben ihrem Ursprungsgerät zugeordnet und zählen in der Auswertung zusammen.
+- Neu: Der Abgleich läuft bei jedem Start automatisch und lässt sich im Profil über „Jetzt abgleichen" anstoßen. Löschungen wandern mit; ändern beide PCs denselben Eintrag, gewinnt der Stand aus dem Konto, und der Fall wird angezeigt statt still überschrieben.
+- Geändert: „YFDatenbank" ist kein Sicherungsziel mehr. Das Sicherungsziel steuert weiterhin nur, wohin die tägliche lokale Sicherungsdatei zusätzlich kopiert wird (OneDrive- oder Google-Drive-Ordner); der Kontoabgleich hängt stattdessen an der Anmeldung.
+- Hinweis: Die Funktion ist optional und standardmäßig aus. Ohne Anmeldung bleibt alles lokal, und die Spielerkennung arbeitet unverändert ohne Konto und ohne Web-API. Einrichtung eigener Builds: `docs/SUPABASE_SETUP.md`.
+
 ## 1.5.1 – 2026-09-14
 - Verbessert: Das Design verwendet ruhigere dunkle Flächen, dezente Kartenverläufe, klarere Schaltflächen und feinere Icon-Konturen. Akzenttexte und farbige Flächen sind auf das helle und dunkle Design abgestimmt. Anordnung, Abstände und Bedienung bleiben unverändert.
 - Verbessert: Einheitliche Rundungen, dezente Lichtkanten und weiche Hover-Übergänge verfeinern die Oberfläche. Diagrammlinien erhalten abgerundete Enden.

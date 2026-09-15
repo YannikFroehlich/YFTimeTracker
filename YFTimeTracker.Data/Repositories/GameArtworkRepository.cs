@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
+using YFTimeTracker.Data.Sync;
 
 namespace YFTimeTracker.Data.Repositories;
 
@@ -47,6 +48,7 @@ public sealed class GameArtworkRepository(
             return;
         }
 
+        SyncTombstoneRecorder.RecordArtwork(context, artwork);
         context.GameArtworks.Remove(artwork);
         await context.SaveChangesAsync(cancellationToken);
     }

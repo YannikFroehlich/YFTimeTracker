@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
+using YFTimeTracker.Data.Sync;
 
 namespace YFTimeTracker.Data.Repositories;
 
@@ -117,6 +118,7 @@ public sealed class GameSessionRepository(IDbContextFactory<YFTimeTrackerDbConte
             return;
         }
 
+        SyncTombstoneRecorder.RecordSession(context, session);
         context.GameSessions.Remove(session);
         await context.SaveChangesAsync(cancellationToken);
     }

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Data.Backup;
 using YFTimeTracker.Data.Repositories;
+using YFTimeTracker.Data.Sync;
 
 namespace YFTimeTracker.Data;
 
@@ -26,6 +27,7 @@ public static class DataServiceCollectionExtensions
         services.AddSingleton<IPlaytimeReadRepository, PlaytimeReadRepository>();
         services.AddSingleton<ISettingsStore, SettingsStore>();
         services.AddSingleton<IBackupService, JsonZipBackupService>();
+        services.AddSingleton<IAccountSyncStore, AccountSyncStore>();
         return services;
     }
 }

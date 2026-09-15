@@ -41,6 +41,7 @@
     <PackageReference Include="Velopack" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\YFTimeTracker.Cloud\YFTimeTracker.Cloud.csproj" />
     <ProjectReference Include="..\YFTimeTracker.Core\YFTimeTracker.Core.csproj" />
     <ProjectReference Include="..\YFTimeTracker.Data\YFTimeTracker.Data.csproj" />
     <ProjectReference Include="..\YFTimeTracker.Windows\YFTimeTracker.Windows.csproj" />
@@ -49,6 +50,8 @@
     <None Include="Package.appxmanifest" />
     <Content Include="Assets\*.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\*.ico" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Supabase-Verbindung. Nicht im Repository; fehlt sie, bleibt der Kontoabgleich aus. -->
+    <Content Include="cloud.config.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('cloud.config.json')" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
   <ItemGroup>

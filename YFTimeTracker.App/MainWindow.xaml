@@ -436,12 +436,73 @@
                             ToolTipService.ToolTip="Profil bearbeiten">
                             <Button.Flyout>
                                 <Flyout x:Name="ProfileFlyout" Opening="ProfileFlyout_Opening" Placement="Bottom">
-                                    <StackPanel Width="260" Spacing="12">
-                                        <TextBlock FontSize="14" FontWeight="SemiBold" Text="Lokales Profil" />
+                                    <StackPanel Width="300" Spacing="12">
+                                        <TextBlock FontSize="14" FontWeight="SemiBold" Text="Profil" />
+
+                                        <!--  Angemeldet: Konto, Abgleichstand und die beiden Aktionen dazu  -->
+                                        <StackPanel x:Name="AccountSignedInPanel" Spacing="8" Visibility="Collapsed">
+                                            <TextBlock x:Name="AccountEmailText" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock
+                                                x:Name="AccountLastSyncText"
+                                                FontSize="11"
+                                                Foreground="{ThemeResource YFMutedBrush}"
+                                                TextWrapping="Wrap" />
+                                            <Button
+                                                x:Name="AccountSyncButton"
+                                                HorizontalAlignment="Stretch"
+                                                Click="AccountSync_Click"
+                                                Content="Jetzt abgleichen"
+                                                Style="{StaticResource YFAccentButtonStyle}" />
+                                            <Button
+                                                HorizontalAlignment="Stretch"
+                                                Click="AccountSignOut_Click"
+                                                Content="Abmelden"
+                                                Style="{StaticResource YFOutlineButtonStyle}" />
+                                        </StackPanel>
+
+                                        <!--  Abgemeldet: Anmelden oder Konto anlegen  -->
+                                        <StackPanel x:Name="AccountSignedOutPanel" Spacing="8">
+                                            <TextBlock
+                                                FontSize="11"
+                                                Foreground="{ThemeResource YFMutedBrush}"
+                                                Text="Mit einem Konto werden Spiele und Spielzeiten in der YFDatenbank gespeichert und stehen auf jedem PC zur Verfügung."
+                                                TextWrapping="Wrap" />
+                                            <TextBox
+                                                x:Name="AccountEmailInput"
+                                                Header="E-Mail"
+                                                PlaceholderText="name@beispiel.de"
+                                                Style="{StaticResource YFTextBoxStyle}" />
+                                            <PasswordBox
+                                                x:Name="AccountPasswordInput"
+                                                Header="Passwort"
+                                                Style="{StaticResource YFPasswordBoxStyle}" />
+                                            <Button
+                                                x:Name="AccountSignInButton"
+                                                HorizontalAlignment="Stretch"
+                                                Click="AccountSignIn_Click"
+                                                Content="Anmelden"
+                                                Style="{StaticResource YFAccentButtonStyle}" />
+                                            <Button
+                                                x:Name="AccountSignUpButton"
+                                                HorizontalAlignment="Stretch"
+                                                Click="AccountSignUp_Click"
+                                                Content="Konto anlegen"
+                                                Style="{StaticResource YFOutlineButtonStyle}" />
+                                        </StackPanel>
+
                                         <TextBlock
+                                            x:Name="AccountStatusText"
                                             FontSize="11"
                                             Foreground="{ThemeResource YFMutedBrush}"
-                                            Text="Name und Farbe werden ausschließlich lokal auf diesem Gerät gespeichert."
+                                            TextWrapping="Wrap"
+                                            Visibility="Collapsed" />
+
+                                        <Border Height="1" Background="{ThemeResource YFStrokeBrush}" />
+                                        <TextBlock
+                                            x:Name="ProfileScopeText"
+                                            FontSize="11"
+                                            Foreground="{ThemeResource YFMutedBrush}"
+                                            Text="Name und Farbe werden auf diesem Gerät gespeichert."
                                             TextWrapping="Wrap" />
                                         <TextBox
                                             x:Name="ProfileNameInput"

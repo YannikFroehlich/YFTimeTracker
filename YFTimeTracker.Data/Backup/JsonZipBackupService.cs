@@ -1,5 +1,4 @@
 using System.IO.Compression;
-using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -333,85 +332,13 @@ public sealed class JsonZipBackupService(
             throw new YFTimeTrackerException("Diese Export-Version wird nicht unterstützt.");
         }
 
-        var gameIds = document.Games.Select(game => game.Id).ToHashSet();
-        var externalIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var game in document.Games)
-        {
-            if (string.IsNullOrWhiteSpace(game.Name) ||
-                (game.ExternalGameId is not null && !externalIds.Add($"{game.Source}:{game.ExternalGameId}")))
-            {
-                throw new YFTimeTrackerException("Das Archiv enthält ungültige oder doppelte Spiele.");
-            }
-        }
-
-        var pathKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var primaryGameIds = new HashSet<long>();
-        foreach (var executable in document.Executables)
-        {
-            if (!gameIds.Contains(executable.GameId) ||
-                string.IsNullOrWhiteSpace(executable.ExecutablePath) ||
-                string.IsNullOrWhiteSpace(executable.ExecutablePathKey) ||
-                !pathKeys.Add(executable.ExecutablePathKey) ||
-                (executable.IsPrimary && !primaryGameIds.Add(executable.GameId)))
-            {
-                throw new YFTimeTrackerException("Das Archiv enthält ungültige oder doppelte EXE-Zuordnungen.");
-            }
-        }
-
-        if (gameIds.Any(gameId => !primaryGameIds.Contains(gameId)))
-        {
-            throw new YFTimeTrackerException("Mindestens einem Spiel fehlt die primäre EXE-Zuordnung.");
-        }
-
-        var openSessionGameIds = new HashSet<long>();
-        foreach (var session in document.Sessions)
-        {
-            if (!gameIds.Contains(session.GameId) ||
-                session.LastSeenAtUtc < session.StartedAtUtc ||
-                session.EndedAtUtc < session.StartedAtUtc ||
-                (session.EndedAtUtc is null && !openSessionGameIds.Add(session.GameId)))
-            {
-                throw new YFTimeTrackerException("Das Archiv enthält ungültige Sessions.");
-            }
-        }
-
-        foreach (var tag in document.Tags ?? [])
-        {
-            if (!gameIds.Contains(tag.GameId) || string.IsNullOrWhiteSpace(tag.Tag))
-            {
-                throw new YFTimeTrackerException("Das Archiv enthält ungültige Tag-Zuordnungen.");
-            }
-        }
-
-        var artworkGameIds = new HashSet<long>();
-        foreach (var artwork in document.Artworks ?? [])
-        {
-            if (!gameIds.Contains(artwork.GameId)
-                || !artworkGameIds.Add(artwork.GameId)
-                || artwork.ImageData.Length == 0
-                || artwork.ImageData.Length > 10 * 1024 * 1024
-                || (artwork.ContentType != "image/png" && artwork.ContentType != "image/jpeg")
-                || (artwork.FileExtension != ".png" && artwork.FileExtension != ".jpg")
-                || !string.Equals(
-                    artwork.Sha256,
-                    Convert.ToHexString(SHA256.HashData(artwork.ImageData)),
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                throw new YFTimeTrackerException("Das Archiv enthält ungültige Coverbilder.");
-            }
-        }
-
-        var exclusionKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var rule in document.TrackingExclusions ?? [])
-        {
-            if (string.IsNullOrWhiteSpace(rule.Value)
-                || string.IsNullOrWhiteSpace(rule.ValueKey)
-                || !Enum.IsDefined(rule.Kind)
-                || !exclusionKeys.Add($"{rule.Kind}:{rule.ValueKey}"))
-            {
-                throw new YFTimeTrackerException("Das Archiv enthält ungültige Erkennungsausschlüsse.");
-            }
-        }
+        BackupContentValidator.Validate(
+            document.Games,
+            document.Executables,
+            document.Sessions,
+            document.Tags,
+            document.Artworks,
+            document.TrackingExclusions);
     }
 
     private static BackupDocument UpgradeLegacyBackup(JsonElement root)

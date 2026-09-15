@@ -389,8 +389,8 @@
                                                         <Run Text="Wie OneDrive, aber mit einem lokal synchronisierten Ordner von Google Drive for Desktop." />
                                                     </TextBlock>
                                                     <TextBlock TextWrapping="Wrap">
-                                                        <Run FontWeight="SemiBold" Text="YFDatenbank:" />
-                                                        <Run Text="Noch in Entwicklung (Demnächst) – aktuell ohne Funktion, kann aber schon ausgewählt werden." />
+                                                        <Run FontWeight="SemiBold" Text="Konto:" />
+                                                        <Run Text="Der Abgleich mit der YFDatenbank hängt nicht am Sicherungsziel, sondern an der Anmeldung. Er lässt sich oben rechts über das Profil einrichten." />
                                                     </TextBlock>
                                                     <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Die lokale Sicherung bleibt in jedem Fall die Grundlage für die Wiederherstellung." TextWrapping="Wrap" />
                                                 </StackPanel>
@@ -425,16 +425,6 @@
                                 </Button>
                             </Grid>
 
-                            <Border
-                                Padding="10,8"
-                                Background="{ThemeResource YFSurfaceBrush}"
-                                CornerRadius="8"
-                                Visibility="{Binding YfDatabasePreviewNoticeVisibility}">
-                                <TextBlock
-                                    Style="{StaticResource YFMutedTextStyle}"
-                                    Text="YFDatenbank ist in Entwicklung und sichert aktuell noch nicht extern."
-                                    TextWrapping="Wrap" />
-                            </Border>
                         </StackPanel>
 
                         <Border Height="1" Background="{ThemeResource YFStrokeBrush}" />

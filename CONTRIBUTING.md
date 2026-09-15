@@ -81,6 +81,7 @@ Je nach Änderung sind zusätzlich manuell zu prüfen:
 - installierte Ausgabe und Update-Ablauf bei Release- oder Updateänderungen
 - Einzelinstanz, Autostart und minimierter Start bei Lifecycle-Änderungen
 - Erststart mit leerer sowie Upgrade mit vorhandener Datenbank bei Änderungen am Einrichtungs-Assistenten
+- Kontoabgleich bei Änderungen an Profil, Synchronisierung oder Datenmodell: Anmelden, Abgleich, Anlegen und Löschen eines Wegwerf-Spiels, erneuter Abgleich (es darf nicht zurückkommen) sowie ein zweiter PC mit demselben Konto
 
 Der ausführliche Tracking-Ablauf steht in [docs/TRACKING_SMOKE_TEST.md](docs/TRACKING_SMOKE_TEST.md).
 

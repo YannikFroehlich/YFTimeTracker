@@ -102,8 +102,7 @@ public sealed class SettingsViewModel : ObservableObject
         [
             new BackupDestinationOption(BackupDestinationKind.Local, "Lokal"),
             new BackupDestinationOption(BackupDestinationKind.OneDrive, "OneDrive-Ordner"),
-            new BackupDestinationOption(BackupDestinationKind.GoogleDrive, "Google Drive-Ordner"),
-            new BackupDestinationOption(BackupDestinationKind.YfDatabase, "YFDatenbank (Demnächst)")
+            new BackupDestinationOption(BackupDestinationKind.GoogleDrive, "Google Drive-Ordner")
         ];
         selectedBackupDestination = BackupDestinationOptions[0];
 
@@ -326,7 +325,6 @@ public sealed class SettingsViewModel : ObservableObject
             if (SetProperty(ref selectedBackupDestination, value))
             {
                 OnPropertyChanged(nameof(ExternalFolderRowVisibility));
-                OnPropertyChanged(nameof(YfDatabasePreviewNoticeVisibility));
             }
         }
     }
@@ -348,10 +346,6 @@ public sealed class SettingsViewModel : ObservableObject
 
     public Visibility ExternalFolderRowVisibility => SelectedBackupDestination.Value
         is BackupDestinationKind.OneDrive or BackupDestinationKind.GoogleDrive
-        ? Visibility.Visible
-        : Visibility.Collapsed;
-
-    public Visibility YfDatabasePreviewNoticeVisibility => SelectedBackupDestination.Value == BackupDestinationKind.YfDatabase
         ? Visibility.Visible
         : Visibility.Collapsed;
 

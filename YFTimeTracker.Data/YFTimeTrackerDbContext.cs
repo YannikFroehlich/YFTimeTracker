@@ -30,6 +30,8 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
 
     public DbSet<TrackingExclusionRule> TrackingExclusionRules => Set<TrackingExclusionRule>();
 
+    public DbSet<SyncTombstone> SyncTombstones => Set<SyncTombstone>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Game>(entity =>
@@ -46,6 +48,9 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
             entity.Property(game => game.LegacyExecutableName).HasColumnName("ExecutableName").HasMaxLength(260).IsRequired();
             entity.Property(game => game.AddedAtUtc).HasConversion(DateTimeOffsetConverter).IsRequired();
             entity.Ignore(game => game.PrimaryExecutable);
+            entity.Property(game => game.CloudId).HasMaxLength(36);
+            entity.Property(game => game.CloudIdentity).HasMaxLength(512);
+            entity.Property(game => game.SyncedHash).HasMaxLength(32);
             entity.HasIndex(game => game.Name);
             entity.HasIndex(game => new { game.Source, game.ExternalGameId })
                 .IsUnique()
@@ -67,6 +72,9 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
                 .WithMany(game => game.Executables)
                 .HasForeignKey(executable => executable.GameId)
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(executable => executable.CloudId).HasMaxLength(36);
+            entity.Property(executable => executable.CloudIdentity).HasMaxLength(512);
+            entity.Property(executable => executable.SyncedHash).HasMaxLength(32);
             entity.HasIndex(executable => executable.ExecutablePathKey).IsUnique();
             entity.HasIndex(executable => executable.GameId);
             entity.HasIndex(executable => executable.GameId, "IX_GameExecutables_GameId_Primary")
@@ -84,6 +92,9 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
                 .WithMany(game => game.Tags)
                 .HasForeignKey(tag => tag.GameId)
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(tag => tag.CloudId).HasMaxLength(36);
+            entity.Property(tag => tag.CloudIdentity).HasMaxLength(512);
+            entity.Property(tag => tag.SyncedHash).HasMaxLength(32);
             entity.HasIndex(tag => tag.GameId);
             entity.HasIndex(tag => new { tag.GameId, tag.Tag }).IsUnique();
         });
@@ -97,6 +108,9 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
             entity.Property(artwork => artwork.Sha256).HasMaxLength(64).IsRequired();
             entity.Property(artwork => artwork.ImageData).IsRequired();
             entity.Property(artwork => artwork.UpdatedAtUtc).HasConversion(DateTimeOffsetConverter).IsRequired();
+            entity.Property(artwork => artwork.CloudId).HasMaxLength(36);
+            entity.Property(artwork => artwork.CloudIdentity).HasMaxLength(512);
+            entity.Property(artwork => artwork.SyncedHash).HasMaxLength(32);
             entity.HasOne(artwork => artwork.Game)
                 .WithOne()
                 .HasForeignKey<GameArtwork>(artwork => artwork.GameId)
@@ -116,6 +130,9 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
                 .WithMany()
                 .HasForeignKey(session => session.GameId)
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(session => session.CloudId).HasMaxLength(36);
+            entity.Property(session => session.CloudIdentity).HasMaxLength(512);
+            entity.Property(session => session.SyncedHash).HasMaxLength(32);
             entity.HasIndex(session => session.GameId);
             entity.HasIndex(session => session.StartedAtUtc);
             entity.HasIndex(session => session.EndedAtUtc);
@@ -132,6 +149,7 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
             entity.Property(setting => setting.Key).HasMaxLength(160);
             entity.Property(setting => setting.Value).HasMaxLength(2048).IsRequired();
             entity.Property(setting => setting.UpdatedAtUtc).HasConversion(DateTimeOffsetConverter).IsRequired();
+            entity.Property(setting => setting.SyncedHash).HasMaxLength(32);
         });
 
         modelBuilder.Entity<NotificationLogEntry>(entity =>
@@ -156,7 +174,21 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
             entity.Property(rule => rule.Value).HasMaxLength(1024).IsRequired();
             entity.Property(rule => rule.ValueKey).HasMaxLength(1024).IsRequired();
             entity.Property(rule => rule.AddedAtUtc).HasConversion(DateTimeOffsetConverter).IsRequired();
+            entity.Property(rule => rule.CloudId).HasMaxLength(36);
+            entity.Property(rule => rule.CloudIdentity).HasMaxLength(512);
+            entity.Property(rule => rule.SyncedHash).HasMaxLength(32);
             entity.HasIndex(rule => new { rule.Kind, rule.ValueKey }).IsUnique();
+        });
+
+        modelBuilder.Entity<SyncTombstone>(entity =>
+        {
+            entity.ToTable("SyncTombstones");
+            entity.HasKey(tombstone => tombstone.Id);
+            entity.Property(tombstone => tombstone.Kind).IsRequired();
+            entity.Property(tombstone => tombstone.Identity).HasMaxLength(512).IsRequired();
+            entity.Property(tombstone => tombstone.CloudId).HasMaxLength(36);
+            entity.Property(tombstone => tombstone.DeletedAtUtc).HasConversion(DateTimeOffsetConverter).IsRequired();
+            entity.HasIndex(tombstone => new { tombstone.Kind, tombstone.Identity }).IsUnique();
         });
     }
 }

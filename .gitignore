@@ -18,3 +18,7 @@ BundleArtifacts/
 *.db-wal
 *.log
 *.zip
+
+# Supabase-Verbindung: gehoert nicht ins Repository (siehe AGENTS.md).
+# Vorlage: YFTimeTracker.App/cloud.config.example.json
+cloud.config.json
