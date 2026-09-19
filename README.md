@@ -67,13 +67,14 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Optional minimierter Start direkt im Tray, sowohl beim manuellen Start als auch über den Windows-Autostart
 - Helles und dunkles Design mit dezenten Kartenverläufen, einheitlichen Konturen und auf das Design abgestimmten Akzenttexten, umschaltbar in den Einstellungen
 - Monitorabhängige DPI-Skalierung und an die Anzeigegröße angepasste Spiel-Icons und Cover, auch beim Wechsel zwischen unterschiedlich skalierten Bildschirmen
-- Lokales Profil mit editierbarem Anzeigename und Akzentfarbe (nur auf diesem Gerät gespeichert)
+- Profil im Header mit editierbarem Anzeigename und Akzentfarbe; ohne Anmeldung nur auf diesem Gerät gespeichert, mit Konto Teil der YFDatenbank
 - Benachrichtigungsverlauf (erreichte Zeitlimits, verfügbare Updates) über das Glocken-Icon im Header
 
 **Daten, Updates und Diagnose**
 
 - Lokale Backups sowie Import und Export, mit Übersicht der vorhandenen Sicherungen und Wiederherstellung direkt in den Einstellungen
-- Optionales zusätzliches Sicherungsziel für die tägliche Sicherung (OneDrive- oder Google-Drive-Ordner) – die lokale Sicherung bleibt dabei unverändert die Grundlage für Wiederherstellung; „YFDatenbank“ ist als kommendes Ziel bereits sichtbar (Demnächst)
+- Optionales zusätzliches Sicherungsziel für die tägliche Sicherung (OneDrive- oder Google-Drive-Ordner oder das YFDatenbank-Konto) – die lokale Sicherung bleibt dabei unverändert die Grundlage für Wiederherstellung; Sicherungen aus dem Konto lassen sich per „Aus Konto laden“ auf jeden PC zurückholen
+- Optionaler Kontoabgleich mit der YFDatenbank: Anmeldung über das Profil oben rechts, danach werden Spiele, EXE-Zuordnungen, Sessions, Tags, Ausschlüsse, Cover und Einstellungen in einem Supabase-Konto gespeichert. Auf einem zweiten PC zeigt dieselbe Anmeldung dieselbe Bibliothek und alle Spielzeiten zusammengeführt. Der Abgleich läuft beim Start automatisch und lässt sich jederzeit von Hand anstoßen; Zugangsdaten liegen im Windows-Anmeldeinformationsspeicher und nie in Exporten. Details: [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)
 - Automatische Update-Prüfung für installierte Ausgaben
 - "Was ist neu"-Dialog mit den Änderungen der Version beim ersten Start nach einem Update
 - Diagnoseansicht mit verständlichem Tracking-Ereignisverlauf für Erkennung, Zuordnung, Ausschlüsse und Sessions sowie Export eines datensparsamen Diagnose-ZIP
@@ -106,6 +107,10 @@ Alle dauerhaften Daten liegen unter `%LocalAppData%\YFTimeTracker`:
 | `Logs` | lokale Diagnoseprotokolle |
 
 Das Diagnose-ZIP enthält Systeminformationen, den begrenzten Tracking-Ereignisverlauf seit dem App-Start und höchstens drei aktuelle Logdateien, aber keine Datenbank, Backups oder Spielsessions. In der verständlichen Ereignisübersicht werden keine vollständigen EXE-Pfade erfasst; die technischen Logdateien können weiterhin lokale Pfade enthalten.
+
+Die Spielerkennung arbeitet ausschließlich lokal: es gibt keine Konten und keine Web-API für das Erkennen oder Zuordnen von Spielen, und es werden keine Nutzungsdaten an den Entwickler übertragen.
+
+Einzige Ausnahme vom rein lokalen Betrieb ist der **optionale** Kontoabgleich mit der YFDatenbank. Er ist standardmäßig aus und überträgt erst dann etwas, wenn man sich im Profil ausdrücklich anmeldet. Übertragen werden Spiele, EXE-Zuordnungen, Sessions, Tags, Erkennungsausschlüsse, eigene Cover, Anzeigename und Akzentfarbe sowie die geräteunabhängigen Einstellungen; mit dem Sicherungsziel „YFDatenbank (Konto)“ zusätzlich die tägliche Sicherungsdatei. Gerätegebundenes wie Autostart, Sicherungsziel oder Suchverlauf bleibt lokal. Zugangsdaten liegen im Windows-Anmeldeinformationsspeicher und landen weder in der Datenbank noch in Exporten oder Diagnosepaketen. Abmelden lässt die lokalen Daten unberührt. Details: [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md).
 
 ## Automatisches Tracking
 
@@ -165,7 +170,7 @@ Neue Änderungen werden auf `develop` entwickelt und anschließend nach `main` g
 - `feat!:` oder `BREAKING CHANGE:` → Major-Version
 - `[skip release]` → keine Veröffentlichung
 
-Ein Release enthält Setup, MSI, Velopack-Pakete, portables ZIP, SHA-256-Prüfsumme und Release-Manifest. Details enthält [CONTRIBUTING.md](CONTRIBUTING.md).
+Ein Release enthält Setup, MSI, Velopack-Pakete, portables ZIP, SHA-256-Prüfsumme und Release-Manifest. Die Pipeline legt dem Build die Supabase-Verbindung aus den Repository-Secrets `SUPABASE_PROJECT_URL` und `SUPABASE_PUBLISHABLE_KEY` bei; fehlt eines davon, bricht der Release ab (siehe [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)). Details enthält [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Automatische Updates
 

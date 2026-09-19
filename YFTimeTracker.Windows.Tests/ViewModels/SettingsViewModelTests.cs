@@ -117,6 +117,10 @@ public sealed class SettingsViewModelTests
 
         public Task PruneBackupsAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
 
+        public Task<bool> MirrorDailyBackupToCloudAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<int> DownloadCloudBackupsAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
+
         public IReadOnlyList<BackupInfo> GetBackups() => [];
 
         public Task<RestoreResult> RestoreAsync(string backupPath, CancellationToken cancellationToken) =>

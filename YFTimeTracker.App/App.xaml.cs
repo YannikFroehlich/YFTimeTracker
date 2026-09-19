@@ -6,6 +6,7 @@ using Serilog.Events;
 using YFTimeTracker.App.Services;
 using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.App.Views;
+using YFTimeTracker.Cloud;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
 using YFTimeTracker.Core.Services;
@@ -72,6 +73,7 @@ public partial class App : Application
                 services.AddYFTimeTrackerCore();
                 services.AddYFTimeTrackerWindowsServices();
                 services.AddYFTimeTrackerData();
+                services.AddYFTimeTrackerCloud();
 
                 services.AddSingleton<IFilePickerService, WinUiFilePickerService>();
                 services.AddSingleton<IExplorerService, WindowsExplorerService>();
@@ -139,6 +141,36 @@ public partial class App : Application
         }
 
         _ = MainWindow.CheckForUpdatesOnStartupAsync();
+        _ = InitializeAccountSyncAsync();
+    }
+
+    /// <summary>
+    /// Stellt die Supabase-Sitzung aus dem gespeicherten Refresh-Token wieder her
+    /// und gleicht einmal mit dem Konto ab.
+    ///
+    /// Bewusst im Hintergrund und ohne Fehleranzeige: die lokale Sicherung ist an
+    /// dieser Stelle laengst erledigt, und der Start der App darf weder auf das
+    /// Netz warten noch an einem nicht erreichbaren Supabase scheitern. Probleme
+    /// stehen im Log und in den Einstellungen.
+    /// </summary>
+    private static async Task InitializeAccountSyncAsync()
+    {
+        try
+        {
+            var auth = Services.GetRequiredService<ICloudAuthService>();
+            await auth.RestoreSessionAsync(CancellationToken.None);
+            await Services.GetRequiredService<IAccountSyncService>()
+                .TrySyncAsync(CancellationToken.None);
+            if (auth.IsSignedIn)
+            {
+                await Services.GetRequiredService<IBackupService>()
+                    .MirrorDailyBackupToCloudAsync(CancellationToken.None);
+            }
+        }
+        catch (Exception exception)
+        {
+            Log.Warning(exception, "Kontoabgleich konnte beim Start nicht initialisiert werden");
+        }
     }
 
     public static async Task ShutdownAsync()

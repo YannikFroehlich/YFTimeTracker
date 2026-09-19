@@ -22,4 +22,12 @@ public static class AppSettingKeys
     public const string LastLoggedUpdateVersion = "updates.lastLoggedVersion";
     public const string UpdateRemindVersion = "updates.remindVersion";
     public const string UpdateRemindAfterUtc = "updates.remindAfterUtc";
+
+    // Kontoabgleich (Supabase). Zugangsdaten stehen bewusst nicht hier, sondern
+    // im Windows-Anmeldeinformationsspeicher; in der Datenbank landen nur
+    // unkritische Angaben wie die zuletzt angemeldete E-Mail und Zeitstempel.
+    public const string CloudUserEmail = "cloud.userEmail";
+    public const string CloudDeviceId = "cloud.deviceId";
+    public const string CloudLastSyncUtc = "cloud.lastSyncUtc";
+    public const string CloudSyncArtwork = "cloud.syncArtwork";
 }

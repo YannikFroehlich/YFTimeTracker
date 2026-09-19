@@ -102,6 +102,26 @@ jobs:
 
           "path=$notesPath" >> $env:GITHUB_OUTPUT
 
+      # Ohne cloud.config.json liefe der installierte Build ohne Konto, Kontoabgleich
+      # und YFDatenbank-Sicherung. Das soll den Release stoppen statt still durchzugehen.
+      - name: Supabase-Verbindung beilegen
+        shell: pwsh
+        env:
+          SUPABASE_PROJECT_URL: ${{ secrets.SUPABASE_PROJECT_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:SUPABASE_PROJECT_URL) -or
+              [string]::IsNullOrWhiteSpace($env:SUPABASE_PUBLISHABLE_KEY)) {
+            throw "Repository-Secrets SUPABASE_PROJECT_URL und SUPABASE_PUBLISHABLE_KEY fehlen."
+          }
+
+          $config = [ordered]@{
+            projectUrl = $env:SUPABASE_PROJECT_URL.Trim()
+            publishableKey = $env:SUPABASE_PUBLISHABLE_KEY.Trim()
+          } | ConvertTo-Json
+          $utf8WithoutBom = [System.Text.UTF8Encoding]::new($false)
+          [System.IO.File]::WriteAllText((Join-Path $PWD "YFTimeTracker.App/cloud.config.json"), $config, $utf8WithoutBom)
+
       - name: App testen und portables Release bauen
         shell: pwsh
         run: >-

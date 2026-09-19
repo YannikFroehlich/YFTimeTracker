@@ -214,11 +214,17 @@ public sealed partial class MainWindow : Window
             : new SolidColorBrush(ParseAccentColor(accentColorHex));
     }
 
-    private void ProfileFlyout_Opening(object? sender, object e)
+    private async void ProfileFlyout_Opening(object? sender, object e)
     {
         ProfileNameInput.Text = currentProfileDisplayName ?? string.Empty;
         pendingProfileAccentColor = currentProfileAccentColor;
         HighlightSelectedSwatch(pendingProfileAccentColor);
+
+        // Der Anmeldestand kann sich seit dem letzten Oeffnen geaendert haben -
+        // etwa weil der Hintergrundabgleich beim Start die Sitzung wiederhergestellt hat.
+        RefreshAccountPanels();
+        AccountEmailInput.Text = await settingsStore.GetAsync(AppSettingKeys.CloudUserEmail, CancellationToken.None) ?? string.Empty;
+        await RefreshAccountLastSyncAsync();
     }
 
     private void ProfileSwatch_Click(object sender, RoutedEventArgs e)
@@ -255,6 +261,11 @@ public sealed partial class MainWindow : Window
         await settingsStore.SetAsync(AppSettingKeys.ProfileAccentColor, pendingProfileAccentColor ?? string.Empty, CancellationToken.None);
         ApplyProfileHeader(name, pendingProfileAccentColor);
         ProfileFlyout.Hide();
+
+        if (AuthService.CurrentSession is not null)
+        {
+            await SyncAccountAsync();
+        }
     }
 
     private static string GetInitials(string name)

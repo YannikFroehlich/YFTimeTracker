@@ -10,6 +10,12 @@ public interface IBackupService
 
     Task PruneBackupsAsync(CancellationToken cancellationToken);
 
+    /// <summary>Wahr, wenn die neueste Tagessicherung danach im Konto liegt. Wirft nie.</summary>
+    Task<bool> MirrorDailyBackupToCloudAsync(CancellationToken cancellationToken);
+
+    /// <summary>Holt im Konto liegende Tagessicherungen, die lokal fehlen. Gibt die Anzahl zurück.</summary>
+    Task<int> DownloadCloudBackupsAsync(CancellationToken cancellationToken);
+
     IReadOnlyList<BackupInfo> GetBackups();
 
     Task<RestoreResult> RestoreAsync(string backupPath, CancellationToken cancellationToken);

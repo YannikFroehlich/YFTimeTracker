@@ -1,5 +1,7 @@
 <Solution>
   <Project Path="YFTimeTracker.App/YFTimeTracker.App.csproj" />
+  <Project Path="YFTimeTracker.Cloud/YFTimeTracker.Cloud.csproj" />
+  <Project Path="YFTimeTracker.Cloud.Tests/YFTimeTracker.Cloud.Tests.csproj" />
   <Project Path="YFTimeTracker.Core.Tests/YFTimeTracker.Core.Tests.csproj" />
   <Project Path="YFTimeTracker.Core/YFTimeTracker.Core.csproj" />
   <Project Path="YFTimeTracker.Data.Tests/YFTimeTracker.Data.Tests.csproj" />

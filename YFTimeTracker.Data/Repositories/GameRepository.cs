@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
+using YFTimeTracker.Data.Sync;
 using YFTimeTracker.Core.Validation;
 
 namespace YFTimeTracker.Data.Repositories;
@@ -129,6 +130,11 @@ public sealed class GameRepository(IDbContextFactory<YFTimeTrackerDbContext> con
         var existing = await context.GameTags
             .Where(tag => tag.GameId == gameId)
             .ToListAsync(cancellationToken);
+        foreach (var removed in existing)
+        {
+            SyncTombstoneRecorder.RecordTag(context, removed);
+        }
+
         context.GameTags.RemoveRange(existing);
         context.GameTags.AddRange(tags.Select(tag => new GameTag { GameId = gameId, Tag = tag }));
         await context.SaveChangesAsync(cancellationToken);
@@ -147,6 +153,11 @@ public sealed class GameRepository(IDbContextFactory<YFTimeTrackerDbContext> con
             var absorbed = await context.GameSessions
                 .Where(session => removedIds.Contains(session.Id))
                 .ToListAsync(cancellationToken);
+            foreach (var removed in absorbed)
+            {
+                SyncTombstoneRecorder.RecordSession(context, removed);
+            }
+
             context.GameSessions.RemoveRange(absorbed);
         }
 
@@ -197,6 +208,7 @@ public sealed class GameRepository(IDbContextFactory<YFTimeTrackerDbContext> con
         {
             if (targetTagNames.Contains(tag.Tag, StringComparer.OrdinalIgnoreCase))
             {
+                SyncTombstoneRecorder.RecordTag(context, tag);
                 context.GameTags.Remove(tag);
             }
             else
@@ -231,6 +243,7 @@ public sealed class GameRepository(IDbContextFactory<YFTimeTrackerDbContext> con
                 target.IsPinned = true;
             }
 
+            await SyncTombstoneRecorder.RecordGameAsync(context, source, cancellationToken);
             context.Games.Remove(source);
         }
 
@@ -247,6 +260,7 @@ public sealed class GameRepository(IDbContextFactory<YFTimeTrackerDbContext> con
             return;
         }
 
+        await SyncTombstoneRecorder.RecordGameAsync(context, game, cancellationToken);
         context.Games.Remove(game);
         await context.SaveChangesAsync(cancellationToken);
     }

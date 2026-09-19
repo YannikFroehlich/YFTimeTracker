@@ -97,6 +97,9 @@ $requiredReleaseFiles = @(
     'Assets\YFTimeTrackerLogo.png',
     'Assets\YFTimeTracker.ico'
 )
+if (Test-Path -LiteralPath (Join-Path $repositoryRoot 'YFTimeTracker.App\cloud.config.json') -PathType Leaf) {
+    $requiredReleaseFiles += 'cloud.config.json'
+}
 $missingReleaseFiles = @(
     $requiredReleaseFiles | Where-Object {
         -not (Test-Path -LiteralPath (Join-Path $releaseDirectory $_) -PathType Leaf)

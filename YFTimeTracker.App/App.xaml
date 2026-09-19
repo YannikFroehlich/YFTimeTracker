@@ -646,6 +646,18 @@
                 <Setter Property="PlaceholderForeground" Value="{ThemeResource YFMutedBrush}" />
             </Style>
 
+            <!--
+                Passwortfelder sollen wie die übrigen Eingabefelder aussehen.
+                PasswordBox kennt kein PlaceholderForeground, deshalb fehlt der Setter hier.
+            -->
+            <Style x:Key="YFPasswordBoxStyle" TargetType="PasswordBox">
+                <Setter Property="MinHeight" Value="42" />
+                <Setter Property="CornerRadius" Value="{StaticResource YFControlCornerRadius}" />
+                <Setter Property="Background" Value="{ThemeResource YFOutlineButtonBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource YFStrokeBrush}" />
+                <Setter Property="Foreground" Value="{ThemeResource YFTextBrush}" />
+            </Style>
+
             <Style x:Key="YFListViewItemStyle" TargetType="ListViewItem">
                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                 <Setter Property="Padding" Value="0" />

@@ -389,8 +389,8 @@
                                                         <Run Text="Wie OneDrive, aber mit einem lokal synchronisierten Ordner von Google Drive for Desktop." />
                                                     </TextBlock>
                                                     <TextBlock TextWrapping="Wrap">
-                                                        <Run FontWeight="SemiBold" Text="YFDatenbank:" />
-                                                        <Run Text="Noch in Entwicklung (Demnächst) – aktuell ohne Funktion, kann aber schon ausgewählt werden." />
+                                                        <Run FontWeight="SemiBold" Text="YFDatenbank (Konto):" />
+                                                        <Run Text="Die tägliche Sicherungsdatei wird zusätzlich im angemeldeten Konto abgelegt und kann über „Aus Konto laden“ auf jeden PC zurückgeholt werden. Erfordert eine Anmeldung oben rechts im Profil; der Abgleich von Spielen und Spielzeiten hängt davon unabhängig an der Anmeldung." />
                                                     </TextBlock>
                                                     <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Die lokale Sicherung bleibt in jedem Fall die Grundlage für die Wiederherstellung." TextWrapping="Wrap" />
                                                 </StackPanel>
@@ -398,7 +398,7 @@
                                         </ToolTipService.ToolTip>
                                     </FontIcon>
                                 </StackPanel>
-                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Zusätzlich zur lokalen Sicherung kann die tägliche Sicherungsdatei in einen selbst gewählten Ordner kopiert werden." TextWrapping="Wrap" />
+                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Zusätzlich zur lokalen Sicherung kann die tägliche Sicherungsdatei in einen selbst gewählten Ordner oder ins Konto kopiert werden." TextWrapping="Wrap" />
                             </StackPanel>
 
                             <ComboBox
@@ -425,16 +425,24 @@
                                 </Button>
                             </Grid>
 
-                            <Border
-                                Padding="10,8"
-                                Background="{ThemeResource YFSurfaceBrush}"
-                                CornerRadius="8"
-                                Visibility="{Binding YfDatabasePreviewNoticeVisibility}">
+                            <Grid ColumnSpacing="12" Visibility="{Binding CloudBackupRowVisibility}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
                                 <TextBlock
+                                    VerticalAlignment="Center"
                                     Style="{StaticResource YFMutedTextStyle}"
-                                    Text="YFDatenbank ist in Entwicklung und sichert aktuell noch nicht extern."
+                                    Text="{Binding CloudBackupHintText}"
                                     TextWrapping="Wrap" />
-                            </Border>
+                                <Button Grid.Column="1" Command="{Binding DownloadCloudBackupsCommand}" Style="{StaticResource YFOutlineButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                        <FontIcon FontSize="14" Glyph="&#xE896;" />
+                                        <TextBlock Text="Aus Konto laden" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
                         </StackPanel>
 
                         <Border Height="1" Background="{ThemeResource YFStrokeBrush}" />

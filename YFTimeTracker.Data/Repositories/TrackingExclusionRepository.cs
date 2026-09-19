@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
+using YFTimeTracker.Data.Sync;
 
 namespace YFTimeTracker.Data.Repositories;
 
@@ -37,6 +38,7 @@ public sealed class TrackingExclusionRepository(
             return;
         }
 
+        SyncTombstoneRecorder.RecordExclusion(context, rule);
         context.TrackingExclusionRules.Remove(rule);
         await context.SaveChangesAsync(cancellationToken);
     }

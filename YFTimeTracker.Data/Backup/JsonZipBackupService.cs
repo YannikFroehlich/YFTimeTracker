@@ -1,5 +1,4 @@
 using System.IO.Compression;
-using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +15,8 @@ public sealed class JsonZipBackupService(
     IAppPathProvider appPathProvider,
     IClock clock,
     ISettingsStore settingsStore,
-    ILogger<JsonZipBackupService>? logger = null) : IBackupService
+    ILogger<JsonZipBackupService>? logger = null,
+    ICloudBackupClient? cloudBackups = null) : IBackupService
 {
     private const string ExternalMirrorFolderName = "YFTimeTracker Backups";
     private readonly ILogger<JsonZipBackupService> log = logger ?? NullLogger<JsonZipBackupService>.Instance;
@@ -64,9 +64,8 @@ public sealed class JsonZipBackupService(
     // niemals gefährden – Fehler werden nur geloggt, nie geworfen.
     private async Task MirrorToExternalDestinationAsync(string backupPath, CancellationToken cancellationToken)
     {
-        var destinationRaw = await settingsStore.GetAsync(AppSettingKeys.BackupDestination, cancellationToken);
-        if (!Enum.TryParse<BackupDestinationKind>(destinationRaw, out var destination) ||
-            destination is BackupDestinationKind.Local or BackupDestinationKind.YfDatabase)
+        var destination = await ReadDestinationAsync(cancellationToken);
+        if (destination is BackupDestinationKind.Local or BackupDestinationKind.YfDatabase)
         {
             return;
         }
@@ -89,6 +88,96 @@ public sealed class JsonZipBackupService(
         {
             log.LogWarning(exception, "Sicherung konnte nicht nach {Destination} gespiegelt werden", destination);
         }
+    }
+
+    private async Task<BackupDestinationKind> ReadDestinationAsync(CancellationToken cancellationToken) =>
+        Enum.TryParse<BackupDestinationKind>(
+            await settingsStore.GetAsync(AppSettingKeys.BackupDestination, cancellationToken),
+            out var destination)
+            ? destination
+            : BackupDestinationKind.Local;
+
+    // Nicht Teil von CreateDailyBackupAsync: beim App-Start entsteht die Tagessicherung,
+    // bevor die Kontositzung wiederhergestellt ist.
+    public async Task<bool> MirrorDailyBackupToCloudAsync(CancellationToken cancellationToken)
+    {
+        if (cloudBackups is null || await ReadDestinationAsync(cancellationToken) != BackupDestinationKind.YfDatabase)
+        {
+            return false;
+        }
+
+        var newest = GetBackups()
+            .Where(backup => !backup.IsSafetyCopy)
+            .MaxBy(backup => backup.FileName, StringComparer.OrdinalIgnoreCase);
+        if (newest is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            var remote = await cloudBackups.ListAsync(cancellationToken);
+            if (!remote.Any(file => string.Equals(file.Name, newest.FileName, StringComparison.OrdinalIgnoreCase)))
+            {
+                var content = await File.ReadAllBytesAsync(newest.FilePath, cancellationToken);
+                await cloudBackups.UploadAsync(newest.FileName, content, cancellationToken);
+            }
+
+            var retentionDays = await settingsStore.GetIntAsync(AppSettingKeys.BackupRetentionDays, 14, cancellationToken);
+            var cutoff = clock.UtcNow.AddDays(-Math.Max(retentionDays, 1));
+            var prunable = remote
+                .OrderByDescending(file => file.CreatedAtUtc)
+                .Skip(MinimumKeptBackupsPerKind)
+                .Where(file => file.CreatedAtUtc < cutoff);
+            foreach (var file in prunable)
+            {
+                await cloudBackups.DeleteAsync(file.Name, cancellationToken);
+            }
+
+            return true;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            log.LogWarning(exception, "Sicherung konnte nicht in die YFDatenbank übertragen werden");
+            return false;
+        }
+    }
+
+    public async Task<int> DownloadCloudBackupsAsync(CancellationToken cancellationToken)
+    {
+        if (cloudBackups is null)
+        {
+            return 0;
+        }
+
+        Directory.CreateDirectory(appPathProvider.BackupDirectory);
+        var downloaded = 0;
+        foreach (var file in await cloudBackups.ListAsync(cancellationToken))
+        {
+            // Der Name kommt aus dem Netz und darf nie aus dem Sicherungsordner herausführen.
+            if (!file.Name.StartsWith(DailyBackupPrefix, StringComparison.OrdinalIgnoreCase) ||
+                !file.Name.EndsWith(".db", StringComparison.OrdinalIgnoreCase) ||
+                file.Name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                continue;
+            }
+
+            var targetPath = Path.Combine(appPathProvider.BackupDirectory, file.Name);
+            if (File.Exists(targetPath))
+            {
+                continue;
+            }
+
+            // Erst vollständig schreiben, dann umbenennen: ein Abbruch darf keine halbe
+            // Datei in der Wiederherstellungsliste hinterlassen.
+            var partialPath = targetPath + ".part";
+            await File.WriteAllBytesAsync(partialPath, await cloudBackups.DownloadAsync(file.Name, cancellationToken), cancellationToken);
+            File.Move(partialPath, targetPath);
+            File.SetCreationTimeUtc(targetPath, file.CreatedAtUtc.UtcDateTime);
+            downloaded++;
+        }
+
+        return downloaded;
     }
 
     public Task<string?> CreatePreMigrationBackupAsync(CancellationToken cancellationToken)
@@ -333,85 +422,13 @@ public sealed class JsonZipBackupService(
             throw new YFTimeTrackerException("Diese Export-Version wird nicht unterstützt.");
         }
 
-        var gameIds = document.Games.Select(game => game.Id).ToHashSet();
-        var externalIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var game in document.Games)
-        {
-            if (string.IsNullOrWhiteSpace(game.Name) ||
-                (game.ExternalGameId is not null && !externalIds.Add($"{game.Source}:{game.ExternalGameId}")))
-            {
-                throw new YFTimeTrackerException("Das Archiv enthält ungültige oder doppelte Spiele.");
-            }
-        }
-
-        var pathKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var primaryGameIds = new HashSet<long>();
-        foreach (var executable in document.Executables)
-        {
-            if (!gameIds.Contains(executable.GameId) ||
-                string.IsNullOrWhiteSpace(executable.ExecutablePath) ||
-                string.IsNullOrWhiteSpace(executable.ExecutablePathKey) ||
-                !pathKeys.Add(executable.ExecutablePathKey) ||
-                (executable.IsPrimary && !primaryGameIds.Add(executable.GameId)))
-            {
-                throw new YFTimeTrackerException("Das Archiv enthält ungültige oder doppelte EXE-Zuordnungen.");
-            }
-        }
-
-        if (gameIds.Any(gameId => !primaryGameIds.Contains(gameId)))
-        {
-            throw new YFTimeTrackerException("Mindestens einem Spiel fehlt die primäre EXE-Zuordnung.");
-        }
-
-        var openSessionGameIds = new HashSet<long>();
-        foreach (var session in document.Sessions)
-        {
-            if (!gameIds.Contains(session.GameId) ||
-                session.LastSeenAtUtc < session.StartedAtUtc ||
-                session.EndedAtUtc < session.StartedAtUtc ||
-                (session.EndedAtUtc is null && !openSessionGameIds.Add(session.GameId)))
-            {
-                throw new YFTimeTrackerException("Das Archiv enthält ungültige Sessions.");
-            }
-        }
-
-        foreach (var tag in document.Tags ?? [])
-        {
-            if (!gameIds.Contains(tag.GameId) || string.IsNullOrWhiteSpace(tag.Tag))
-            {
-                throw new YFTimeTrackerException("Das Archiv enthält ungültige Tag-Zuordnungen.");
-            }
-        }
-
-        var artworkGameIds = new HashSet<long>();
-        foreach (var artwork in document.Artworks ?? [])
-        {
-            if (!gameIds.Contains(artwork.GameId)
-                || !artworkGameIds.Add(artwork.GameId)
-                || artwork.ImageData.Length == 0
-                || artwork.ImageData.Length > 10 * 1024 * 1024
-                || (artwork.ContentType != "image/png" && artwork.ContentType != "image/jpeg")
-                || (artwork.FileExtension != ".png" && artwork.FileExtension != ".jpg")
-                || !string.Equals(
-                    artwork.Sha256,
-                    Convert.ToHexString(SHA256.HashData(artwork.ImageData)),
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                throw new YFTimeTrackerException("Das Archiv enthält ungültige Coverbilder.");
-            }
-        }
-
-        var exclusionKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var rule in document.TrackingExclusions ?? [])
-        {
-            if (string.IsNullOrWhiteSpace(rule.Value)
-                || string.IsNullOrWhiteSpace(rule.ValueKey)
-                || !Enum.IsDefined(rule.Kind)
-                || !exclusionKeys.Add($"{rule.Kind}:{rule.ValueKey}"))
-            {
-                throw new YFTimeTrackerException("Das Archiv enthält ungültige Erkennungsausschlüsse.");
-            }
-        }
+        BackupContentValidator.Validate(
+            document.Games,
+            document.Executables,
+            document.Sessions,
+            document.Tags,
+            document.Artworks,
+            document.TrackingExclusions);
     }
 
     private static BackupDocument UpgradeLegacyBackup(JsonElement root)

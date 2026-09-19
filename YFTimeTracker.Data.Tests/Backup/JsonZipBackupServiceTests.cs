@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
 using YFTimeTracker.Core.Validation;
 using YFTimeTracker.Data.Backup;
@@ -456,7 +457,7 @@ public sealed class JsonZipBackupServiceTests
     }
 
     [TestMethod]
-    public async Task Daily_backup_is_not_mirrored_for_the_not_yet_implemented_yf_database_destination()
+    public async Task Daily_backup_is_not_copied_to_a_folder_for_the_yf_database_destination()
     {
         using var paths = new TestRepositories.TempAppPathProvider();
         var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
@@ -482,6 +483,135 @@ public sealed class JsonZipBackupServiceTests
         finally
         {
             Directory.Delete(externalFolder, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task Cloud_mirror_uploads_newest_daily_backup_once_and_prunes_old_remote_copies()
+    {
+        using var paths = new TestRepositories.TempAppPathProvider();
+        var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var now = DateTimeOffset.Parse("2026-09-19T12:00:00Z");
+        var clock = new TestRepositories.TestClock(now);
+        var settings = new SettingsStore(factory, clock);
+        await settings.SetAsync(AppSettingKeys.BackupDestination, nameof(BackupDestinationKind.YfDatabase), CancellationToken.None);
+        await settings.SetAsync(AppSettingKeys.BackupRetentionDays, "14", CancellationToken.None);
+
+        var cloud = new FakeCloudBackupClient();
+        for (var day = 1; day <= 5; day++)
+        {
+            cloud.Files[$"auto-202601{day:00}.db"] = new CloudBackupFile($"auto-202601{day:00}.db", now.AddDays(-100 + day));
+        }
+
+        var backup = new JsonZipBackupService(factory, paths, clock, settings, cloudBackups: cloud);
+        await backup.CreatePreMigrationBackupAsync(CancellationToken.None);
+        var dailyPath = await backup.CreateDailyBackupAsync(CancellationToken.None);
+
+        Assert.IsTrue(await backup.MirrorDailyBackupToCloudAsync(CancellationToken.None));
+        Assert.IsTrue(await backup.MirrorDailyBackupToCloudAsync(CancellationToken.None));
+
+        CollectionAssert.AreEqual(new[] { Path.GetFileName(dailyPath) }, cloud.Uploads);
+        CollectionAssert.AreEquivalent(
+            new[] { "auto-20260104.db", "auto-20260105.db", Path.GetFileName(dailyPath) },
+            cloud.Files.Keys.ToArray());
+    }
+
+    [TestMethod]
+    public async Task Cloud_mirror_does_nothing_for_other_destinations_and_never_throws()
+    {
+        using var paths = new TestRepositories.TempAppPathProvider();
+        var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var clock = new TestRepositories.TestClock(DateTimeOffset.Parse("2026-09-19T12:00:00Z"));
+        var settings = new SettingsStore(factory, clock);
+        var cloud = new FakeCloudBackupClient();
+        var backup = new JsonZipBackupService(factory, paths, clock, settings, cloudBackups: cloud);
+        await backup.CreateDailyBackupAsync(CancellationToken.None);
+
+        Assert.IsFalse(await backup.MirrorDailyBackupToCloudAsync(CancellationToken.None));
+        Assert.IsEmpty(cloud.Uploads);
+
+        await settings.SetAsync(AppSettingKeys.BackupDestination, nameof(BackupDestinationKind.YfDatabase), CancellationToken.None);
+        cloud.Fail = true;
+        Assert.IsFalse(await backup.MirrorDailyBackupToCloudAsync(CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task Cloud_download_adds_only_missing_backups_and_ignores_unsafe_names()
+    {
+        using var paths = new TestRepositories.TempAppPathProvider();
+        var factory = new TestRepositories.TestDbContextFactory(paths.DatabasePath);
+        var clock = new TestRepositories.TestClock(DateTimeOffset.Parse("2026-09-19T12:00:00Z"));
+        var settings = new SettingsStore(factory, clock);
+        Directory.CreateDirectory(paths.BackupDirectory);
+        File.WriteAllText(Path.Combine(paths.BackupDirectory, "auto-20260918.db"), "local");
+
+        var created = DateTimeOffset.Parse("2026-09-17T08:00:00Z");
+        var cloud = new FakeCloudBackupClient();
+        foreach (var name in new[] { "auto-20260917.db", "auto-20260918.db", "auto-x\\..\\..\\evil.db", "notes.db" })
+        {
+            cloud.Files[name] = new CloudBackupFile(name, created);
+        }
+
+        var backup = new JsonZipBackupService(factory, paths, clock, settings, cloudBackups: cloud);
+
+        Assert.AreEqual(1, await backup.DownloadCloudBackupsAsync(CancellationToken.None));
+        var downloaded = Path.Combine(paths.BackupDirectory, "auto-20260917.db");
+        Assert.AreEqual("remote:auto-20260917.db", File.ReadAllText(downloaded));
+        Assert.AreEqual(created.UtcDateTime, File.GetCreationTimeUtc(downloaded));
+        Assert.AreEqual("local", File.ReadAllText(Path.Combine(paths.BackupDirectory, "auto-20260918.db")));
+        Assert.IsFalse(File.Exists(Path.Combine(paths.DataDirectory, "evil.db")));
+        CollectionAssert.AreEquivalent(
+            new[] { "auto-20260917.db", "auto-20260918.db" },
+            Directory.GetFiles(paths.BackupDirectory).Select(Path.GetFileName).ToArray());
+    }
+
+    private sealed class FakeCloudBackupClient : ICloudBackupClient
+    {
+        public Dictionary<string, CloudBackupFile> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public List<string> Uploads { get; } = [];
+
+        public bool Fail { get; set; }
+
+        public Task UploadAsync(string name, byte[] content, CancellationToken cancellationToken)
+        {
+            ThrowIfFailing();
+            Uploads.Add(name);
+            Files[name] = new CloudBackupFile(name, DateTimeOffset.Parse("2026-09-19T12:00:00Z"));
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<CloudBackupFile>> ListAsync(CancellationToken cancellationToken)
+        {
+            ThrowIfFailing();
+            return Task.FromResult<IReadOnlyList<CloudBackupFile>>([.. Files.Values]);
+        }
+
+        public Task<byte[]> DownloadAsync(string name, CancellationToken cancellationToken) =>
+            Task.FromResult(System.Text.Encoding.UTF8.GetBytes($"remote:{name}"));
+
+        public Task DeleteAsync(string name, CancellationToken cancellationToken)
+        {
+            Files.Remove(name);
+            return Task.CompletedTask;
+        }
+
+        private void ThrowIfFailing()
+        {
+            if (Fail)
+            {
+                throw new HttpRequestException("Supabase ist nicht erreichbar.");
+            }
         }
     }
 

@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Windows.GameIcons;
 using YFTimeTracker.Windows.Processes;
+using YFTimeTracker.Windows.Security;
 using YFTimeTracker.Windows.SystemInfo;
 
 namespace YFTimeTracker.Windows;
@@ -17,6 +18,8 @@ public static class WindowsServiceCollectionExtensions
         services.AddSingleton<IBootSessionProvider, WindowsBootSessionProvider>();
         services.AddSingleton<ISystemSuspendNotifier, WindowsSystemSuspendNotifier>();
         services.AddSingleton<IStartupService, UnavailableStartupService>();
+        services.AddSingleton<ISecretStore, CredentialManagerSecretStore>();
+        services.AddSingleton<IDeviceIdentityProvider, WindowsDeviceIdentityProvider>();
         return services;
     }
 }

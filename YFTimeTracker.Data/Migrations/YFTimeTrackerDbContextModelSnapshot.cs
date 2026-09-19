@@ -22,6 +22,10 @@ namespace YFTimeTracker.Data.Migrations
                         .HasMaxLength(160)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("SyncedHash")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
                     b.Property<long>("UpdatedAtUtc")
                         .HasColumnType("INTEGER");
 
@@ -43,6 +47,14 @@ namespace YFTimeTracker.Data.Migrations
 
                     b.Property<long>("AddedAtUtc")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("CloudId")
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CloudIdentity")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
 
                     b.Property<int?>("DailyPlaytimeLimitMinutes")
                         .HasColumnType("INTEGER");
@@ -88,6 +100,10 @@ namespace YFTimeTracker.Data.Migrations
                     b.Property<int>("Source")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("SyncedHash")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("WeeklyPlaytimeLimitMinutes")
                         .HasColumnType("INTEGER");
 
@@ -111,6 +127,14 @@ namespace YFTimeTracker.Data.Migrations
                     b.Property<long>("GameId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("CloudId")
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CloudIdentity")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ContentType")
                         .IsRequired()
                         .HasMaxLength(40)
@@ -130,6 +154,10 @@ namespace YFTimeTracker.Data.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("SyncedHash")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
                     b.Property<long>("UpdatedAtUtc")
                         .HasColumnType("INTEGER");
 
@@ -146,6 +174,14 @@ namespace YFTimeTracker.Data.Migrations
 
                     b.Property<long>("AddedAtUtc")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("CloudId")
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CloudIdentity")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("ExecutableName")
                         .IsRequired()
@@ -167,6 +203,10 @@ namespace YFTimeTracker.Data.Migrations
 
                     b.Property<bool>("IsPrimary")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("SyncedHash")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -194,6 +234,14 @@ namespace YFTimeTracker.Data.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CloudId")
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CloudIdentity")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
                     b.Property<long?>("DurationSeconds")
                         .HasColumnType("INTEGER");
 
@@ -208,6 +256,10 @@ namespace YFTimeTracker.Data.Migrations
 
                     b.Property<long>("StartedAtUtc")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("SyncedHash")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -231,8 +283,20 @@ namespace YFTimeTracker.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("CloudId")
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CloudIdentity")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
                     b.Property<long>("GameId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("SyncedHash")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Tag")
                         .IsRequired()
@@ -291,6 +355,35 @@ namespace YFTimeTracker.Data.Migrations
                     b.ToTable("NotificationLogEntries", (string)null);
                 });
 
+            modelBuilder.Entity("YFTimeTracker.Core.Models.SyncTombstone", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CloudId")
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("DeletedAtUtc")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Identity")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Kind", "Identity")
+                        .IsUnique();
+
+                    b.ToTable("SyncTombstones", (string)null);
+                });
+
             modelBuilder.Entity("YFTimeTracker.Core.Models.TrackingExclusionRule", b =>
                 {
                     b.Property<long>("Id")
@@ -300,8 +393,20 @@ namespace YFTimeTracker.Data.Migrations
                     b.Property<long>("AddedAtUtc")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("CloudId")
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CloudIdentity")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Kind")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("SyncedHash")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Value")
                         .IsRequired()
