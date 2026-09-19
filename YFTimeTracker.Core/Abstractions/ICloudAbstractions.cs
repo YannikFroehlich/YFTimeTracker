@@ -105,6 +105,22 @@ public interface IAccountSyncClient
         CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Ablage der taeglichen Sicherungsdatei im Konto. Namen sind reine Dateinamen;
+/// vorhandene Dateien werden nie ueberschrieben, damit ein zweiter PC die
+/// Sicherung desselben Tages nicht ersetzen kann.
+/// </summary>
+public interface ICloudBackupClient
+{
+    Task UploadAsync(string name, byte[] content, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<CloudBackupFile>> ListAsync(CancellationToken cancellationToken);
+
+    Task<byte[]> DownloadAsync(string name, CancellationToken cancellationToken);
+
+    Task DeleteAsync(string name, CancellationToken cancellationToken);
+}
+
 /// <summary>Der Abgleich zwischen lokalem Bestand und Konto.</summary>
 public interface IAccountSyncService
 {

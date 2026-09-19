@@ -25,6 +25,7 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly IAppDiagnosticsService diagnosticsService;
     private readonly ITrackingDiagnosticLog trackingDiagnostics;
     private readonly ITrackingExclusionService? trackingExclusions;
+    private readonly ICloudAuthService? cloudAuth;
     private readonly DispatcherQueue dispatcherQueue;
     private bool trackingEnabled = true;
     private bool launcherDiscoveryEnabled = true;
@@ -74,7 +75,8 @@ public sealed class SettingsViewModel : ObservableObject
         IAppUpdateService appUpdateService,
         IAppDiagnosticsService diagnosticsService,
         ITrackingDiagnosticLog trackingDiagnostics,
-        ITrackingExclusionService? trackingExclusions = null)
+        ITrackingExclusionService? trackingExclusions = null,
+        ICloudAuthService? cloudAuth = null)
     {
         this.settings = settings;
         this.startupService = startupService;
@@ -88,6 +90,7 @@ public sealed class SettingsViewModel : ObservableObject
         this.diagnosticsService = diagnosticsService;
         this.trackingDiagnostics = trackingDiagnostics;
         this.trackingExclusions = trackingExclusions;
+        this.cloudAuth = cloudAuth;
         dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         ThemeOptions =
@@ -102,7 +105,8 @@ public sealed class SettingsViewModel : ObservableObject
         [
             new BackupDestinationOption(BackupDestinationKind.Local, "Lokal"),
             new BackupDestinationOption(BackupDestinationKind.OneDrive, "OneDrive-Ordner"),
-            new BackupDestinationOption(BackupDestinationKind.GoogleDrive, "Google Drive-Ordner")
+            new BackupDestinationOption(BackupDestinationKind.GoogleDrive, "Google Drive-Ordner"),
+            new BackupDestinationOption(BackupDestinationKind.YfDatabase, "YFDatenbank (Konto)")
         ];
         selectedBackupDestination = BackupDestinationOptions[0];
 
@@ -114,6 +118,7 @@ public sealed class SettingsViewModel : ObservableObject
         ClearTrackingDiagnosticsCommand = new RelayCommand(ClearTrackingDiagnostics);
         OpenExportFolderCommand = new RelayCommand(OpenExportFolder);
         ChooseBackupFolderCommand = new AsyncRelayCommand(ChooseBackupFolderAsync);
+        DownloadCloudBackupsCommand = new AsyncRelayCommand(DownloadCloudBackupsAsync);
         AddExecutableExclusionCommand = new AsyncRelayCommand(AddExecutableExclusionAsync);
         AddDirectoryExclusionCommand = new AsyncRelayCommand(AddDirectoryExclusionAsync);
 
@@ -325,6 +330,8 @@ public sealed class SettingsViewModel : ObservableObject
             if (SetProperty(ref selectedBackupDestination, value))
             {
                 OnPropertyChanged(nameof(ExternalFolderRowVisibility));
+                OnPropertyChanged(nameof(CloudBackupRowVisibility));
+                OnPropertyChanged(nameof(CloudBackupHintText));
             }
         }
     }
@@ -349,7 +356,17 @@ public sealed class SettingsViewModel : ObservableObject
         ? Visibility.Visible
         : Visibility.Collapsed;
 
+    public Visibility CloudBackupRowVisibility => SelectedBackupDestination.Value == BackupDestinationKind.YfDatabase
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public string CloudBackupHintText => cloudAuth?.CurrentSession is { } session
+        ? $"Die tägliche Sicherungsdatei wird nach dem Start zusätzlich im Konto {session.Email} abgelegt."
+        : "Für dieses Sicherungsziel oben rechts im Profil anmelden.";
+
     public IAsyncRelayCommand ChooseBackupFolderCommand { get; }
+
+    public IAsyncRelayCommand DownloadCloudBackupsCommand { get; }
 
     public IAsyncRelayCommand LoadCommand { get; }
 
@@ -421,6 +438,7 @@ public sealed class SettingsViewModel : ObservableObject
             : BackupDestinationKind.Local;
         SelectedBackupDestination = BackupDestinationOptions.FirstOrDefault(option => option.Value == destination)
             ?? BackupDestinationOptions[0];
+        OnPropertyChanged(nameof(CloudBackupHintText));
         ExternalBackupFolderPath = await settings.GetAsync(AppSettingKeys.BackupExternalFolderPath, CancellationToken.None) ?? string.Empty;
         RefreshBackups();
 
@@ -477,7 +495,42 @@ public sealed class SettingsViewModel : ObservableObject
         }
 
         StatusMessage = "Einstellungen gespeichert";
+        if (SelectedBackupDestination.Value == BackupDestinationKind.YfDatabase && cloudAuth?.IsSignedIn == true)
+        {
+            StatusMessage = await backupService.MirrorDailyBackupToCloudAsync(CancellationToken.None)
+                ? "Einstellungen gespeichert, die aktuelle Sicherung liegt in der YFDatenbank"
+                : "Einstellungen gespeichert, die Sicherung konnte nicht in die YFDatenbank übertragen werden (Details im Log)";
+        }
+
         App.MainWindow?.SetMinimizeOnClose(MinimizeOnClose);
+    }
+
+    private async Task DownloadCloudBackupsAsync()
+    {
+        if (cloudAuth?.IsSignedIn != true)
+        {
+            StatusMessage = "Für Sicherungen aus der YFDatenbank oben rechts im Profil anmelden.";
+            return;
+        }
+
+        try
+        {
+            var count = await backupService.DownloadCloudBackupsAsync(CancellationToken.None);
+            StatusMessage = count switch
+            {
+                0 => "Alle Sicherungen aus der YFDatenbank liegen bereits lokal vor",
+                1 => "1 Sicherung aus der YFDatenbank geladen",
+                _ => $"{count} Sicherungen aus der YFDatenbank geladen"
+            };
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Sicherungen konnten nicht geladen werden: {ex.Message}";
+        }
+        finally
+        {
+            RefreshBackups();
+        }
     }
 
     private async Task ExportAsync()

@@ -15,7 +15,8 @@ public sealed class JsonZipBackupService(
     IAppPathProvider appPathProvider,
     IClock clock,
     ISettingsStore settingsStore,
-    ILogger<JsonZipBackupService>? logger = null) : IBackupService
+    ILogger<JsonZipBackupService>? logger = null,
+    ICloudBackupClient? cloudBackups = null) : IBackupService
 {
     private const string ExternalMirrorFolderName = "YFTimeTracker Backups";
     private readonly ILogger<JsonZipBackupService> log = logger ?? NullLogger<JsonZipBackupService>.Instance;
@@ -63,9 +64,8 @@ public sealed class JsonZipBackupService(
     // niemals gefährden – Fehler werden nur geloggt, nie geworfen.
     private async Task MirrorToExternalDestinationAsync(string backupPath, CancellationToken cancellationToken)
     {
-        var destinationRaw = await settingsStore.GetAsync(AppSettingKeys.BackupDestination, cancellationToken);
-        if (!Enum.TryParse<BackupDestinationKind>(destinationRaw, out var destination) ||
-            destination is BackupDestinationKind.Local or BackupDestinationKind.YfDatabase)
+        var destination = await ReadDestinationAsync(cancellationToken);
+        if (destination is BackupDestinationKind.Local or BackupDestinationKind.YfDatabase)
         {
             return;
         }
@@ -88,6 +88,96 @@ public sealed class JsonZipBackupService(
         {
             log.LogWarning(exception, "Sicherung konnte nicht nach {Destination} gespiegelt werden", destination);
         }
+    }
+
+    private async Task<BackupDestinationKind> ReadDestinationAsync(CancellationToken cancellationToken) =>
+        Enum.TryParse<BackupDestinationKind>(
+            await settingsStore.GetAsync(AppSettingKeys.BackupDestination, cancellationToken),
+            out var destination)
+            ? destination
+            : BackupDestinationKind.Local;
+
+    // Nicht Teil von CreateDailyBackupAsync: beim App-Start entsteht die Tagessicherung,
+    // bevor die Kontositzung wiederhergestellt ist.
+    public async Task<bool> MirrorDailyBackupToCloudAsync(CancellationToken cancellationToken)
+    {
+        if (cloudBackups is null || await ReadDestinationAsync(cancellationToken) != BackupDestinationKind.YfDatabase)
+        {
+            return false;
+        }
+
+        var newest = GetBackups()
+            .Where(backup => !backup.IsSafetyCopy)
+            .MaxBy(backup => backup.FileName, StringComparer.OrdinalIgnoreCase);
+        if (newest is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            var remote = await cloudBackups.ListAsync(cancellationToken);
+            if (!remote.Any(file => string.Equals(file.Name, newest.FileName, StringComparison.OrdinalIgnoreCase)))
+            {
+                var content = await File.ReadAllBytesAsync(newest.FilePath, cancellationToken);
+                await cloudBackups.UploadAsync(newest.FileName, content, cancellationToken);
+            }
+
+            var retentionDays = await settingsStore.GetIntAsync(AppSettingKeys.BackupRetentionDays, 14, cancellationToken);
+            var cutoff = clock.UtcNow.AddDays(-Math.Max(retentionDays, 1));
+            var prunable = remote
+                .OrderByDescending(file => file.CreatedAtUtc)
+                .Skip(MinimumKeptBackupsPerKind)
+                .Where(file => file.CreatedAtUtc < cutoff);
+            foreach (var file in prunable)
+            {
+                await cloudBackups.DeleteAsync(file.Name, cancellationToken);
+            }
+
+            return true;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            log.LogWarning(exception, "Sicherung konnte nicht in die YFDatenbank übertragen werden");
+            return false;
+        }
+    }
+
+    public async Task<int> DownloadCloudBackupsAsync(CancellationToken cancellationToken)
+    {
+        if (cloudBackups is null)
+        {
+            return 0;
+        }
+
+        Directory.CreateDirectory(appPathProvider.BackupDirectory);
+        var downloaded = 0;
+        foreach (var file in await cloudBackups.ListAsync(cancellationToken))
+        {
+            // Der Name kommt aus dem Netz und darf nie aus dem Sicherungsordner herausführen.
+            if (!file.Name.StartsWith(DailyBackupPrefix, StringComparison.OrdinalIgnoreCase) ||
+                !file.Name.EndsWith(".db", StringComparison.OrdinalIgnoreCase) ||
+                file.Name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                continue;
+            }
+
+            var targetPath = Path.Combine(appPathProvider.BackupDirectory, file.Name);
+            if (File.Exists(targetPath))
+            {
+                continue;
+            }
+
+            // Erst vollständig schreiben, dann umbenennen: ein Abbruch darf keine halbe
+            // Datei in der Wiederherstellungsliste hinterlassen.
+            var partialPath = targetPath + ".part";
+            await File.WriteAllBytesAsync(partialPath, await cloudBackups.DownloadAsync(file.Name, cancellationToken), cancellationToken);
+            File.Move(partialPath, targetPath);
+            File.SetCreationTimeUtc(targetPath, file.CreatedAtUtc.UtcDateTime);
+            downloaded++;
+        }
+
+        return downloaded;
     }
 
     public Task<string?> CreatePreMigrationBackupAsync(CancellationToken cancellationToken)

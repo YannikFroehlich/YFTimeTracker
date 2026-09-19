@@ -301,3 +301,16 @@ drop policy if exists "game_artwork_owner_access" on storage.objects;
 create policy "game_artwork_owner_access" on storage.objects for all to authenticated
     using (bucket_id = 'game-artwork' and (storage.foldername(name))[1] = (select auth.uid())::text)
     with check (bucket_id = 'game-artwork' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- =============================================================================
+-- Storage-Bucket fuer die taegliche Sicherungsdatei (Sicherungsziel YFDatenbank)
+-- Pfadschema: {user_id}/auto-{yyyyMMdd}.db
+-- =============================================================================
+insert into storage.buckets (id, name, public)
+values ('backups', 'backups', false)
+on conflict (id) do nothing;
+
+drop policy if exists "backups_owner_access" on storage.objects;
+create policy "backups_owner_access" on storage.objects for all to authenticated
+    using (bucket_id = 'backups' and (storage.foldername(name))[1] = (select auth.uid())::text)
+    with check (bucket_id = 'backups' and (storage.foldername(name))[1] = (select auth.uid())::text);

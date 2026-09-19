@@ -21,7 +21,7 @@ namespace YFTimeTracker.Cloud;
 /// koennte der zweite PC nicht unterscheiden, ob sie geloescht wurde oder dort
 /// noch nie ankam, und luede sie beim naechsten Abgleich wieder hoch.
 /// </summary>
-public sealed class SupabaseAccountClient(
+public sealed partial class SupabaseAccountClient(
     HttpClient httpClient,
     ICloudConnectionProvider connectionProvider,
     ICloudAuthService authService,

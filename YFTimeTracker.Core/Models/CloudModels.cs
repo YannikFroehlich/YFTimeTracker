@@ -52,6 +52,8 @@ public sealed record CloudAuthResult(CloudAuthStatus Status, string Message, Clo
         new(CloudAuthStatus.Success, "Angemeldet.", session);
 }
 
+public sealed record CloudBackupFile(string Name, DateTimeOffset CreatedAtUtc);
+
 /// <summary>Fortschrittsmeldung fuer die Oberflaeche.</summary>
 public sealed record CloudProgress(string Step, int Completed, int Total)
 {

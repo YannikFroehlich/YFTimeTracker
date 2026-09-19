@@ -389,8 +389,8 @@
                                                         <Run Text="Wie OneDrive, aber mit einem lokal synchronisierten Ordner von Google Drive for Desktop." />
                                                     </TextBlock>
                                                     <TextBlock TextWrapping="Wrap">
-                                                        <Run FontWeight="SemiBold" Text="Konto:" />
-                                                        <Run Text="Der Abgleich mit der YFDatenbank hängt nicht am Sicherungsziel, sondern an der Anmeldung. Er lässt sich oben rechts über das Profil einrichten." />
+                                                        <Run FontWeight="SemiBold" Text="YFDatenbank (Konto):" />
+                                                        <Run Text="Die tägliche Sicherungsdatei wird zusätzlich im angemeldeten Konto abgelegt und kann über „Aus Konto laden“ auf jeden PC zurückgeholt werden. Erfordert eine Anmeldung oben rechts im Profil; der Abgleich von Spielen und Spielzeiten hängt davon unabhängig an der Anmeldung." />
                                                     </TextBlock>
                                                     <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Die lokale Sicherung bleibt in jedem Fall die Grundlage für die Wiederherstellung." TextWrapping="Wrap" />
                                                 </StackPanel>
@@ -398,7 +398,7 @@
                                         </ToolTipService.ToolTip>
                                     </FontIcon>
                                 </StackPanel>
-                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Zusätzlich zur lokalen Sicherung kann die tägliche Sicherungsdatei in einen selbst gewählten Ordner kopiert werden." TextWrapping="Wrap" />
+                                <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Zusätzlich zur lokalen Sicherung kann die tägliche Sicherungsdatei in einen selbst gewählten Ordner oder ins Konto kopiert werden." TextWrapping="Wrap" />
                             </StackPanel>
 
                             <ComboBox
@@ -421,6 +421,24 @@
                                     <StackPanel Orientation="Horizontal" Spacing="9">
                                         <FontIcon FontSize="14" Glyph="&#xE8B7;" />
                                         <TextBlock Text="Ordner wählen" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                            <Grid ColumnSpacing="12" Visibility="{Binding CloudBackupRowVisibility}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Style="{StaticResource YFMutedTextStyle}"
+                                    Text="{Binding CloudBackupHintText}"
+                                    TextWrapping="Wrap" />
+                                <Button Grid.Column="1" Command="{Binding DownloadCloudBackupsCommand}" Style="{StaticResource YFOutlineButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                        <FontIcon FontSize="14" Glyph="&#xE896;" />
+                                        <TextBlock Text="Aus Konto laden" />
                                     </StackPanel>
                                 </Button>
                             </Grid>

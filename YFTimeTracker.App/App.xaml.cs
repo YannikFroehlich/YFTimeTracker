@@ -157,10 +157,15 @@ public partial class App : Application
     {
         try
         {
-            await Services.GetRequiredService<ICloudAuthService>()
-                .RestoreSessionAsync(CancellationToken.None);
+            var auth = Services.GetRequiredService<ICloudAuthService>();
+            await auth.RestoreSessionAsync(CancellationToken.None);
             await Services.GetRequiredService<IAccountSyncService>()
                 .TrySyncAsync(CancellationToken.None);
+            if (auth.IsSignedIn)
+            {
+                await Services.GetRequiredService<IBackupService>()
+                    .MirrorDailyBackupToCloudAsync(CancellationToken.None);
+            }
         }
         catch (Exception exception)
         {

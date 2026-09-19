@@ -12,7 +12,11 @@ Spielerkennung selbst arbeitet in jedem Fall rein lokal und fragt keine Web-API.
 
 Das Konto sitzt im **Profil oben rechts**, nicht in den Einstellungen. Das
 Sicherungsziel unter *Einstellungen → Daten & Sicherung* steuert etwas anderes:
-wohin die tägliche lokale Sicherungs**datei** zusätzlich kopiert wird.
+wohin die tägliche lokale Sicherungs**datei** zusätzlich kopiert wird. Mit
+**YFDatenbank (Konto)** landet sie nach der Anmeldung im Storage-Bucket
+`backups`; **Aus Konto laden** holt sie auf jedem PC in die lokale
+Sicherungsliste zurück. Eine Sicherung desselben Tages wird nie überschrieben,
+ältere Kopien verschwinden nach der eingestellten Aufbewahrungsdauer.
 
 1. Profil-Avatar oben rechts anklicken
 2. E-Mail und Passwort eingeben, **Konto anlegen**
@@ -50,7 +54,7 @@ eigenes Projekt.
 
 **SQL Editor → New query**, Inhalt von [`supabase/schema.sql`](../supabase/schema.sql)
 einfügen, **Run**. Das Skript ist idempotent und legt Tabellen, Indizes,
-Trigger, RLS-Policies und den Storage-Bucket an.
+Trigger, RLS-Policies und die Storage-Buckets `game-artwork` und `backups` an.
 
 Danach sollten unter **Table Editor** zehn Tabellen stehen, jede mit aktivem RLS.
 
@@ -173,7 +177,10 @@ ist Supabase nicht erreichbar, läuft die App unverändert weiter.
 
 Auf dem kostenlosen Plan (500 MB Datenbank, 1 GB Storage) reicht der Platz für
 viele Jahre Spielzeitdaten: Spiele und Sessions sind Textzeilen von wenigen
-hundert Byte. Der Platzbedarf wird praktisch nur von den Cover-Bildern bestimmt.
+hundert Byte. Der Platzbedarf wird praktisch nur von den Cover-Bildern und, mit
+dem Sicherungsziel YFDatenbank, von den Sicherungsdateien bestimmt: je Tag eine
+Kopie der lokalen Datenbank, begrenzt durch die Aufbewahrungsdauer. Supabase
+nimmt auf dem kostenlosen Plan Dateien bis 50 MB an.
 
 Supabase pausiert Projekte auf dem kostenlosen Plan nach einer Woche ohne
 Zugriff. Der Abgleich beim App-Start verhindert das im Normalbetrieb.
