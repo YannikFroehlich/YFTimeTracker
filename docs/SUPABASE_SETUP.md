@@ -92,6 +92,18 @@ Die Datei ist gitignoriert (siehe `AGENTS.md`: keine Schlüssel im Repository) u
 wird beim Bauen ins Ausgabeverzeichnis kopiert. Fehlt sie, bleibt der
 Kontoabgleich einfach aus — die App läuft unverändert lokal.
 
+Für Releases über GitHub Actions schreibt `release.yml` die Datei selbst, und
+zwar aus den Repository-Secrets (**Settings → Secrets and variables → Actions**):
+
+| Secret | Wert |
+|---|---|
+| `SUPABASE_PROJECT_URL` | Project URL |
+| `SUPABASE_PUBLISHABLE_KEY` | Publishable Key |
+
+Fehlt eines davon, bricht der Release ab, statt einen Build ohne Konto zu
+veröffentlichen. `New-Release.ps1` prüft außerdem, dass eine vorhandene
+`cloud.config.json` tatsächlich im veröffentlichten Build landet.
+
 ### 3. Bestätigungsmail abschalten (optional)
 
 Für ein Einzelnutzer-Projekt: **Authentication → Sign In / Providers → Email** →

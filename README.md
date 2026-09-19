@@ -170,7 +170,7 @@ Neue Änderungen werden auf `develop` entwickelt und anschließend nach `main` g
 - `feat!:` oder `BREAKING CHANGE:` → Major-Version
 - `[skip release]` → keine Veröffentlichung
 
-Ein Release enthält Setup, MSI, Velopack-Pakete, portables ZIP, SHA-256-Prüfsumme und Release-Manifest. Details enthält [CONTRIBUTING.md](CONTRIBUTING.md).
+Ein Release enthält Setup, MSI, Velopack-Pakete, portables ZIP, SHA-256-Prüfsumme und Release-Manifest. Die Pipeline legt dem Build die Supabase-Verbindung aus den Repository-Secrets `SUPABASE_PROJECT_URL` und `SUPABASE_PUBLISHABLE_KEY` bei; fehlt eines davon, bricht der Release ab (siehe [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)). Details enthält [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Automatische Updates
 
