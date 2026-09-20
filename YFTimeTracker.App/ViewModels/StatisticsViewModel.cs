@@ -404,7 +404,7 @@ public sealed class StatisticsViewModel : ObservableObject
             var color = containsToday ? CyanColor : index % 3 == 2 ? PurpleColor : BlueColor;
             Timeline.Add(new StatisticsTrendPointViewModel(
                 FormatTimelineLabel(point, report.Period),
-                TimeFormatter.Format(point.Duration),
+                TimeFormatter.FormatCompact(point.Duration),
                 FormatTimelineTooltip(point),
                 height,
                 itemWidth,

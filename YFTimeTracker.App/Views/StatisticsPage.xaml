@@ -160,7 +160,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Grid>
                             <StackPanel>
@@ -180,15 +180,15 @@
                                 <ColumnDefinition Width="42" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Grid Height="202">
+                            <Grid Margin="0,24,0,0" Height="160">
                                 <TextBlock VerticalAlignment="Top" Style="{StaticResource YFMutedTextStyle}" Text="{Binding ChartMaximumText}" />
                                 <TextBlock VerticalAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="{Binding ChartMiddleText}" />
                                 <TextBlock VerticalAlignment="Bottom" Style="{StaticResource YFMutedTextStyle}" Text="0 h" />
                             </Grid>
                             <Grid Grid.Column="1">
-                                <Border Height="1" Margin="0,10,0,0" VerticalAlignment="Top" Background="{ThemeResource YFStrokeBrush}" />
-                                <Border Height="1" VerticalAlignment="Center" Background="{ThemeResource YFStrokeBrush}" />
-                                <Border Height="1" Margin="0,0,0,24" VerticalAlignment="Bottom" Background="{ThemeResource YFStrokeBrush}" />
+                                <Border Height="1" Margin="0,24,0,0" VerticalAlignment="Top" Background="{ThemeResource YFStrokeBrush}" />
+                                <Border Height="1" Margin="0,104,0,0" VerticalAlignment="Top" Background="{ThemeResource YFStrokeBrush}" />
+                                <Border Height="1" Margin="0,184,0,0" VerticalAlignment="Top" Background="{ThemeResource YFStrokeBrush}" />
                                 <ScrollViewer HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled" VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
                                     <Grid MinWidth="{Binding ChartMinimumWidth}" VerticalAlignment="Top">
                                         <ItemsControl VerticalAlignment="Top" VerticalContentAlignment="Top" ItemsSource="{Binding Timeline}">
