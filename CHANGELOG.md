@@ -2,6 +2,9 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.6.1 – 2026-09-20
+- Behoben: Die Stundenskala im Spielzeit-Trend (Statistiken) stimmte nicht mehr mit den Balken überein und driftete bei größerer Fensterhöhe zunehmend auseinander. Die Dauer-Beschriftung über den Balken wurde in der 30-Tage-Ansicht teils abgeschnitten.
+
 ## 1.6.0 – 2026-09-19
 - Neu: Kontoabgleich mit der YFDatenbank. Das Profil oben rechts ist jetzt ein echtes Konto: nach der Anmeldung mit E-Mail und Passwort werden Spiele, EXE-Zuordnungen, Sessions, Tags, Erkennungsausschlüsse, eigene Cover sowie Anzeigename, Farbe und Einstellungen in einer Supabase-Datenbank gespeichert.
 - Neu: Meldet man sich auf einem zweiten PC mit demselben Konto an, werden beide Bestände zusammengeführt statt verdoppelt. Spiele werden dabei über Launcher-Id beziehungsweise Name erkannt, Sessions bleiben ihrem Ursprungsgerät zugeordnet und zählen in der Auswertung zusammen.
