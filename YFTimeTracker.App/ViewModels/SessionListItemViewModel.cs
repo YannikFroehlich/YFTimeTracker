@@ -11,11 +11,13 @@ public sealed class SessionListItemViewModel : ObservableObject
     public SessionListItemViewModel(
         GameSession session,
         DateTimeOffset? nowUtc = null,
-        string? iconPath = null)
+        string? iconPath = null,
+        string? deviceName = null)
     {
         this.session = session;
         this.nowUtc = nowUtc ?? DateTimeOffset.UtcNow;
         IconPath = iconPath;
+        DeviceName = deviceName;
     }
 
     public long Id => session.Id;
@@ -48,6 +50,16 @@ public sealed class SessionListItemViewModel : ObservableObject
         GameSource.EaApp => "EA APP",
         _ => "MANUELL"
     };
+
+    /// <summary>
+    /// Geraet, auf dem die Session entstand. Bleibt <c>null</c>, solange nur
+    /// dieser PC bekannt ist - dann ist die Angabe ueberfluessig.
+    /// </summary>
+    public string? DeviceName { get; }
+
+    public string SourceAndDeviceLabel => string.IsNullOrWhiteSpace(DeviceName)
+        ? SourceLabel
+        : $"{SourceLabel} · {DeviceName.ToUpperInvariant()}";
 
     public DateTimeOffset StartedAtUtc => session.StartedAtUtc;
 

@@ -52,6 +52,10 @@ public sealed class GameDetailsViewModel : ObservableObject
     private string sessionEditorDescription = "Ergänze fehlende Spielzeit mit lokalen Start- und Endzeiten.";
     private double dailyPlaytimeLimitMinutes;
     private double weeklyPlaytimeLimitMinutes;
+    private double baselinePlaytimeHours;
+    private double baselinePlaytimeMinutes;
+    private string baselineSummaryText = string.Empty;
+    private Visibility baselineSummaryVisibility = Visibility.Collapsed;
     private string dailyProgressText = string.Empty;
     private double dailyProgressPercent;
     private string dailyProgressColor = ProgressNormalColor;
@@ -159,6 +163,34 @@ public sealed class GameDetailsViewModel : ObservableObject
     {
         get => weeklyPlaytimeLimitMinutes;
         set => SetProperty(ref weeklyPlaytimeLimitMinutes, value);
+    }
+
+    /// <summary>
+    /// Vor der Aufzeichnung gespielte Zeit, getrennt nach Stunden und Minuten
+    /// eingegeben: 300 Stunden als Minutenzahl waeren nicht zumutbar.
+    /// </summary>
+    public double BaselinePlaytimeHours
+    {
+        get => baselinePlaytimeHours;
+        set => SetProperty(ref baselinePlaytimeHours, value);
+    }
+
+    public double BaselinePlaytimeMinutes
+    {
+        get => baselinePlaytimeMinutes;
+        set => SetProperty(ref baselinePlaytimeMinutes, value);
+    }
+
+    public string BaselineSummaryText
+    {
+        get => baselineSummaryText;
+        private set => SetProperty(ref baselineSummaryText, value);
+    }
+
+    public Visibility BaselineSummaryVisibility
+    {
+        get => baselineSummaryVisibility;
+        private set => SetProperty(ref baselineSummaryVisibility, value);
     }
 
     public string DailyProgressText { get => dailyProgressText; private set => SetProperty(ref dailyProgressText, value); }
@@ -430,6 +462,8 @@ public sealed class GameDetailsViewModel : ObservableObject
         PrimaryExecutablePath = game.PrimaryExecutable?.ExecutablePath ?? string.Empty;
         DailyPlaytimeLimitMinutes = game.DailyPlaytimeLimitMinutes ?? 0;
         WeeklyPlaytimeLimitMinutes = game.WeeklyPlaytimeLimitMinutes ?? 0;
+        BaselinePlaytimeHours = (game.BaselinePlaytimeMinutes ?? 0) / 60;
+        BaselinePlaytimeMinutes = (game.BaselinePlaytimeMinutes ?? 0) % 60;
         TagsText = string.Join(", ", game.Tags.Select(tag => tag.Tag));
 
         Executables.Clear();
@@ -470,14 +504,21 @@ public sealed class GameDetailsViewModel : ObservableObject
     private void UpdateSummary(IReadOnlyList<GameSession> storedSessions)
     {
         var durations = storedSessions.Select(session => session.GetEffectiveDuration(clock.UtcNow)).ToArray();
-        var total = TimeSpan.FromTicks(durations.Sum(duration => duration.Ticks));
-        var average = durations.Length == 0 ? TimeSpan.Zero : TimeSpan.FromTicks(total.Ticks / durations.Length);
+        var trackedTotal = TimeSpan.FromTicks(durations.Sum(duration => duration.Ticks));
+        var baseline = TimeSpan.FromMinutes(loadedGame?.BaselinePlaytimeMinutes ?? 0);
+        var total = trackedTotal + baseline;
+
+        // Der Durchschnitt bleibt bewusst auf die aufgezeichneten Sessions bezogen:
+        // die Basis-Spielzeit ist eine Summe ohne Sessions.
+        var average = durations.Length == 0 ? TimeSpan.Zero : TimeSpan.FromTicks(trackedTotal.Ticks / durations.Length);
         var lastPlayedAt = storedSessions
             .Select(session => session.EndedAtUtc ?? (session.IsOpen ? clock.UtcNow : session.LastSeenAtUtc))
             .DefaultIfEmpty()
             .Max();
 
         TotalPlaytimeText = TimeFormatter.Format(total);
+        BaselineSummaryText = $"davon {TimeFormatter.Format(baseline)} Basis-Spielzeit";
+        BaselineSummaryVisibility = baseline > TimeSpan.Zero ? Visibility.Visible : Visibility.Collapsed;
         SessionCountText = durations.Length == 0
             ? "Keine Sessions"
             : $"{durations.Length} {(durations.Length == 1 ? "Session" : "Sessions")}";
@@ -568,6 +609,18 @@ public sealed class GameDetailsViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Stunden und Minuten zu einem Minutenwert. Ein leeres Feld liefert in der
+    /// NumberBox NaN - das darf nicht als Spielzeit durchgehen.
+    /// </summary>
+    private int? GetBaselineMinutes()
+    {
+        var hours = double.IsNaN(BaselinePlaytimeHours) ? 0 : Math.Max(0, BaselinePlaytimeHours);
+        var minutes = double.IsNaN(BaselinePlaytimeMinutes) ? 0 : Math.Max(0, BaselinePlaytimeMinutes);
+        var total = (int)Math.Round(hours * 60 + minutes, MidpointRounding.AwayFromZero);
+        return total > 0 ? total : null;
+    }
+
     private async Task SaveGameAsync()
     {
         if (loadedGame is null)
@@ -583,10 +636,11 @@ public sealed class GameDetailsViewModel : ObservableObject
                 loadedGame.PrimaryExecutable?.ExecutablePath ?? string.Empty,
                 DailyPlaytimeLimitMinutes > 0 ? (int)DailyPlaytimeLimitMinutes : null,
                 WeeklyPlaytimeLimitMinutes > 0 ? (int)WeeklyPlaytimeLimitMinutes : null,
+                GetBaselineMinutes(),
                 TagsText.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries),
                 CancellationToken.None);
             await RefreshAsync();
-            StatusMessage = "Spielname gespeichert";
+            StatusMessage = "Spiel gespeichert";
         }
         catch (YFTimeTrackerException exception)
         {

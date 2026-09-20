@@ -49,6 +49,37 @@ public sealed class PlaytimeReadRepositoryTests
         Assert.AreEqual(now.AddMinutes(-30), runningTiming.StartedAtUtc);
     }
 
+    [TestMethod]
+    public async Task Basis_playtime_counts_in_the_totals_but_never_in_session_timings()
+    {
+        using var paths = new TempAppPathProvider();
+        var factory = new TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var games = new GameRepository(factory);
+        var sessions = new GameSessionRepository(factory);
+        var repository = new PlaytimeReadRepository(factory);
+        var now = DateTimeOffset.Parse("2026-08-31T12:00:00Z");
+        var alpha = await AddGameAsync(games, "Alpha", now);
+        alpha.BaselinePlaytimeMinutes = 120;
+        await games.UpdateAsync(alpha, CancellationToken.None);
+
+        await AddSessionAsync(sessions, alpha.Id, now.AddHours(-3), now.AddHours(-2), 3600);
+
+        var overview = await repository.GetOverviewAsync(now, recentGameCount: 8, CancellationToken.None);
+
+        Assert.AreEqual(10_800L, overview.TotalDurationSeconds, "1 h Session + 2 h Basis-Spielzeit.");
+        Assert.AreEqual(TimeSpan.FromHours(3), overview.RecentGames.Single().TotalDuration);
+        Assert.AreEqual(10_800L, await repository.GetTotalDurationSecondsAsync(now, CancellationToken.None));
+
+        // Ohne Datum darf die Basis-Spielzeit in keiner Zeitraum-Auswertung auftauchen.
+        var timings = await repository.GetSessionTimingsAsync(now.AddDays(-1), now, CancellationToken.None);
+        Assert.HasCount(1, timings);
+    }
+
     private static Task<Game> AddGameAsync(GameRepository games, string name, DateTimeOffset now)
     {
         return games.AddAsync(new Game

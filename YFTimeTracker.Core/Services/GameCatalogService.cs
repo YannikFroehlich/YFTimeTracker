@@ -58,6 +58,7 @@ public sealed class GameCatalogService(
         string executablePath,
         int? dailyPlaytimeLimitMinutes,
         int? weeklyPlaytimeLimitMinutes,
+        int? baselinePlaytimeMinutes,
         IReadOnlyList<string> tags,
         CancellationToken cancellationToken)
     {
@@ -81,6 +82,7 @@ public sealed class GameCatalogService(
         game.Name = displayName.Trim();
         game.DailyPlaytimeLimitMinutes = dailyPlaytimeLimitMinutes is > 0 ? dailyPlaytimeLimitMinutes : null;
         game.WeeklyPlaytimeLimitMinutes = weeklyPlaytimeLimitMinutes is > 0 ? weeklyPlaytimeLimitMinutes : null;
+        game.BaselinePlaytimeMinutes = baselinePlaytimeMinutes is > 0 ? baselinePlaytimeMinutes : null;
         await games.UpdateAsync(game, cancellationToken);
         await games.SetPrimaryExecutableAsync(game.Id, new GameExecutable
         {

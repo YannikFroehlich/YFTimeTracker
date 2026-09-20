@@ -18,6 +18,7 @@ public sealed record CloudGame(
     int? DailyLimitMinutes,
     int? WeeklyLimitMinutes,
     bool IsPinned,
+    int? BaselineMinutes = null,
     DateTimeOffset? DeletedAt = null,
     DateTimeOffset UpdatedAt = default);
 
@@ -90,6 +91,12 @@ public sealed record CloudArtwork(
     byte[]? ImageData = null,
     DateTimeOffset? DeletedAt = null,
     DateTimeOffset UpdatedAt = default);
+
+/// <summary>
+/// Ein Geraet des Kontos. Rein informativ: damit eine Session benennen kann,
+/// auf welchem PC sie entstanden ist.
+/// </summary>
+public sealed record CloudDevice(string MachineKey, string DeviceName);
 
 /// <summary>Anzeigename und Akzentfarbe, jetzt Teil des Kontos statt nur lokal.</summary>
 public sealed record CloudProfile(string? DisplayName, string? AccentColor, DateTimeOffset UpdatedAt);

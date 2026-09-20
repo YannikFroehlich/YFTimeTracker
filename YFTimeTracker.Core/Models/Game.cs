@@ -23,6 +23,15 @@ public sealed class Game
 
     public int? WeeklyPlaytimeLimitMinutes { get; set; }
 
+    /// <summary>
+    /// Bereits vor der Aufzeichnung gespielte Zeit in Minuten.
+    ///
+    /// Zaehlt in der Gesamtspielzeit mit, aber bewusst in keiner
+    /// Zeitraum-Auswertung: der Wert hat kein Datum und wuerde sonst einen
+    /// beliebigen Tag oder Monat verfaelschen.
+    /// </summary>
+    public int? BaselinePlaytimeMinutes { get; set; }
+
     public bool IsPinned { get; set; }
 
     public List<GameTag> Tags { get; set; } = [];

@@ -33,6 +33,9 @@ public sealed class StatisticsViewModel : ObservableObject
     private readonly IClock clock;
     private readonly IFilePickerService filePicker;
     private readonly IExplorerService explorerService;
+    private readonly ISettingsStore settings;
+    private readonly IDeviceIdentityProvider deviceIdentity;
+    private IReadOnlyDictionary<string, string> knownDevices = new Dictionary<string, string>(StringComparer.Ordinal);
     private StatisticsPeriodOption selectedPeriod;
     private int selectedCalendarYear;
     private PlaytimeStatistics? lastReport;
@@ -64,6 +67,7 @@ public sealed class StatisticsViewModel : ObservableObject
     private Visibility dataVisibility = Visibility.Collapsed;
     private Visibility emptyVisibility = Visibility.Visible;
     private Visibility tagSharesVisibility = Visibility.Collapsed;
+    private Visibility deviceSharesVisibility = Visibility.Collapsed;
     private IReadOnlyList<Point> trendLinePoints = [];
     private IReadOnlyList<Point> trendAreaPoints = [];
     private string topGameShareText = "–";
@@ -79,12 +83,16 @@ public sealed class StatisticsViewModel : ObservableObject
         IPlaytimeStatisticsService statistics,
         IClock clock,
         IFilePickerService filePicker,
-        IExplorerService explorerService)
+        IExplorerService explorerService,
+        ISettingsStore settings,
+        IDeviceIdentityProvider deviceIdentity)
     {
         this.statistics = statistics;
         this.clock = clock;
         this.filePicker = filePicker;
         this.explorerService = explorerService;
+        this.settings = settings;
+        this.deviceIdentity = deviceIdentity;
         Periods =
         [
             new StatisticsPeriodOption(StatisticsPeriodKind.Last7Days, "7 Tage"),
@@ -176,6 +184,12 @@ public sealed class StatisticsViewModel : ObservableObject
 
     public Visibility TagSharesVisibility { get => tagSharesVisibility; private set => SetProperty(ref tagSharesVisibility, value); }
 
+    /// <summary>
+    /// Nur sichtbar, wenn im Zeitraum Spielzeit von mehr als einem Geraet
+    /// vorliegt - auf einem einzelnen PC waere der Ring eine Vollkreis-Aussage.
+    /// </summary>
+    public Visibility DeviceSharesVisibility { get => deviceSharesVisibility; private set => SetProperty(ref deviceSharesVisibility, value); }
+
     public IReadOnlyList<Point> TrendLinePoints { get => trendLinePoints; private set => SetProperty(ref trendLinePoints, value); }
 
     public IReadOnlyList<Point> TrendAreaPoints { get => trendAreaPoints; private set => SetProperty(ref trendAreaPoints, value); }
@@ -201,6 +215,8 @@ public sealed class StatisticsViewModel : ObservableObject
     public ObservableCollection<GameShareSliceViewModel> GameShares { get; } = [];
 
     public ObservableCollection<GameShareSliceViewModel> TagShares { get; } = [];
+
+    public ObservableCollection<GameShareSliceViewModel> DeviceShares { get; } = [];
 
     public ObservableCollection<WeekdayStatisticsViewModel> Weekdays { get; } = [];
 
@@ -229,6 +245,8 @@ public sealed class StatisticsViewModel : ObservableObject
 
         try
         {
+            knownDevices = DeviceDirectory.Parse(
+                await settings.GetAsync(AppSettingKeys.CloudKnownDevices, CancellationToken.None));
             var reportTask = statistics.GetStatisticsAsync(
                 SelectedPeriod.Kind,
                 TimeZoneInfo.Local,
@@ -367,6 +385,7 @@ public sealed class StatisticsViewModel : ObservableObject
         UpdateGames(report);
         UpdateGameShares(report);
         UpdateTagShares(report);
+        UpdateDeviceShares(report);
         UpdateWeekdays(report);
         UpdateInsights(report);
         UpdateAdvancedStatistics(report);
@@ -544,6 +563,31 @@ public sealed class StatisticsViewModel : ObservableObject
         foreach (var slice in BuildShareSlices(slices, totalTaggedSeconds))
         {
             TagShares.Add(slice);
+        }
+    }
+
+    // Anders als bei den Tags gehoert jede Session genau einem Geraet, die
+    // Anteile ergeben deshalb direkt die Gesamtspielzeit des Zeitraums.
+    private void UpdateDeviceShares(PlaytimeStatistics report)
+    {
+        DeviceShares.Clear();
+        DeviceSharesVisibility = report.Devices.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+        if (report.Devices.Count <= 1)
+        {
+            return;
+        }
+
+        var slices = report.Devices
+            .Select((device, index) => (
+                Name: DeviceDirectory.ResolveName(
+                    device.MachineKey, knownDevices, deviceIdentity.MachineKey, deviceIdentity.DeviceName),
+                device.Duration,
+                Color: GetAccentColor(index)))
+            .ToList();
+
+        foreach (var slice in BuildShareSlices(slices, report.TotalDuration.TotalSeconds))
+        {
+            DeviceShares.Add(slice);
         }
     }
 

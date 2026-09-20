@@ -237,11 +237,16 @@ public sealed class GameRepository(IDbContextFactory<YFTimeTrackerDbContext> con
 
         if (await context.Games.FirstOrDefaultAsync(game => game.Id == sourceGameId, cancellationToken) is { } source)
         {
+            var target = await context.Games.FirstAsync(game => game.Id == targetGameId, cancellationToken);
             if (source.IsPinned)
             {
-                var target = await context.Games.FirstAsync(game => game.Id == targetGameId, cancellationToken);
                 target.IsPinned = true;
             }
+
+            // Basis-Spielzeit haengt wie Sessions am Spiel und darf beim
+            // Zusammenfuehren nicht verschwinden, sondern zaehlt zusammen.
+            var baseline = (target.BaselinePlaytimeMinutes ?? 0) + (source.BaselinePlaytimeMinutes ?? 0);
+            target.BaselinePlaytimeMinutes = baseline > 0 ? baseline : null;
 
             await SyncTombstoneRecorder.RecordGameAsync(context, source, cancellationToken);
             context.Games.Remove(source);

@@ -6,7 +6,8 @@ namespace YFTimeTracker.Core.Services;
 public sealed class PlaytimeStatisticsService(
     IGameSessionRepository sessions,
     IPlaytimeReadRepository readRepository,
-    IClock clock) : IPlaytimeStatisticsService
+    IClock clock,
+    IDeviceIdentityProvider deviceIdentity) : IPlaytimeStatisticsService
 {
     public async Task<DashboardStats> GetDashboardStatsAsync(TimeZoneInfo localTimeZone, CancellationToken cancellationToken)
     {
@@ -171,7 +172,8 @@ public sealed class PlaytimeStatisticsService(
             CreateRollingComparisons(
                 await comparisonSessionsTask,
                 today,
-                localTimeZone));
+                localTimeZone),
+            CreateDeviceDistribution(contributions));
     }
 
     public async Task<TimeSpan> GetTotalDurationAsync(CancellationToken cancellationToken)
@@ -610,6 +612,24 @@ public sealed class PlaytimeStatisticsService(
         StatisticsBucketKind BucketKind,
         DateOnly? PreviousStart,
         DateOnly? PreviousEndExclusive);
+
+    /// <summary>
+    /// Spielzeit je Geraet. Sessions ohne Abgleich-Identitaet stammen von diesem
+    /// PC - eine eigene Spalte dafuer braucht es nicht.
+    /// </summary>
+    private IReadOnlyList<DevicePlaytimeStatistics> CreateDeviceDistribution(
+        IReadOnlyList<SessionContribution> contributions)
+    {
+        var localMachineKey = deviceIdentity.MachineKey;
+        return contributions
+            .GroupBy(contribution => DeviceDirectory.MachineKeyOf(contribution.Session, localMachineKey))
+            .Select(group => new DevicePlaytimeStatistics(
+                group.Key,
+                TimeSpan.FromTicks(group.Sum(contribution => contribution.Duration.Ticks)),
+                group.Count()))
+            .OrderByDescending(device => device.Duration)
+            .ToArray();
+    }
 
     private sealed record SessionContribution(GameSession Session, TimeSpan Duration);
 

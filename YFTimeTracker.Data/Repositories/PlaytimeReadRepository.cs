@@ -67,12 +67,24 @@ public sealed class PlaytimeReadRepository(IDbContextFactory<YFTimeTrackerDbCont
                 group => group.Key,
                 group => group.Sum(session => GetEffectiveSeconds(session.StartedAtUtc, session.EndedAtUtc, nowUtc)));
 
+        var baselineSecondsByGame = recentGameIds.Length == 0
+            ? new Dictionary<long, long>()
+            : await context.Games
+                .Where(game => recentGameIds.Contains(game.Id) && game.BaselinePlaytimeMinutes != null)
+                .ToDictionaryAsync(
+                    game => game.Id,
+                    game => (long)(game.BaselinePlaytimeMinutes ?? 0) * 60,
+                    cancellationToken);
+
         var recentGames = recentRows
             .Select(row => new RecentGameInfo(
                 row.GameId,
                 row.Name,
                 row.LastPlayedAtUtc,
-                TimeSpan.FromSeconds(row.StoredDurationSeconds + unresolvedByGame.GetValueOrDefault(row.GameId)),
+                TimeSpan.FromSeconds(
+                    row.StoredDurationSeconds
+                    + unresolvedByGame.GetValueOrDefault(row.GameId)
+                    + baselineSecondsByGame.GetValueOrDefault(row.GameId)),
                 row.IsRunning,
                 executablePaths.GetValueOrDefault(row.GameId)))
             .ToArray();
@@ -124,7 +136,13 @@ public sealed class PlaytimeReadRepository(IDbContextFactory<YFTimeTrackerDbCont
                 session.EndedAtUtc))
             .ToListAsync(cancellationToken);
 
-        return storedDurationSeconds + unresolvedDurations.Sum(session =>
+        // Basis-Spielzeit hat kein Datum und taucht deshalb in keiner
+        // Zeitraum-Auswertung auf - in der Gesamtspielzeit zaehlt sie mit.
+        var baselineSeconds = await context.Games
+            .Where(game => game.BaselinePlaytimeMinutes != null)
+            .SumAsync(game => (long)(game.BaselinePlaytimeMinutes ?? 0) * 60, cancellationToken);
+
+        return storedDurationSeconds + baselineSeconds + unresolvedDurations.Sum(session =>
             GetEffectiveSeconds(session.StartedAtUtc, session.EndedAtUtc, nowUtc));
     }
 

@@ -99,6 +99,7 @@ public static class SyncIdentity
         game.ExternalGameId,
         game.DailyPlaytimeLimitMinutes?.ToString(CultureInfo.InvariantCulture),
         game.WeeklyPlaytimeLimitMinutes?.ToString(CultureInfo.InvariantCulture),
+        game.BaselinePlaytimeMinutes?.ToString(CultureInfo.InvariantCulture),
         game.IsPinned.ToString(),
         game.AddedAtUtc.UtcTicks.ToString(CultureInfo.InvariantCulture));
 

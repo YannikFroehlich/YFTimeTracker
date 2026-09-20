@@ -39,6 +39,7 @@ jedem Start automatisch ab; **Jetzt abgleichen** im Profil stößt es von Hand a
 | Sessions (Spielzeiten) | Zuletzt gesehener Changelog, Update-Erinnerungen |
 | Erkennungsausschlüsse | Suchverlauf, Ersteinrichtungs-Status |
 | Cover-Bilder | Angemeldete E-Mail, Zeitpunkt des letzten Abgleichs |
+| Basis-Spielzeit je Spiel | Namen der bekannten Geräte (Kopie aus dem Konto) |
 | Anzeigename und Akzentfarbe | |
 | Übrige Einstellungen (Theme, Intervalle …) | |
 
@@ -61,6 +62,12 @@ Danach sollten unter **Table Editor** zehn Tabellen stehen, jede mit aktivem RLS
 > **Wichtig:** Ohne die Row-Level-Security-Policies aus dem Skript könnte jeder
 > angemeldete Benutzer des Projekts alle Daten lesen. Niemals ohne diesen Block
 > einspielen.
+
+Bei einem Projekt, das bereits auf Schemaversion 2 läuft, genügt dasselbe
+Skript erneut: `create table if not exists` lässt vorhandene Tabellen
+unangetastet, und der Abschnitt *Nachträglich ergänzte Spalten* zieht neue
+Spalten per `alter table … add column if not exists` nach — seit Version 3
+`games.baseline_minutes` für die Basis-Spielzeit.
 
 Wer von Schemaversion 1 kommt (geräteorientiert, vor dem Kontoabgleich), spielt
 vorher [`supabase/reset-schema-v1.sql`](../supabase/reset-schema-v1.sql) ein. Das

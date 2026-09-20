@@ -94,6 +94,8 @@ public sealed class AccountSyncService(
             await settingsStore.SetAsync(
                 AppSettingKeys.CloudLastSyncUtc, summary.CompletedAtUtc.ToString("O"), cancellationToken);
 
+            await UpdateKnownDevicesAsync(cancellationToken);
+
             if (summary.Conflicts.Count > 0)
             {
                 // Nicht still ueberschreiben: der Benutzer soll erfahren, dass ein
@@ -114,6 +116,33 @@ public sealed class AccountSyncService(
         finally
         {
             gate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Haelt die Geraetenamen aus dem Konto lokal vor, damit eine Session eines
+    /// zweiten PCs auch offline benannt werden kann. Schlaegt das fehl, bleibt
+    /// der bisherige Stand stehen - ein fehlender Name darf keinen Abgleich
+    /// scheitern lassen, der sonst durchgelaufen ist.
+    /// </summary>
+    private async Task UpdateKnownDevicesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var devices = await syncClient.FetchDevicesAsync(cancellationToken);
+            var map = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var device in devices)
+            {
+                map[device.MachineKey] = device.DeviceName;
+            }
+
+            map[deviceIdentity.MachineKey] = deviceIdentity.DeviceName;
+            await settingsStore.SetAsync(
+                AppSettingKeys.CloudKnownDevices, DeviceDirectory.Serialize(map), cancellationToken);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            log.LogWarning(exception, "Geräteliste konnte nicht gelesen werden; bisherige Namen bleiben erhalten");
         }
     }
 

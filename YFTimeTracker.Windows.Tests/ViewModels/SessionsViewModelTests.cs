@@ -77,7 +77,9 @@ public sealed class SessionsViewModelTests
             editor,
             new FixedClock(now),
             new FakeFilePicker(),
-            new FakeExplorerService());
+            new FakeExplorerService(),
+            new FakeSettingsStore(),
+            new FakeDeviceIdentity());
 
         await viewModel.RefreshAsync();
         await viewModel.SaveSessionCommand.ExecuteAsync(null);
@@ -124,8 +126,8 @@ public sealed class SessionsViewModelTests
             await viewModel.ExportCsvCommand.ExecuteAsync(null);
 
             var lines = await File.ReadAllLinesAsync(exportPath);
-            Assert.AreEqual("Spiel;Quelle;Start;Ende;Dauer;Status", lines[0]);
-            StringAssert.Contains(lines[1], "Alpha;MANUELL;");
+            Assert.AreEqual("Spiel;Quelle;Gerät;Start;Ende;Dauer;Status", lines[0]);
+            StringAssert.Contains(lines[1], "Alpha;MANUELL;Dieser-PC;");
             StringAssert.Contains(lines[1], "1 h 00 min;ABGESCHLOSSEN");
             StringAssert.Contains(viewModel.StatusMessage, Path.GetFileName(exportPath));
             Assert.IsTrue(viewModel.IsExportFolderAvailable);
@@ -175,7 +177,9 @@ public sealed class SessionsViewModelTests
             editor,
             new FixedClock(now),
             new FakeFilePicker(),
-            new FakeExplorerService());
+            new FakeExplorerService(),
+            new FakeSettingsStore(),
+            new FakeDeviceIdentity());
 
         await viewModel.RefreshAsync();
         viewModel.SelectedSession = viewModel.Sessions.Single();
@@ -191,12 +195,53 @@ public sealed class SessionsViewModelTests
         StringAssert.Contains(viewModel.StatusMessage, "Beta");
     }
 
+    [TestMethod]
+    public async Task Sessions_of_a_second_pc_are_named_and_filterable()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var game = CreateGame(1, "Alpha");
+        var local = CreateCompletedSession(1, game, now.AddHours(-3), now.AddHours(-2));
+        var remote = CreateCompletedSession(2, game, now.AddHours(-2), now);
+        remote.CloudIdentity = $"ses:zweiter-pc:game:manual:alpha:{remote.StartedAtUtc.UtcTicks}";
+        var repository = new FakeSessionRepository([local, remote]);
+        var viewModel = CreateViewModel(
+            [game],
+            repository,
+            now,
+            knownDevicesJson: """{"zweiter-pc":"Wohnzimmer"}""");
+
+        await viewModel.RefreshAsync();
+
+        Assert.AreEqual(Microsoft.UI.Xaml.Visibility.Visible, viewModel.DeviceFilterVisibility);
+        Assert.HasCount(3, viewModel.DeviceFilters, "Alle Geräte plus zwei PCs.");
+        Assert.AreEqual("MANUELL · WOHNZIMMER", viewModel.Sessions.Single(item => item.Id == 2).SourceAndDeviceLabel);
+
+        viewModel.SelectedDeviceFilter = viewModel.DeviceFilters.Single(filter => filter.Name == "Wohnzimmer");
+
+        Assert.AreEqual(2, viewModel.Sessions.Single().Id);
+    }
+
+    [TestMethod]
+    public async Task A_single_pc_gets_no_device_filter()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var game = CreateGame(1, "Alpha");
+        var repository = new FakeSessionRepository([CreateCompletedSession(1, game, now.AddHours(-2), now)]);
+        var viewModel = CreateViewModel([game], repository, now);
+
+        await viewModel.RefreshAsync();
+
+        Assert.AreEqual(Microsoft.UI.Xaml.Visibility.Collapsed, viewModel.DeviceFilterVisibility);
+        Assert.AreEqual("MANUELL", viewModel.Sessions.Single().SourceAndDeviceLabel);
+    }
+
     private static SessionsViewModel CreateViewModel(
         IReadOnlyList<Game> games,
         FakeSessionRepository repository,
         DateTimeOffset now,
         IFilePickerService? filePicker = null,
-        IExplorerService? explorerService = null)
+        IExplorerService? explorerService = null,
+        string? knownDevicesJson = null)
     {
         return new SessionsViewModel(
             new FakeCatalog(games),
@@ -204,7 +249,9 @@ public sealed class SessionsViewModelTests
             new FakeSessionEditor(repository, id => games.FirstOrDefault(game => game.Id == id)),
             new FixedClock(now),
             filePicker ?? new FakeFilePicker(),
-            explorerService ?? new FakeExplorerService());
+            explorerService ?? new FakeExplorerService(),
+            new FakeSettingsStore(knownDevicesJson),
+            new FakeDeviceIdentity());
     }
 
     private static Game CreateGame(long id, string name)
@@ -253,13 +300,33 @@ public sealed class SessionsViewModelTests
         public DateTimeOffset UtcNow { get; } = now;
     }
 
+    private sealed class FakeSettingsStore(string? value = null) : ISettingsStore
+    {
+        public Task<string?> GetAsync(string key, CancellationToken cancellationToken) => Task.FromResult(value);
+
+        public Task SetAsync(string key, string value, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task<int> GetIntAsync(string key, int fallback, CancellationToken cancellationToken) =>
+            Task.FromResult(fallback);
+
+        public Task<bool> GetBoolAsync(string key, bool fallback, CancellationToken cancellationToken) =>
+            Task.FromResult(fallback);
+    }
+
+    private sealed class FakeDeviceIdentity : IDeviceIdentityProvider
+    {
+        public string MachineKey => "local-machine";
+
+        public string DeviceName => "Dieser-PC";
+    }
+
     private sealed class FakeCatalog(IReadOnlyList<Game> games) : IGameCatalogService
     {
         public Task<IReadOnlyList<Game>> GetGamesAsync(CancellationToken cancellationToken) => Task.FromResult(games);
 
         public Task<Game> AddGameAsync(string executablePath, string? displayName, CancellationToken cancellationToken) => throw new NotSupportedException();
 
-        public Task UpdateGameAsync(long gameId, string displayName, string executablePath, int? dailyPlaytimeLimitMinutes, int? weeklyPlaytimeLimitMinutes, IReadOnlyList<string> tags, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task UpdateGameAsync(long gameId, string displayName, string executablePath, int? dailyPlaytimeLimitMinutes, int? weeklyPlaytimeLimitMinutes, int? baselinePlaytimeMinutes, IReadOnlyList<string> tags, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task DeleteGameAsync(long gameId, CancellationToken cancellationToken) => throw new NotSupportedException();
 

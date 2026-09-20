@@ -8,6 +8,14 @@ internal sealed class FakeClock(DateTimeOffset nowUtc) : IClock
     public DateTimeOffset UtcNow { get; set; } = nowUtc;
 }
 
+internal sealed class FakeDeviceIdentityProvider(string machineKey = "local-machine", string deviceName = "Test-PC")
+    : IDeviceIdentityProvider
+{
+    public string MachineKey { get; } = machineKey;
+
+    public string DeviceName { get; } = deviceName;
+}
+
 internal sealed class FakeBootSessionProvider(string bootSessionId) : IBootSessionProvider
 {
     public string BootSessionId { get; set; } = bootSessionId;
@@ -254,6 +262,9 @@ internal sealed class InMemoryGameRepository : IGameRepository
             InstallDirectoryKey = game.InstallDirectoryKey,
             AddedAtUtc = game.AddedAtUtc,
             IsPinned = game.IsPinned,
+            DailyPlaytimeLimitMinutes = game.DailyPlaytimeLimitMinutes,
+            WeeklyPlaytimeLimitMinutes = game.WeeklyPlaytimeLimitMinutes,
+            BaselinePlaytimeMinutes = game.BaselinePlaytimeMinutes,
             Executables = game.Executables.Select(CloneExecutable).ToList(),
             Tags = game.Tags.Select(CloneTag).ToList()
         };
@@ -407,7 +418,8 @@ internal sealed class InMemoryGameSessionRepository(Func<long, Game?> gameResolv
             LastSeenAtUtc = session.LastSeenAtUtc,
             EndedAtUtc = session.EndedAtUtc,
             DurationSeconds = session.DurationSeconds,
-            BootSessionId = session.BootSessionId
+            BootSessionId = session.BootSessionId,
+            CloudIdentity = session.CloudIdentity
         };
     }
 }

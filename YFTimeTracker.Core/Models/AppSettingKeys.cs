@@ -30,4 +30,9 @@ public static class AppSettingKeys
     public const string CloudDeviceId = "cloud.deviceId";
     public const string CloudLastSyncUtc = "cloud.lastSyncUtc";
     public const string CloudSyncArtwork = "cloud.syncArtwork";
+
+    // Geraetenamen aus dem Konto, damit Sessions eines zweiten PCs auch ohne
+    // Netz benennbar bleiben. Bewusst geraetegebunden: der Inhalt ist eine
+    // Zwischenablage des Kontostands, kein abzugleichender Datensatz.
+    public const string CloudKnownDevices = "cloud.knownDevices";
 }

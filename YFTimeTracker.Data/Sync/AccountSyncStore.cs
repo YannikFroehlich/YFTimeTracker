@@ -28,6 +28,7 @@ public sealed partial class AccountSyncStore(
         AppSettingKeys.CloudUserEmail,
         AppSettingKeys.CloudDeviceId,
         AppSettingKeys.CloudLastSyncUtc,
+        AppSettingKeys.CloudKnownDevices,
         AppSettingKeys.BackupExternalFolderPath,
         AppSettingKeys.BackupDestination,
         AppSettingKeys.LastBackupDate,
@@ -73,7 +74,8 @@ public sealed partial class AccountSyncStore(
             game => game.SyncedHash,
             (game, identity, hash) => new CloudGame(
                 identity, game.CloudId, hash, game.Name, game.Source, game.ExternalGameId,
-                game.AddedAtUtc, game.DailyPlaytimeLimitMinutes, game.WeeklyPlaytimeLimitMinutes, game.IsPinned));
+                game.AddedAtUtc, game.DailyPlaytimeLimitMinutes, game.WeeklyPlaytimeLimitMinutes, game.IsPinned,
+                game.BaselinePlaytimeMinutes));
 
         var executableSet = BuildSet(
             executables.Where(item => gameIdentityById.ContainsKey(item.GameId)).ToList(),
