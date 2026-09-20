@@ -47,6 +47,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Kalender-Heatmap für jedes erfasste Jahr mit täglicher Spielzeit, festen Intensitätsstufen, aktivstem Tag und längster Spielserie
 - Jahresrückblick mit Monatsverlauf, Vorjahresvergleich, Rekorden, Top-Spielen und PNG-Export
 - Donut-Auswertung „Nach Tag“, die die Spielzeit nach den in der Bibliothek vergebenen Tags gruppiert
+- Donut-Auswertung „Nach Gerät“, sobald über das Konto Sessions von mehr als einem PC vorliegen
 
 **Bibliothek und Sessions**
 
@@ -56,7 +57,9 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Spiele direkt aus den Spieldetails heraus starten
 - Lokale Spiel-Icons aus den registrierten EXE-Dateien mit datensparsamem Cache
 - Eigene lokale PNG- oder JPEG-Cover pro Spiel, angezeigt in Bibliothek, Suche, Dashboard, Sessions und Jahresrückblick; ohne eigenes Cover bleibt das EXE-Icon aktiv
+- Basis-Spielzeit pro Spiel für Stunden aus der Zeit vor der Aufzeichnung; sie zählt in der Gesamtspielzeit mit, aber bewusst nicht in Statistiken, Limits oder Jahresrückblick
 - Anlegen, Bearbeiten und Löschen manueller Sessions sowie Umhängen einer Session auf ein anderes Spiel, inklusive CSV-Export der Sessions-Liste
+- Anzeige und Filter nach dem Gerät, auf dem eine Session entstanden ist – sichtbar, sobald mit dem Konto ein zweiter PC dazukommt
 - Direkter Link zum Explorer-Ordner nach einem Export
 
 **Windows-Integration**

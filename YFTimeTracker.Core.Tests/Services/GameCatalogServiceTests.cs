@@ -45,6 +45,7 @@ public sealed class GameCatalogServiceTests
                 @"C:\Games\Alpha.exe",
                 null,
                 null,
+                null,
                 [],
                 CancellationToken.None));
 
@@ -58,7 +59,7 @@ public sealed class GameCatalogServiceTests
         var game = await catalog.AddGameAsync(@"C:\Games\Alpha.exe", "Alpha", CancellationToken.None);
 
         var exception = await Assert.ThrowsAsync<YFTimeTrackerException>(
-            () => catalog.UpdateGameAsync(game.Id, "Alpha", string.Empty, null, null, [], CancellationToken.None));
+            () => catalog.UpdateGameAsync(game.Id, "Alpha", string.Empty, null, null, null, [], CancellationToken.None));
 
         Assert.AreEqual("Bitte wähle eine .exe-Datei aus.", exception.Message);
     }
@@ -73,6 +74,7 @@ public sealed class GameCatalogServiceTests
             game.Id,
             "Alpha",
             @"C:\Games\Alpha.exe",
+            null,
             null,
             null,
             ["  Shooter ", "Multiplayer", "shooter", ""],
@@ -140,6 +142,25 @@ public sealed class GameCatalogServiceTests
         Assert.AreEqual(2, result.MovedSessionCount);
         Assert.AreEqual(1, result.CombinedSessionCount, "Die 11:00-Session geht in der 10:00-Session auf.");
         Assert.AreEqual(1, result.MovedExecutableCount);
+    }
+
+    [TestMethod]
+    public async Task Updating_a_game_stores_the_basis_playtime_and_clears_it_at_zero()
+    {
+        var (catalog, _, _) = CreateCatalog();
+        var game = await catalog.AddGameAsync(@"C:\Games\Alpha.exe", "Alpha", CancellationToken.None);
+
+        await catalog.UpdateGameAsync(
+            game.Id, "Alpha", @"C:\Games\Alpha.exe", null, null, 18_000, [], CancellationToken.None);
+
+        var stored = await catalog.GetGamesAsync(CancellationToken.None);
+        Assert.AreEqual(18_000, stored.Single().BaselinePlaytimeMinutes);
+
+        await catalog.UpdateGameAsync(
+            game.Id, "Alpha", @"C:\Games\Alpha.exe", null, null, 0, [], CancellationToken.None);
+
+        stored = await catalog.GetGamesAsync(CancellationToken.None);
+        Assert.IsNull(stored.Single().BaselinePlaytimeMinutes, "0 bedeutet keine Basis-Spielzeit, nicht 0 Minuten.");
     }
 
     private static GameSession ClosedSession(long gameId, string start, string end) => new()

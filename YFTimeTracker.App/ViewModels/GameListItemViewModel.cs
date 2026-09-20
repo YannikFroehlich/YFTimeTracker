@@ -97,7 +97,11 @@ public sealed class GameListItemViewModel(Game game, string? iconPath = null) : 
 
     public IReadOnlyList<string> Tags => game.Tags.Select(tag => tag.Tag).ToArray();
 
-    public TimeSpan TotalDuration => TimeSpan.FromTicks(gameSessions.Sum(session => session.GetEffectiveDuration(nowUtc).Ticks));
+    // Basis-Spielzeit zaehlt in der Gesamtspielzeit mit, nicht in den
+    // Zeitraum-Auswertungen - dort fehlt ihr das Datum.
+    public TimeSpan TotalDuration =>
+        TimeSpan.FromTicks(gameSessions.Sum(session => session.GetEffectiveDuration(nowUtc).Ticks))
+        + TimeSpan.FromMinutes(game.BaselinePlaytimeMinutes ?? 0);
 
     public string TotalPlaytime => TimeFormatter.Format(TotalDuration);
 

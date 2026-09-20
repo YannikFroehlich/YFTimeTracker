@@ -21,7 +21,7 @@ public sealed class StatisticsViewModelTests
                 new GamePlaytimeStatistics(1, "Alpha Game", GameSource.Steam, TimeSpan.FromHours(6), 2, now, []),
                 new GamePlaytimeStatistics(2, "Beta", GameSource.Manual, TimeSpan.FromHours(2), 1, now.AddDays(-1), [])
             ]);
-        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), new FakeFilePicker(), new FakeExplorerService());
+        var viewModel = CreateViewModel(report, now);
 
         await viewModel.RefreshAsync();
 
@@ -76,7 +76,7 @@ public sealed class StatisticsViewModelTests
                 new GamePlaytimeStatistics(2, "Beta", GameSource.Manual, TimeSpan.FromHours(2), 1, now, ["Shooter"]),
                 new GamePlaytimeStatistics(3, "Gamma", GameSource.Manual, TimeSpan.FromHours(2), 1, now, [])
             ]);
-        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), new FakeFilePicker(), new FakeExplorerService());
+        var viewModel = CreateViewModel(report, now);
 
         await viewModel.RefreshAsync();
 
@@ -96,7 +96,7 @@ public sealed class StatisticsViewModelTests
     {
         var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
         var report = CreateReport(TimeSpan.Zero, TimeSpan.Zero, 0, []);
-        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), new FakeFilePicker(), new FakeExplorerService());
+        var viewModel = CreateViewModel(report, now);
 
         await viewModel.RefreshAsync();
 
@@ -129,7 +129,7 @@ public sealed class StatisticsViewModelTests
         var exportPath = Path.Combine(Path.GetTempPath(), $"yftimetracker-statistics-test-{Guid.NewGuid():N}.csv");
         var filePicker = new FakeFilePicker(exportPath);
         var explorerService = new FakeExplorerService();
-        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), filePicker, explorerService);
+        var viewModel = CreateViewModel(report, now, filePicker, explorerService);
         await viewModel.RefreshAsync();
 
         try
@@ -163,7 +163,7 @@ public sealed class StatisticsViewModelTests
         var report = CreateReport(TimeSpan.Zero, TimeSpan.Zero, 0, []);
         var filePicker = new FakeFilePicker(Path.Combine(Path.GetTempPath(), "should-not-be-created.csv"));
         var explorerService = new FakeExplorerService();
-        var viewModel = new StatisticsViewModel(new FakeStatisticsService(report), new FixedClock(now), filePicker, explorerService);
+        var viewModel = CreateViewModel(report, now, filePicker, explorerService);
         await viewModel.RefreshAsync();
 
         await viewModel.ExportCsvCommand.ExecuteAsync(null);
@@ -173,11 +173,28 @@ public sealed class StatisticsViewModelTests
         Assert.IsFalse(File.Exists(Path.Combine(Path.GetTempPath(), "should-not-be-created.csv")));
     }
 
+    private static StatisticsViewModel CreateViewModel(
+        PlaytimeStatistics report,
+        DateTimeOffset now,
+        IFilePickerService? filePicker = null,
+        IExplorerService? explorerService = null,
+        string? knownDevicesJson = null)
+    {
+        return new StatisticsViewModel(
+            new FakeStatisticsService(report),
+            new FixedClock(now),
+            filePicker ?? new FakeFilePicker(),
+            explorerService ?? new FakeExplorerService(),
+            new FakeSettingsStore(knownDevicesJson),
+            new FakeDeviceIdentity());
+    }
+
     private static PlaytimeStatistics CreateReport(
         TimeSpan total,
         TimeSpan? previous,
         int sessionCount,
-        IReadOnlyList<GamePlaytimeStatistics> games)
+        IReadOnlyList<GamePlaytimeStatistics> games,
+        IReadOnlyList<DevicePlaytimeStatistics>? devices = null)
     {
         var start = new DateOnly(2026, 8, 24);
         return new PlaytimeStatistics(
@@ -216,7 +233,8 @@ public sealed class StatisticsViewModelTests
                 new RollingPlaytimeComparison(RollingComparisonKind.Last7Days, 7, total, previous ?? TimeSpan.Zero),
                 new RollingPlaytimeComparison(RollingComparisonKind.Last30Days, 30, total, previous ?? TimeSpan.Zero),
                 new RollingPlaytimeComparison(RollingComparisonKind.Last365Days, 365, total, previous ?? TimeSpan.Zero)
-            ]);
+            ],
+            devices ?? []);
     }
 
     private sealed class FixedClock(DateTimeOffset now) : IClock
@@ -290,5 +308,25 @@ public sealed class StatisticsViewModelTests
         public string? RevealedPath { get; private set; }
 
         public void RevealFile(string path) => RevealedPath = path;
+    }
+
+    private sealed class FakeSettingsStore(string? value) : ISettingsStore
+    {
+        public Task<string?> GetAsync(string key, CancellationToken cancellationToken) => Task.FromResult(value);
+
+        public Task SetAsync(string key, string value, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task<int> GetIntAsync(string key, int fallback, CancellationToken cancellationToken) =>
+            Task.FromResult(fallback);
+
+        public Task<bool> GetBoolAsync(string key, bool fallback, CancellationToken cancellationToken) =>
+            Task.FromResult(fallback);
+    }
+
+    private sealed class FakeDeviceIdentity : IDeviceIdentityProvider
+    {
+        public string MachineKey => "local-machine";
+
+        public string DeviceName => "Dieser-PC";
     }
 }

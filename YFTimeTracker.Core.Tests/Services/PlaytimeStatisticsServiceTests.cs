@@ -342,6 +342,28 @@ public sealed class PlaytimeStatisticsServiceTests
         Assert.AreEqual(TimeSpan.FromHours(2), calendar.Days.Single(day => day.Date == new DateOnly(2026, 1, 2)).Duration);
     }
 
+    [TestMethod]
+    public async Task GetStatisticsAsync_splits_the_playtime_by_the_device_a_session_came_from()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 8, 27, 12, 0, 0, TimeSpan.Zero));
+        var games = new InMemoryGameRepository();
+        var game = await AddGameAsync(games, "Alpha", clock.UtcNow);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+
+        await AddClosedSessionAsync(sessions, game.Id, Utc(2026, 8, 26, 8), Utc(2026, 8, 26, 11));
+        var remote = await AddClosedSessionAsync(sessions, game.Id, Utc(2026, 8, 25, 18), Utc(2026, 8, 25, 19));
+        remote.CloudIdentity = $"ses:zweiter-pc:game:manual:alpha:{remote.StartedAtUtc.UtcTicks}";
+        await sessions.UpdateAsync(remote, CancellationToken.None);
+
+        var report = await CreateService(sessions, clock)
+            .GetStatisticsAsync(StatisticsPeriodKind.Last7Days, TimeZoneInfo.Utc, CancellationToken.None);
+
+        Assert.HasCount(2, report.Devices);
+        Assert.AreEqual(TimeSpan.FromHours(3), report.Devices.Single(device => device.MachineKey == "local-machine").Duration);
+        Assert.AreEqual(TimeSpan.FromHours(1), report.Devices.Single(device => device.MachineKey == "zweiter-pc").Duration);
+        Assert.AreEqual(report.TotalDuration, report.Devices.Aggregate(TimeSpan.Zero, (sum, device) => sum + device.Duration));
+    }
+
     private static DateTimeOffset ToUtc(int year, int month, int day, int hour, int minute)
     {
         var local = new DateTime(year, month, day, hour, minute, 0, DateTimeKind.Local);
@@ -355,7 +377,8 @@ public sealed class PlaytimeStatisticsServiceTests
         return new PlaytimeStatisticsService(
             sessions,
             new InMemoryPlaytimeReadRepository(sessions),
-            clock);
+            clock,
+            new FakeDeviceIdentityProvider());
     }
 
     private static DateTimeOffset Utc(int year, int month, int day, int hour, int minute = 0)

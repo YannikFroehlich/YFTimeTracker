@@ -512,6 +512,7 @@ public sealed class GamesViewModel : ObservableObject
                     ExecutablePath,
                     SelectedGame.Model.DailyPlaytimeLimitMinutes,
                     SelectedGame.Model.WeeklyPlaytimeLimitMinutes,
+                    SelectedGame.Model.BaselinePlaytimeMinutes,
                     SelectedGame.Model.Tags.Select(tag => tag.Tag).ToArray(),
                     CancellationToken.None);
             }

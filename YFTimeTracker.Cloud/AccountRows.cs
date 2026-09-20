@@ -3,7 +3,7 @@ using YFTimeTracker.Core.Models;
 
 namespace YFTimeTracker.Cloud;
 
-// Abbild der Tabellen aus supabase/schema.sql (Schemaversion 2). Spaltennamen
+// Abbild der Tabellen aus supabase/schema.sql (Schemaversion 3). Spaltennamen
 // sind snake_case wie in Postgres; PostgREST liefert und erwartet sie so.
 //
 // "id" und "updated_at" werden beim Schreiben bewusst weggelassen: die Id
@@ -70,6 +70,8 @@ internal sealed record GameRow
 
     [JsonPropertyName("is_pinned")] public bool IsPinned { get; init; }
 
+    [JsonPropertyName("baseline_minutes")] public int? BaselineMinutes { get; init; }
+
     // Muss auch als null uebertragen werden: beim erneuten Hochladen hebt genau
     // dieser Wert einen frueheren Grabstein im Konto wieder auf. Die globalen
     // JSON-Optionen lassen Nullwerte sonst weg.
@@ -81,7 +83,7 @@ internal sealed record GameRow
 
     public CloudGame ToModel() => new(
         Identity, Id, ContentHash, Name, (GameSource)Source, ExternalGameId,
-        AddedAtUtc, DailyLimitMinutes, WeeklyLimitMinutes, IsPinned, DeletedAt, UpdatedAt);
+        AddedAtUtc, DailyLimitMinutes, WeeklyLimitMinutes, IsPinned, BaselineMinutes, DeletedAt, UpdatedAt);
 
     public static GameRow From(CloudGame game, string userId) => new()
     {
@@ -95,6 +97,7 @@ internal sealed record GameRow
         DailyLimitMinutes = game.DailyLimitMinutes,
         WeeklyLimitMinutes = game.WeeklyLimitMinutes,
         IsPinned = game.IsPinned,
+        BaselineMinutes = game.BaselineMinutes,
 
         // Ein Datensatz, der gerade hochgeladen wird, existiert wieder - ein
         // frueherer Grabstein im Konto muss dabei aufgehoben werden.

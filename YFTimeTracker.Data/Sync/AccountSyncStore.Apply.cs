@@ -84,6 +84,7 @@ public sealed partial class AccountSyncStore
                 existing.DailyPlaytimeLimitMinutes = incoming.DailyLimitMinutes;
                 existing.WeeklyPlaytimeLimitMinutes = incoming.WeeklyLimitMinutes;
                 existing.IsPinned = incoming.IsPinned;
+                existing.BaselinePlaytimeMinutes = incoming.BaselineMinutes;
                 continue;
             }
 
@@ -96,6 +97,7 @@ public sealed partial class AccountSyncStore
                 DailyPlaytimeLimitMinutes = incoming.DailyLimitMinutes,
                 WeeklyPlaytimeLimitMinutes = incoming.WeeklyLimitMinutes,
                 IsPinned = incoming.IsPinned,
+                BaselinePlaytimeMinutes = incoming.BaselineMinutes,
 
                 // Die Legacy-Spalten sind NOT NULL und der Pfadschluessel ist
                 // eindeutig indiziert. Ein Spiel, das von einem anderen PC kommt

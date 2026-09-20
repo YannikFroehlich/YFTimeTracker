@@ -99,6 +99,12 @@ public interface IAccountSyncClient
 
     Task PushAsync(AccountPush push, IProgress<CloudProgress>? progress, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Die im Konto bekannten Geraete. Wird nur zum Benennen fremder Sessions
+    /// gebraucht und ist deshalb vom eigentlichen Abgleich getrennt.
+    /// </summary>
+    Task<IReadOnlyList<CloudDevice>> FetchDevicesAsync(CancellationToken cancellationToken);
+
     /// <summary>Laedt die Bilddaten zu bereits bekannten Cover-Metadaten nach.</summary>
     Task<IReadOnlyList<CloudArtwork>> DownloadArtworkAsync(
         IReadOnlyList<CloudArtwork> artworks,

@@ -1,5 +1,5 @@
 -- =============================================================================
--- YFTimeTracker - Supabase-Schema (Schemaversion 2)
+-- YFTimeTracker - Supabase-Schema (Schemaversion 3)
 --
 -- Einspielen: Supabase-Dashboard -> SQL Editor -> Inhalt einfuegen -> "Run".
 -- Das Skript ist idempotent und kann gefahrlos erneut ausgefuehrt werden.
@@ -66,6 +66,7 @@ create table if not exists public.games (
     daily_limit_minutes  integer,
     weekly_limit_minutes integer,
     is_pinned            boolean     not null default false,
+    baseline_minutes     integer,
     deleted_at           timestamptz,
     updated_at           timestamptz not null default now(),
     constraint games_identity_unique unique (user_id, identity)
@@ -198,13 +199,22 @@ create table if not exists public.sync_runs (
     started_at     timestamptz not null default now(),
     finished_at    timestamptz,
     app_version    text,
-    schema_version integer     not null default 2,
+    schema_version integer     not null default 3,
     uploaded       integer     not null default 0,
     downloaded     integer     not null default 0,
     conflicts      integer     not null default 0,
     status         text        not null default 'running',
     error_message  text
 );
+
+-- -----------------------------------------------------------------------------
+-- Nachtraeglich ergaenzte Spalten
+--
+-- "create table if not exists" laesst eine bereits vorhandene Tabelle
+-- unveraendert. Neue Spalten muessen deshalb einzeln nachgezogen werden, damit
+-- ein aelteres Projekt dasselbe Schema bekommt wie ein frisch angelegtes.
+-- -----------------------------------------------------------------------------
+alter table public.games add column if not exists baseline_minutes integer;
 
 -- -----------------------------------------------------------------------------
 -- Indizes: der Abgleich liest je Tabelle alles zum Konto und filtert auf

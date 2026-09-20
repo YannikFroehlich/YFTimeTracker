@@ -2,9 +2,11 @@ using System.Collections.ObjectModel;
 using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.UI.Xaml;
 using YFTimeTracker.App.Services;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
+using YFTimeTracker.Core.Services;
 using YFTimeTracker.Core.Validation;
 
 namespace YFTimeTracker.App.ViewModels;
@@ -18,12 +20,17 @@ public sealed class SessionsViewModel : ObservableObject
     private readonly IFilePickerService filePicker;
     private readonly IExplorerService explorerService;
     private readonly IGameIconService? gameIcons;
+    private readonly ISettingsStore settings;
+    private readonly IDeviceIdentityProvider deviceIdentity;
     private readonly List<GameSession> loadedSessions = [];
     private readonly Dictionary<long, string?> iconPathsByGame = [];
+    private readonly Dictionary<string, string> deviceNamesByKey = new(StringComparer.Ordinal);
     private readonly AsyncRelayCommand saveSessionCommand;
     private int refreshVersion;
     private SessionListItemViewModel? selectedSession;
     private SessionGameFilterOption? selectedGameFilter;
+    private SessionDeviceFilterOption? selectedDeviceFilter;
+    private Visibility deviceFilterVisibility = Visibility.Collapsed;
     private SessionPeriodOption selectedPeriod;
     private GameListItemViewModel? editorGame;
     private string searchText = string.Empty;
@@ -50,6 +57,8 @@ public sealed class SessionsViewModel : ObservableObject
         IClock clock,
         IFilePickerService filePicker,
         IExplorerService explorerService,
+        ISettingsStore settings,
+        IDeviceIdentityProvider deviceIdentity,
         IGameIconService? gameIcons = null)
     {
         this.catalog = catalog;
@@ -58,6 +67,8 @@ public sealed class SessionsViewModel : ObservableObject
         this.clock = clock;
         this.filePicker = filePicker;
         this.explorerService = explorerService;
+        this.settings = settings;
+        this.deviceIdentity = deviceIdentity;
         this.gameIcons = gameIcons;
 
         PeriodOptions =
@@ -83,6 +94,8 @@ public sealed class SessionsViewModel : ObservableObject
     public ObservableCollection<SessionListItemViewModel> Sessions { get; } = [];
 
     public ObservableCollection<SessionGameFilterOption> GameFilters { get; } = [];
+
+    public ObservableCollection<SessionDeviceFilterOption> DeviceFilters { get; } = [];
 
     public ObservableCollection<GameListItemViewModel> EditorGames { get; } = [];
 
@@ -110,6 +123,28 @@ public sealed class SessionsViewModel : ObservableObject
                 ApplyFilters();
             }
         }
+    }
+
+    public SessionDeviceFilterOption? SelectedDeviceFilter
+    {
+        get => selectedDeviceFilter;
+        set
+        {
+            if (SetProperty(ref selectedDeviceFilter, value))
+            {
+                ApplyFilters();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Nur sichtbar, sobald Sessions von mehr als einem PC vorliegen. Auf einem
+    /// einzelnen Rechner waere die Auswahl ohne Aussage.
+    /// </summary>
+    public Visibility DeviceFilterVisibility
+    {
+        get => deviceFilterVisibility;
+        private set => SetProperty(ref deviceFilterVisibility, value);
     }
 
     public SessionPeriodOption SelectedPeriod
@@ -260,11 +295,13 @@ public sealed class SessionsViewModel : ObservableObject
         {
             var selectedId = SelectedSession?.Id;
             var selectedFilterGameId = SelectedGameFilter?.GameId;
+            var selectedFilterMachineKey = SelectedDeviceFilter?.MachineKey;
             var selectedEditorGameId = EditorGame?.Id;
             var selectedPeriodSnapshot = SelectedPeriod;
             var (fromUtc, toUtc) = GetPeriodRangeUtc(selectedPeriodSnapshot.Kind);
             var games = await catalog.GetGamesAsync(CancellationToken.None);
             var storedSessions = await sessionRepository.GetSessionsAsync(fromUtc, toUtc, CancellationToken.None);
+            var knownDevicesJson = await settings.GetAsync(AppSettingKeys.CloudKnownDevices, CancellationToken.None);
             var resolvedIconPaths = await ResolveIconPathsAsync(games);
             if (currentRefresh != Volatile.Read(ref refreshVersion))
             {
@@ -298,6 +335,7 @@ public sealed class SessionsViewModel : ObservableObject
 
             loadedSessions.Clear();
             loadedSessions.AddRange(storedSessions);
+            UpdateDeviceFilters(knownDevicesJson, selectedFilterMachineKey);
             ApplyFilters(selectedId);
 
             StatusMessage = $"{Sessions.Count} Session(s) · {selectedPeriodSnapshot.Label}";
@@ -314,6 +352,9 @@ public sealed class SessionsViewModel : ObservableObject
         OnPropertyChanged(nameof(SearchText));
         selectedGameFilter = null;
         OnPropertyChanged(nameof(SelectedGameFilter));
+        // Ein aktiver Geraetefilter wuerde die gesuchte Session sonst ausblenden.
+        selectedDeviceFilter = null;
+        OnPropertyChanged(nameof(SelectedDeviceFilter));
         selectedPeriod = PeriodOptions.Single(option => option.Kind == SessionPeriodKind.All);
         OnPropertyChanged(nameof(SelectedPeriod));
         await RefreshAsync();
@@ -480,6 +521,8 @@ public sealed class SessionsViewModel : ObservableObject
         OnPropertyChanged(nameof(SearchText));
         selectedGameFilter = GameFilters.FirstOrDefault();
         OnPropertyChanged(nameof(SelectedGameFilter));
+        selectedDeviceFilter = DeviceFilters.FirstOrDefault();
+        OnPropertyChanged(nameof(SelectedDeviceFilter));
         SelectedPeriod = PeriodOptions[2];
         ApplyFilters();
     }
@@ -489,8 +532,11 @@ public sealed class SessionsViewModel : ObservableObject
         selectedId ??= SelectedSession?.Id;
         var search = SearchText.Trim();
         var gameId = SelectedGameFilter?.GameId;
+        var machineKey = SelectedDeviceFilter?.MachineKey;
+        var showDevice = DeviceFilterVisibility == Visibility.Visible;
         var filtered = loadedSessions
             .Where(session => gameId is null || session.GameId == gameId)
+            .Where(session => machineKey is null || GetMachineKey(session) == machineKey)
             .Where(session => string.IsNullOrWhiteSpace(search)
                 || (session.Game?.Name?.Contains(search, StringComparison.CurrentCultureIgnoreCase) ?? false)
                 || session.StartedAtUtc.LocalDateTime.ToString("g").Contains(search, StringComparison.CurrentCultureIgnoreCase))
@@ -498,7 +544,8 @@ public sealed class SessionsViewModel : ObservableObject
             .Select(session => new SessionListItemViewModel(
                 session,
                 clock.UtcNow,
-                iconPathsByGame.GetValueOrDefault(session.GameId)))
+                iconPathsByGame.GetValueOrDefault(session.GameId),
+                showDevice ? GetDeviceName(session) : null))
             .ToArray();
 
         Sessions.Clear();
@@ -529,6 +576,42 @@ public sealed class SessionsViewModel : ObservableObject
         IsExportEnabled = Sessions.Count > 0;
         UpdateSummary();
     }
+
+    /// <summary>
+    /// Baut die Geraeteauswahl aus den geladenen Sessions. Sichtbar wird sie
+    /// erst ab zwei Geraeten - vorher gibt es nichts zu unterscheiden.
+    /// </summary>
+    private void UpdateDeviceFilters(string? knownDevicesJson, string? previousMachineKey)
+    {
+        var knownDevices = DeviceDirectory.Parse(knownDevicesJson);
+        var localMachineKey = deviceIdentity.MachineKey;
+
+        deviceNamesByKey.Clear();
+        foreach (var key in loadedSessions.Select(GetMachineKey).Distinct(StringComparer.Ordinal))
+        {
+            deviceNamesByKey[key] = DeviceDirectory.ResolveName(
+                key, knownDevices, localMachineKey, deviceIdentity.DeviceName);
+        }
+
+        DeviceFilterVisibility = deviceNamesByKey.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+
+        DeviceFilters.Clear();
+        DeviceFilters.Add(new SessionDeviceFilterOption(null, "Alle Geräte"));
+        foreach (var device in deviceNamesByKey.OrderBy(entry => entry.Value, StringComparer.CurrentCultureIgnoreCase))
+        {
+            DeviceFilters.Add(new SessionDeviceFilterOption(device.Key, device.Value));
+        }
+
+        selectedDeviceFilter = DeviceFilters.FirstOrDefault(option => option.MachineKey == previousMachineKey)
+            ?? DeviceFilters.First();
+        OnPropertyChanged(nameof(SelectedDeviceFilter));
+    }
+
+    private string GetMachineKey(GameSession session) =>
+        DeviceDirectory.MachineKeyOf(session, deviceIdentity.MachineKey);
+
+    private string? GetDeviceName(GameSession session) =>
+        deviceNamesByKey.GetValueOrDefault(GetMachineKey(session));
 
     private async Task ExportCsvAsync()
     {
@@ -564,15 +647,16 @@ public sealed class SessionsViewModel : ObservableObject
         }
     }
 
-    private static string BuildSessionsCsv(IEnumerable<SessionListItemViewModel> sessions)
+    private string BuildSessionsCsv(IEnumerable<SessionListItemViewModel> sessions)
     {
         var builder = new StringBuilder();
-        builder.AppendLine("Spiel;Quelle;Start;Ende;Dauer;Status");
+        builder.AppendLine("Spiel;Quelle;Gerät;Start;Ende;Dauer;Status");
         foreach (var session in sessions)
         {
             builder.AppendLine(string.Join(';',
                 CsvField(session.GameName),
                 CsvField(session.SourceLabel),
+                CsvField(GetDeviceName(session.Model) ?? string.Empty),
                 session.StartedAtUtc.LocalDateTime.ToString("dd.MM.yyyy HH:mm:ss"),
                 session.EndedAtUtc?.LocalDateTime.ToString("dd.MM.yyyy HH:mm:ss") ?? "Läuft",
                 CsvField(session.Duration),
@@ -688,6 +772,8 @@ public sealed class SessionsViewModel : ObservableObject
 }
 
 public sealed record SessionGameFilterOption(long? GameId, string Name);
+
+public sealed record SessionDeviceFilterOption(string? MachineKey, string Name);
 
 public sealed record SessionPeriodOption(SessionPeriodKind Kind, string Label);
 

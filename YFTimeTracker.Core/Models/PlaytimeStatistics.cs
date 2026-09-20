@@ -47,7 +47,8 @@ public sealed record PlaytimeStatistics(
     DateOnly? BusiestDay,
     TimeSpan BusiestDayDuration,
     IReadOnlyList<TimeOfDayPlaytimeStatistics> TimesOfDay,
-    IReadOnlyList<RollingPlaytimeComparison> RollingComparisons);
+    IReadOnlyList<RollingPlaytimeComparison> RollingComparisons,
+    IReadOnlyList<DevicePlaytimeStatistics> Devices);
 
 public sealed record StatisticsTimelinePoint(
     DateOnly StartDate,
@@ -65,6 +66,13 @@ public sealed record GamePlaytimeStatistics(
     IReadOnlyList<string> Tags);
 
 public sealed record WeekdayPlaytimeStatistics(DayOfWeek DayOfWeek, TimeSpan Duration);
+
+/// <summary>
+/// Spielzeit eines Geraets im Zeitraum. Der MachineKey ist die stabile Kennung
+/// des PCs; den Anzeigenamen loest die Oberflaeche ueber die im Konto bekannten
+/// Geraete auf.
+/// </summary>
+public sealed record DevicePlaytimeStatistics(string MachineKey, TimeSpan Duration, int SessionCount);
 
 public sealed record TimeOfDayPlaytimeStatistics(TimeOfDayKind Kind, TimeSpan Duration);
 

@@ -138,6 +138,7 @@
                         <StackPanel Spacing="6">
                             <TextBlock Style="{StaticResource YFCaptionStyle}" Text="GESAMTSPIELZEIT" />
                             <TextBlock FontSize="25" FontWeight="SemiBold" Foreground="{ThemeResource YFBlueTextBrush}" Text="{Binding TotalPlaytimeText}" />
+                            <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding BaselineSummaryText}" TextWrapping="Wrap" Visibility="{Binding BaselineSummaryVisibility}" />
                         </StackPanel>
                     </Border>
                     <Border x:Name="SessionCountCard" Grid.Column="1" Padding="18" Background="{ThemeResource YFPurpleCardGradientBrush}" BorderBrush="{ThemeResource YFPurpleCardBorderBrush}" BorderThickness="1" CornerRadius="{StaticResource YFCardCornerRadius}">
@@ -383,6 +384,29 @@
                                         Value="{Binding WeeklyProgressPercent}" />
                                     <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding WeeklyProgressText}" />
                                 </StackPanel>
+                                <StackPanel Spacing="5">
+                                    <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="BASIS-SPIELZEIT" />
+                                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Bereits vor der Aufzeichnung gespielte Zeit. Sie zählt in der Gesamtspielzeit mit, aber nicht in Statistiken, Limits oder im Jahresrückblick – dafür fehlt ihr das Datum." TextWrapping="Wrap" />
+                                </StackPanel>
+                                <Grid ColumnSpacing="10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <NumberBox
+                                        Header="Stunden"
+                                        Minimum="0"
+                                        Maximum="100000"
+                                        SpinButtonPlacementMode="Compact"
+                                        Value="{Binding BaselinePlaytimeHours, Mode=TwoWay}" />
+                                    <NumberBox
+                                        Grid.Column="1"
+                                        Header="Minuten"
+                                        Minimum="0"
+                                        Maximum="59"
+                                        SpinButtonPlacementMode="Compact"
+                                        Value="{Binding BaselinePlaytimeMinutes, Mode=TwoWay}" />
+                                </Grid>
                                 <TextBox
                                     Header="Tags"
                                     PlaceholderText="z. B. Shooter, Multiplayer"

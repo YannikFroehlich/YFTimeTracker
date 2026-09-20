@@ -209,6 +209,39 @@ public sealed class GameDetailsViewModelTests
         Assert.AreEqual("Spiel konnte nicht gestartet werden: Datei fehlt", viewModel.StatusMessage);
     }
 
+    [TestMethod]
+    public async Task Basis_playtime_counts_in_the_total_and_is_saved_as_minutes()
+    {
+        var now = DateTimeOffset.Parse("2026-08-31T12:00:00Z");
+        var game = CreateGame();
+        game.BaselinePlaytimeMinutes = 150;
+        var sessions = new FakeSessionRepository([CreateSession(1, game, now.AddHours(-2), now.AddHours(-1))]);
+        var catalog = new FakeCatalog(game);
+        var viewModel = new GameDetailsViewModel(
+            new FakeGameRepository(game),
+            catalog,
+            sessions,
+            new FakeSessionEditor(sessions, game),
+            new FixedClock(now));
+
+        await viewModel.LoadAsync(game.Id);
+
+        Assert.AreEqual(2d, viewModel.BaselinePlaytimeHours);
+        Assert.AreEqual(30d, viewModel.BaselinePlaytimeMinutes);
+        Assert.AreEqual("3 h 30 min", viewModel.TotalPlaytimeText, "1 h Session plus 2 h 30 min Basis-Spielzeit.");
+        Assert.AreEqual("davon 2 h 30 min Basis-Spielzeit", viewModel.BaselineSummaryText);
+        Assert.AreEqual(Microsoft.UI.Xaml.Visibility.Visible, viewModel.BaselineSummaryVisibility);
+
+        // Der Durchschnitt bezieht sich weiterhin nur auf die aufgezeichnete Session.
+        Assert.AreEqual("1 h 00 min", viewModel.AverageSessionText);
+
+        viewModel.BaselinePlaytimeHours = 10;
+        viewModel.BaselinePlaytimeMinutes = 5;
+        await viewModel.SaveGameCommand.ExecuteAsync(null);
+
+        Assert.AreEqual(605, game.BaselinePlaytimeMinutes);
+    }
+
     private static GameDetailsViewModel CreateViewModel(Game game, FakeSessionRepository sessions, DateTimeOffset now)
     {
         return new GameDetailsViewModel(
@@ -310,6 +343,7 @@ public sealed class GameDetailsViewModelTests
             string executablePath,
             int? dailyPlaytimeLimitMinutes,
             int? weeklyPlaytimeLimitMinutes,
+            int? baselinePlaytimeMinutes,
             IReadOnlyList<string> tags,
             CancellationToken cancellationToken)
         {
@@ -317,6 +351,7 @@ public sealed class GameDetailsViewModelTests
             game.Name = displayName;
             game.DailyPlaytimeLimitMinutes = dailyPlaytimeLimitMinutes;
             game.WeeklyPlaytimeLimitMinutes = weeklyPlaytimeLimitMinutes;
+            game.BaselinePlaytimeMinutes = baselinePlaytimeMinutes;
             game.Tags = tags.Select(tag => new GameTag { GameId = gameId, Tag = tag }).ToList();
             return Task.CompletedTask;
         }

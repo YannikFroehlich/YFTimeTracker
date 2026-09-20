@@ -14,6 +14,7 @@ public interface IGameCatalogService
         string executablePath,
         int? dailyPlaytimeLimitMinutes,
         int? weeklyPlaytimeLimitMinutes,
+        int? baselinePlaytimeMinutes,
         IReadOnlyList<string> tags,
         CancellationToken cancellationToken);
 

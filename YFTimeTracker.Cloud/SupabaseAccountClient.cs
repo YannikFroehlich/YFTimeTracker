@@ -91,6 +91,18 @@ public sealed partial class SupabaseAccountClient(
             profiles.FirstOrDefault()?.ToModel());
     }
 
+    public async Task<IReadOnlyList<CloudDevice>> FetchDevicesAsync(CancellationToken cancellationToken)
+    {
+        var context = await CreateContextAsync(cancellationToken);
+        var rows = await SelectAllAsync<DeviceRow>(
+            context, "devices", $"user_id=eq.{context.UserId}", cancellationToken);
+
+        return rows
+            .Where(row => !string.IsNullOrWhiteSpace(row.MachineKey))
+            .Select(row => new CloudDevice(row.MachineKey, row.DeviceName))
+            .ToList();
+    }
+
     public async Task<IReadOnlyList<CloudArtwork>> DownloadArtworkAsync(
         IReadOnlyList<CloudArtwork> artworks,
         CancellationToken cancellationToken)

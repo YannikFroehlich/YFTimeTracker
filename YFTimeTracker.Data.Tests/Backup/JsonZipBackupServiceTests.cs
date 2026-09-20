@@ -182,7 +182,8 @@ public sealed class JsonZipBackupServiceTests
             ExecutablePath = @"C:\Games\Tagged.exe",
             ExecutablePathKey = @"C:\GAMES\TAGGED.EXE",
             ExecutableName = "Tagged.exe",
-            AddedAtUtc = clock.UtcNow
+            AddedAtUtc = clock.UtcNow,
+            BaselinePlaytimeMinutes = 480
         }, CancellationToken.None);
         await repository.SetPinnedAsync(game.Id, true, CancellationToken.None);
         await repository.SetTagsAsync(game.Id, ["Shooter", "Multiplayer"], CancellationToken.None);
@@ -194,6 +195,7 @@ public sealed class JsonZipBackupServiceTests
 
         var imported = (await new GameRepository(factory).GetAllAsync(CancellationToken.None)).Single();
         Assert.IsTrue(imported.IsPinned);
+        Assert.AreEqual(480, imported.BaselinePlaytimeMinutes);
         CollectionAssert.AreEquivalent(new[] { "Shooter", "Multiplayer" }, imported.Tags.Select(tag => tag.Tag).ToArray());
     }
 

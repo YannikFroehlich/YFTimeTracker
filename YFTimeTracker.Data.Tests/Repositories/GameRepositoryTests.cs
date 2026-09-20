@@ -372,6 +372,47 @@ public sealed class GameRepositoryTests
         CollectionAssert.AreEquivalent(new[] { "Multiplayer", "Koop" }, merged.Tags.Select(tag => tag.Tag).ToArray());
     }
 
+    [TestMethod]
+    public async Task MergeInto_adds_up_the_basis_playtime_of_both_entries()
+    {
+        using var paths = new TempAppPathProvider();
+        var factory = new TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var games = new GameRepository(factory);
+        var addedAt = DateTimeOffset.Parse("2026-09-20T09:00:00Z");
+
+        var target = await games.AddAsync(new Game
+        {
+            Name = "Gamma",
+            ExecutablePath = @"C:\Games\Gamma\gamma.exe",
+            ExecutablePathKey = @"C:\GAMES\GAMMA\GAMMA.EXE",
+            ExecutableName = "gamma.exe",
+            AddedAtUtc = addedAt,
+            BaselinePlaytimeMinutes = 90
+        }, CancellationToken.None);
+
+        var source = await games.AddAsync(new Game
+        {
+            Name = "Gamma (Steam)",
+            ExecutablePath = @"C:\Games\Gamma\start.exe",
+            ExecutablePathKey = @"C:\GAMES\GAMMA\START.EXE",
+            ExecutableName = "start.exe",
+            AddedAtUtc = addedAt,
+            BaselinePlaytimeMinutes = 30
+        }, CancellationToken.None);
+
+        var plan = YFTimeTracker.Core.Services.SessionMergePlanner.Create([], []);
+        await games.MergeIntoAsync(source.Id, target.Id, plan, CancellationToken.None);
+
+        var merged = await games.GetByIdAsync(target.Id, CancellationToken.None);
+        Assert.IsNotNull(merged);
+        Assert.AreEqual(120, merged.BaselinePlaytimeMinutes, "Sonst ginge die Spielzeit des Quelleintrags verloren.");
+    }
+
     private static GameSession Closed(long gameId, string start, string end) => new()
     {
         GameId = gameId,

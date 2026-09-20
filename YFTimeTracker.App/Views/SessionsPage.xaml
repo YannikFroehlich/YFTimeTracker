@@ -179,9 +179,20 @@
                                 <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="SESSION-VERLAUF" />
                                 <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Laufende Sessions werden live aktualisiert und sind schreibgeschützt." />
                             </StackPanel>
-                            <Border Padding="9,4" HorizontalAlignment="Right" VerticalAlignment="Top" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="8">
-                                <TextBlock FontSize="10" Foreground="{ThemeResource YFBlueTextBrush}" Text="LOKALE DATEN" />
-                            </Border>
+                            <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Orientation="Horizontal" Spacing="9">
+                                <ComboBox
+                                    x:Name="DeviceFilterBox"
+                                    MinWidth="170"
+                                    DisplayMemberPath="Name"
+                                    ItemsSource="{Binding DeviceFilters}"
+                                    PlaceholderText="Alle Geräte"
+                                    SelectedItem="{Binding SelectedDeviceFilter, Mode=TwoWay}"
+                                    ToolTipService.ToolTip="Sessions nach dem PC filtern, auf dem sie entstanden sind"
+                                    Visibility="{Binding DeviceFilterVisibility}" />
+                                <Border Padding="9,4" VerticalAlignment="Center" Background="{ThemeResource YFListRowBackgroundHoverBrush}" CornerRadius="8">
+                                    <TextBlock FontSize="10" Foreground="{ThemeResource YFBlueTextBrush}" Text="LOKALE DATEN" />
+                                </Border>
+                            </StackPanel>
                         </Grid>
 
                         <Grid Grid.Row="1" Padding="12,9" Background="{ThemeResource YFStatusBarBrush}" CornerRadius="9,9,0,0">
@@ -227,7 +238,7 @@
                                                     Initials="{Binding GameInitials}" />
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                                                     <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding GameName}" TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock FontSize="9" Foreground="{ThemeResource YFCyanTextBrush}" Text="{Binding SourceLabel}" />
+                                                    <TextBlock FontSize="9" Foreground="{ThemeResource YFCyanTextBrush}" Text="{Binding SourceAndDeviceLabel}" TextTrimming="CharacterEllipsis" />
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="3">
                                                     <TextBlock FontSize="12" Text="{Binding DateLabel}" TextTrimming="CharacterEllipsis" />
