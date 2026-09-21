@@ -43,19 +43,20 @@ Regenerate app icon/asset variants after changing `YFTimeTrackerLogo.png`:
 
 ## Architecture
 
-Four layered class libraries plus one test project per layer, referenced top-down only (no project references upward):
+Five layered class libraries plus one test project per layer (except `App`), referenced top-down only (no project references upward):
 
 - **`YFTimeTracker.Core`** — domain models, abstractions (interfaces), tracking rules, statistics, validation. No dependency on WinUI, SQLite, or concrete Windows APIs; this is what makes tracking logic unit-testable without a UI or database.
 - **`YFTimeTracker.Data`** — EF Core + SQLite. Repositories, migrations, JSON+ZIP backup/import/export. Implements the `Core` repository/store abstractions.
 - **`YFTimeTracker.Windows`** — Windows-specific implementations of `Core` abstractions: process snapshots, local launcher discovery (Steam/Epic/GOG/Xbox/Battle.net/Ubisoft/EA app), registry, boot-session id, autostart.
+- **`YFTimeTracker.Cloud`** — optional Supabase-backed account sync and off-device backup mirroring. Depends only on `Core` (its abstractions in `ICloudAbstractions.cs`), same as `Data`/`Windows`; entirely opt-in and unrelated to game detection, which stays local-only (see the rules below).
 - **`YFTimeTracker.App`** — WinUI 3 shell: pages/views, ViewModels (CommunityToolkit.Mvvm `ObservableObject` + `AsyncRelayCommand`), tray icon, single-instance handling, first-run setup wizard, Velopack auto-update, diagnostics export.
-- **`YFTimeTracker.Core.Tests` / `YFTimeTracker.Data.Tests` / `YFTimeTracker.Windows.Tests`** — MSTest, mirror the layer they test. There is no `App.Tests` project; UI-adjacent logic that needs testing generally belongs in a lower layer.
+- **`YFTimeTracker.Core.Tests` / `YFTimeTracker.Data.Tests` / `YFTimeTracker.Windows.Tests` / `YFTimeTracker.Cloud.Tests`** — MSTest, mirror the layer they test. There is no `App.Tests` project; UI-adjacent logic that needs testing generally belongs in a lower layer.
 
 New logic goes in the lowest layer that can host it. UI code must not duplicate persistence or process-tracking logic.
 
 ### Composition root
 
-`YFTimeTracker.App/App.xaml.cs` (`OnLaunched`) builds a generic `Host` and wires every layer in one place: `services.AddYFTimeTrackerCore()` (Core), `AddYFTimeTrackerWindowsServices()` (Windows), `AddYFTimeTrackerData()` (Data), then registers App-layer services, pages (transient) and ViewModels (mostly singleton; `GameDetailsViewModel` is transient). Each layer exposes its own `IServiceCollection` extension method (`CoreServiceCollectionExtensions`, `DataServiceCollectionExtensions`, `WindowsServiceCollectionExtensions`) — add new services there, not ad hoc in `App.xaml.cs`.
+`YFTimeTracker.App/App.xaml.cs` (`OnLaunched`) builds a generic `Host` and wires every layer in one place: `services.AddYFTimeTrackerCore()` (Core), `AddYFTimeTrackerWindowsServices()` (Windows), `AddYFTimeTrackerData()` (Data), `AddYFTimeTrackerCloud()` (Cloud), then registers App-layer services, pages (transient) and ViewModels (mostly singleton; `GameDetailsViewModel` is transient). Each layer exposes its own `IServiceCollection` extension method (`CoreServiceCollectionExtensions`, `DataServiceCollectionExtensions`, `WindowsServiceCollectionExtensions`, `CloudServiceCollectionExtensions`) — add new services there, not ad hoc in `App.xaml.cs`.
 
 Static `App.Services` is the service locator used by views (e.g. `MainWindow` resolves its ViewModel and services via `App.Services.GetRequiredService<T>()` in its constructor rather than through DI-injected page constructors).
 
