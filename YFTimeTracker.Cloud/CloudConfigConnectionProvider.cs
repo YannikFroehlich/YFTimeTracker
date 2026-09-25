@@ -56,25 +56,38 @@ public sealed class CloudConfigConnectionProvider(
 
         try
         {
-            var document = JsonSerializer.Deserialize<CloudConfigFile>(
-                File.ReadAllText(path),
-                new JsonSerializerOptions(JsonSerializerDefaults.Web));
-
-            if (document is null ||
-                string.IsNullOrWhiteSpace(document.ProjectUrl) ||
-                string.IsNullOrWhiteSpace(document.PublishableKey))
-            {
-                log.LogWarning("{File} ist unvollständig; erwartet werden projectUrl und publishableKey", ConfigFileName);
-                return null;
-            }
-
-            return new CloudConnectionSettings(document.ProjectUrl.Trim(), document.PublishableKey.Trim());
+            return Parse(File.ReadAllText(path), log);
         }
         catch (Exception exception) when (exception is IOException or JsonException or UnauthorizedAccessException)
         {
             log.LogWarning(exception, "{File} konnte nicht gelesen werden", ConfigFileName);
             return null;
         }
+    }
+
+    internal static CloudConnectionSettings? Parse(string json, ILogger log)
+    {
+        var document = JsonSerializer.Deserialize<CloudConfigFile>(
+            json, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        if (document is null ||
+            string.IsNullOrWhiteSpace(document.ProjectUrl) ||
+            string.IsNullOrWhiteSpace(document.PublishableKey))
+        {
+            log.LogWarning("{File} ist unvollständig; erwartet werden projectUrl und publishableKey", ConfigFileName);
+            return null;
+        }
+
+        // Ueber diese URL gehen Passwort und Tokens. Unverschluesselt waeren sie im
+        // Netz mitlesbar, deshalb bleibt der Kontoabgleich dann lieber aus.
+        var projectUrl = document.ProjectUrl.Trim();
+        if (!Uri.TryCreate(projectUrl, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+        {
+            log.LogWarning("{File}: projectUrl muss eine https-Adresse sein; der Kontoabgleich bleibt deaktiviert", ConfigFileName);
+            return null;
+        }
+
+        return new CloudConnectionSettings(projectUrl, document.PublishableKey.Trim());
     }
 
     private sealed record CloudConfigFile

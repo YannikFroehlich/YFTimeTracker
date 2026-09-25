@@ -5,6 +5,8 @@
 ## 1.7.1 – 2026-09-25
 - Behoben: Gelöschte EXE-Zuordnungen und Erkennungsausschlüsse kamen beim Kontoabgleich nicht auf anderen PCs an, sobald ihr Pfad einen Backslash oder Zeichen wie `&`, `#` oder `+` enthielt – also praktisch immer. Sie wurden dort weiter angezeigt.
 - Behoben: Startete beim App-Start gleichzeitig ein Abgleich, konnte Supabase die Anmeldung als ungültig verwerfen, sodass man sich erneut anmelden musste.
+- Sicherheit: Der Kontoabgleich startet nur noch mit einer `https`-Projekt-URL, damit Passwort und Anmeldedaten nie unverschlüsselt übertragen werden.
+- Hinweis: Wer ein eigenes Supabase-Projekt betreibt, spielt `supabase/schema.sql` erneut ein. Sessions und EXE-Zuordnungen können danach nur noch auf Geräte des eigenen Kontos verweisen.
 
 ## 1.7.0 – 2026-09-20
 - Neu: Sessions zeigen jetzt das Gerät, auf dem sie entstanden sind. Über dem Session-Verlauf lässt sich nach einem einzelnen PC filtern, und die Statistiken enthalten eine Auswertung „Nach Gerät“. Beides erscheint erst, wenn über das Konto Sessions von mehr als einem Gerät vorliegen – auf einem einzelnen PC bleibt die Ansicht unverändert.

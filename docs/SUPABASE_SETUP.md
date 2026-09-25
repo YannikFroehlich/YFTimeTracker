@@ -67,7 +67,11 @@ Bei einem Projekt, das bereits auf Schemaversion 2 läuft, genügt dasselbe
 Skript erneut: `create table if not exists` lässt vorhandene Tabellen
 unangetastet, und der Abschnitt *Nachträglich ergänzte Spalten* zieht neue
 Spalten per `alter table … add column if not exists` nach — seit Version 3
-`games.baseline_minutes` für die Basis-Spielzeit.
+`games.baseline_minutes` für die Basis-Spielzeit. Außerdem ersetzt es die
+Geräteverweise in `game_executables`, `game_sessions` und `sync_runs` durch
+Schlüssel über `(device_id, user_id)`, damit eine Zeile nur auf ein Gerät des
+eigenen Kontos zeigen kann (erfordert Postgres 15 oder neuer, Standard bei
+Supabase).
 
 Wer von Schemaversion 1 kommt (geräteorientiert, vor dem Kontoabgleich), spielt
 vorher [`supabase/reset-schema-v1.sql`](../supabase/reset-schema-v1.sql) ein. Das
