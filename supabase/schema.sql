@@ -85,7 +85,7 @@ create table if not exists public.game_executables (
     identity            text        not null,
     content_hash        text        not null,
     game_identity       text        not null,
-    device_id           uuid references public.devices (id) on delete set null,
+    device_id           uuid,
     executable_path     text        not null,
     executable_path_key text        not null,
     executable_name     text        not null,
@@ -123,7 +123,7 @@ create table if not exists public.game_sessions (
     identity         text        not null,
     content_hash     text        not null,
     game_identity    text        not null,
-    device_id        uuid references public.devices (id) on delete set null,
+    device_id        uuid,
     started_at_utc   timestamptz not null,
     last_seen_at_utc timestamptz not null,
     ended_at_utc     timestamptz,
@@ -195,7 +195,7 @@ create table if not exists public.game_artwork (
 create table if not exists public.sync_runs (
     id             uuid primary key default gen_random_uuid(),
     user_id        uuid        not null references auth.users (id) on delete cascade,
-    device_id      uuid references public.devices (id) on delete set null,
+    device_id      uuid,
     started_at     timestamptz not null default now(),
     finished_at    timestamptz,
     app_version    text,
@@ -215,6 +215,46 @@ create table if not exists public.sync_runs (
 -- ein aelteres Projekt dasselbe Schema bekommt wie ein frisch angelegtes.
 -- -----------------------------------------------------------------------------
 alter table public.games add column if not exists baseline_minutes integer;
+
+-- -----------------------------------------------------------------------------
+-- Geraeteverweise nur auf eigene Geraete
+--
+-- Ein einfacher Fremdschluessel auf devices(id) prueft RLS nicht: ein Konto
+-- koennte die Id eines fremden Geraets eintragen. Der Schluessel ueber
+-- (device_id, user_id) erzwingt, dass das Geraet demselben Konto gehoert. Wird
+-- ein Geraet geloescht, wird nur device_id geleert, nie user_id.
+-- Aeltere Projekte tragen noch den einfachen Schluessel "<tabelle>_device_id_fkey";
+-- er wird hier ersetzt.
+-- -----------------------------------------------------------------------------
+do $device_refs$
+declare
+    target_table text;
+begin
+    if not exists (
+        select 1 from pg_constraint
+        where conname = 'devices_id_user_unique' and conrelid = 'public.devices'::regclass)
+    then
+        alter table public.devices add constraint devices_id_user_unique unique (id, user_id);
+    end if;
+
+    foreach target_table in array array['game_executables', 'game_sessions', 'sync_runs']
+    loop
+        execute format('alter table public.%I drop constraint if exists %I;',
+            target_table, target_table || '_device_id_fkey');
+
+        if not exists (
+            select 1 from pg_constraint
+            where conname = target_table || '_device_owner_fkey'
+              and conrelid = format('public.%I', target_table)::regclass)
+        then
+            execute format(
+                'alter table public.%I add constraint %I foreign key (device_id, user_id) '
+                || 'references public.devices (id, user_id) on delete set null (device_id);',
+                target_table, target_table || '_device_owner_fkey');
+        end if;
+    end loop;
+end
+$device_refs$;
 
 -- -----------------------------------------------------------------------------
 -- Indizes: der Abgleich liest je Tabelle alles zum Konto und filtert auf

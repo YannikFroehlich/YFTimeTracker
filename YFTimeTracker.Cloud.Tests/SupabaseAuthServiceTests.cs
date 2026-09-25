@@ -173,6 +173,50 @@ public sealed class SupabaseAuthServiceTests
     }
 
     [TestMethod]
+    public async Task Restore_and_token_request_at_the_same_time_refresh_only_once()
+    {
+        // Supabase tauscht den Refresh-Token bei jeder Erneuerung aus. Zwei parallele
+        // Erneuerungen mit demselben Token wuerden als Wiederverwendung gewertet und
+        // die Sitzung widerrufen.
+        var handler = new BlockingTokenHandler(TokenResponseBody);
+        var secrets = new InMemorySecretStore();
+        secrets.Write(SupabaseAuthService.RefreshTokenSecretName, "refresh-0");
+        var service = new SupabaseAuthService(
+            new HttpClient(handler),
+            new StaticConnectionProvider(new CloudConnectionSettings("https://demo.supabase.co", "anon-key")),
+            secrets,
+            new InMemorySettingsStore(),
+            new MutableClock(new DateTimeOffset(2026, 9, 15, 12, 0, 0, TimeSpan.Zero)));
+
+        var restore = service.RestoreSessionAsync(CancellationToken.None);
+        var token = service.GetAccessTokenAsync(CancellationToken.None);
+        handler.Release();
+
+        Assert.IsTrue((await restore).IsSuccess);
+        Assert.AreEqual("access-1", await token);
+        Assert.AreEqual(1, handler.RequestCount);
+    }
+
+    private sealed class BlockingTokenHandler(string body) : HttpMessageHandler
+    {
+        private readonly TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int requestCount;
+
+        public int RequestCount => Volatile.Read(ref requestCount);
+
+        public void Release() => release.TrySetResult();
+
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref requestCount);
+            await release.Task;
+            return RecordingHandler.Create(HttpStatusCode.OK, body);
+        }
+    }
+
+    [TestMethod]
     public async Task Restore_without_a_stored_token_does_not_call_the_network()
     {
         var (service, handler, _, _, _) = CreateService();

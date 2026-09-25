@@ -82,13 +82,24 @@ public sealed class SupabaseAuthService(
 
     public async Task<CloudAuthResult> RestoreSessionAsync(CancellationToken cancellationToken)
     {
-        var refreshToken = secretStore.Read(RefreshTokenSecretName);
-        if (string.IsNullOrWhiteSpace(refreshToken))
+        // Dieselbe Sperre wie GetAccessTokenAsync: Supabase tauscht den Refresh-Token
+        // bei jeder Erneuerung aus. Zwei parallele Erneuerungen mit demselben Token
+        // wertet Supabase als Wiederverwendung und widerruft die ganze Sitzung.
+        await gate.WaitAsync(cancellationToken);
+        try
         {
-            return new CloudAuthResult(CloudAuthStatus.InvalidCredentials, "Nicht angemeldet.");
-        }
+            var refreshToken = secretStore.Read(RefreshTokenSecretName);
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                return new CloudAuthResult(CloudAuthStatus.InvalidCredentials, "Nicht angemeldet.");
+            }
 
-        return await RefreshAsync(refreshToken, cancellationToken);
+            return await RefreshAsync(refreshToken, cancellationToken);
+        }
+        finally
+        {
+            gate.Release();
+        }
     }
 
     public async Task<string?> GetAccessTokenAsync(CancellationToken cancellationToken)
