@@ -110,6 +110,30 @@ public sealed class SupabaseAccountClientTests
     }
 
     [TestMethod]
+    public async Task Deleting_an_executable_escapes_its_path_for_postgrest_and_the_url()
+    {
+        var (client, handler) = CreateClient();
+        const string identity = @"exe:game:manual:tom jerry:c:\games\tom & jerry #2\c++%.exe";
+        var push = PushWith(deletions: new Dictionary<SyncEntityKind, IReadOnlyList<string>>
+        {
+            [SyncEntityKind.Executable] = [identity]
+        });
+
+        await client.PushAsync(push, progress: null, CancellationToken.None);
+
+        // Genau zwei Parameter: & und # aus dem Pfad duerfen die Abfrage nicht zerlegen.
+        var patch = handler.Requests.Single(request => request.Method == HttpMethod.Patch);
+        var parameters = patch.Uri.Query.TrimStart('?').Split('&');
+        Assert.AreEqual(2, parameters.Length, patch.Uri.Query);
+        Assert.AreEqual("user_id=eq.user-1", parameters[0]);
+
+        // Backslashes verdoppelt, sonst liest PostgREST sie als Escape-Zeichen.
+        Assert.AreEqual(
+            "identity=" + @"in.(""exe:game:manual:tom jerry:c:\\games\\tom & jerry #2\\c++%.exe"")",
+            Uri.UnescapeDataString(parameters[1]));
+    }
+
+    [TestMethod]
     public async Task Uploading_a_row_again_lifts_an_earlier_deletion()
     {
         var (client, handler) = CreateClient();

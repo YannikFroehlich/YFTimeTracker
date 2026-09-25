@@ -2,6 +2,10 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.7.1 – 2026-09-25
+- Behoben: Gelöschte EXE-Zuordnungen und Erkennungsausschlüsse kamen beim Kontoabgleich nicht auf anderen PCs an, sobald ihr Pfad einen Backslash oder Zeichen wie `&`, `#` oder `+` enthielt – also praktisch immer. Sie wurden dort weiter angezeigt.
+- Behoben: Startete beim App-Start gleichzeitig ein Abgleich, konnte Supabase die Anmeldung als ungültig verwerfen, sodass man sich erneut anmelden musste.
+
 ## 1.7.0 – 2026-09-20
 - Neu: Sessions zeigen jetzt das Gerät, auf dem sie entstanden sind. Über dem Session-Verlauf lässt sich nach einem einzelnen PC filtern, und die Statistiken enthalten eine Auswertung „Nach Gerät“. Beides erscheint erst, wenn über das Konto Sessions von mehr als einem Gerät vorliegen – auf einem einzelnen PC bleibt die Ansicht unverändert.
 - Neu: Basis-Spielzeit je Spiel. In den Spieldetails lassen sich Stunden und Minuten hinterlegen, die vor der Aufzeichnung gespielt wurden. Sie zählen in der Gesamtspielzeit von Dashboard, Bibliothek und Spieldetails mit, bleiben aber aus Statistiken, Kalender, Jahresrückblick und den Tageslimits heraus: ohne Datum ließe sich der Wert keinem Tag zuordnen.

@@ -237,8 +237,13 @@ public sealed partial class SupabaseAccountClient(
             var table = TableFor(kind);
             foreach (var chunk in identities.Chunk(100))
             {
-                var list = string.Join(',', chunk.Select(identity => $"\"{identity.Replace("\"", "\\\"")}\""));
-                var filter = $"user_id=eq.{context.UserId}&identity=in.({list})";
+                // PostgREST liest in Anfuehrungszeichen den Backslash als Escape-Zeichen,
+                // und EXE-Kennungen enthalten Windows-Pfade: ohne Verdoppeln traefe
+                // "c:\games\x.exe" nie. Anschliessend URL-kodieren, sonst zerlegen
+                // & # + % aus Pfaden oder Tags die Abfrage.
+                var list = string.Join(',', chunk.Select(identity =>
+                    $"\"{identity.Replace("\\", "\\\\").Replace("\"", "\\\"")}\""));
+                var filter = $"user_id=eq.{context.UserId}&identity={Uri.EscapeDataString($"in.({list})")}";
                 await PatchAsync(
                     context, table, filter,
                     new Dictionary<string, object?> { ["deleted_at"] = clock.UtcNow },
