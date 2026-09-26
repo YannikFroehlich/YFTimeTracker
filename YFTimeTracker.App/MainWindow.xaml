@@ -483,6 +483,14 @@
                                                 Click="AccountSignUp_Click"
                                                 Content="Konto anlegen"
                                                 Style="{StaticResource YFOutlineButtonStyle}" />
+                                            <!--  Art. 13 DSGVO: Hinweis zum Zeitpunkt der Erhebung  -->
+                                            <TextBlock
+                                                FontSize="11"
+                                                Foreground="{ThemeResource YFMutedBrush}"
+                                                TextWrapping="Wrap">
+                                                <Run Text="Für das Konto gilt die" />
+                                                <Hyperlink NavigateUri="https://tracker.yfserver.de/datenschutz">Datenschutzerklärung</Hyperlink><Run Text="." />
+                                            </TextBlock>
                                         </StackPanel>
 
                                         <TextBlock
