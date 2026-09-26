@@ -59,7 +59,7 @@ eigenes Projekt.
 einfügen, **Run**. Das Skript ist idempotent und legt Tabellen, Indizes,
 Trigger, RLS-Policies und die Storage-Buckets `game-artwork` und `backups` an.
 
-Danach sollten unter **Table Editor** elf Tabellen stehen, jede mit aktivem RLS.
+Danach sollten unter **Table Editor** zwölf Tabellen stehen, jede mit aktivem RLS.
 
 > **Wichtig:** Ohne die Row-Level-Security-Policies aus dem Skript könnte jeder
 > angemeldete Benutzer des Projekts alle Daten lesen. Niemals ohne diesen Block
@@ -151,6 +151,15 @@ Funktionen, die ausschließlich Summen liefern:
 Nie heraus gehen `user_id`, E-Mail, EXE-Pfade, Geräte, Einstellungen,
 Ausschlüsse oder einzelne Sessions mit Uhrzeit. Laufende Sessions zählen erst
 nach ihrem Ende mit, weil die App sie erst dann hochlädt.
+
+### Kontaktformular der Website
+
+Die Edge Function `contact` ([`supabase/functions/contact/index.ts`](../supabase/functions/contact/index.ts))
+nimmt das Formular auf `/kontakt` entgegen, speichert die Nachricht in
+`contact_messages` und schickt sie per Strato-SMTP weiter. Einrichtung im
+Dashboard unter **Edge Functions**: Funktion `contact` mit diesem Code anlegen,
+*Verify JWT* aus, und unter **Secrets** `SMTP_PASSWORD` mit dem Passwort des
+Postfachs `webmaster@yfserver.de` setzen.
 
 ## Wie der Abgleich arbeitet
 
