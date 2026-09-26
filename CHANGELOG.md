@@ -2,6 +2,15 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.8.0 – 2026-09-27
+- Neu: Der Kontoabgleich läuft jetzt auch, sobald ein Spiel startet oder endet – nicht mehr nur beim Start der App. Eine beendete Session steht damit kurz nach dem Spielende im Konto und auf anderen PCs.
+- Neu: Die Website [tracker.yfserver.de](https://tracker.yfserver.de) nutzt dasselbe Konto wie die App. Dort lassen sich Spieler und Spiele suchen, Bestenlisten und Spieleseiten ansehen und ein eigenes öffentliches Profil anlegen. Jedes Konto bleibt privat, bis man das Profil dort ausdrücklich öffentlich schaltet; öffentlich sind nur Summen, keine einzelnen Sessions, Geräte oder Pfade.
+- Verbessert: Eine laufende Session wandert erst nach ihrem Ende ins Konto. Vorher konnte ein zweiter PC eine gerade laufende Session übernehmen, als verwaist schließen und sie dadurch auf dem spielenden PC teilen.
+- Verbessert: Ist das Passwort beim Anlegen eines Kontos zu kurz, erscheint eine deutsche Meldung statt des englischen Supabase-Texts. Neue Passwörter brauchen mindestens 8 Zeichen.
+- Verbessert: Das Profil verlinkt beim Anmelden die Datenschutzerklärung.
+- Entfernt: Der Untertitel „Local Edition“ in der Navigation.
+- Hinweis: Wer ein eigenes Supabase-Projekt betreibt, spielt `supabase/schema.sql` erneut ein (Schemaversion 4: öffentliche Profile, Konto löschen, Kontaktformular). Für das Kontaktformular kommt die Edge Function aus `supabase/functions/contact` dazu, siehe `docs/SUPABASE_SETUP.md`.
+
 ## 1.7.1 – 2026-09-25
 - Behoben: Gelöschte EXE-Zuordnungen und Erkennungsausschlüsse kamen beim Kontoabgleich nicht auf anderen PCs an, sobald ihr Pfad einen Backslash oder Zeichen wie `&`, `#` oder `+` enthielt – also praktisch immer. Sie wurden dort weiter angezeigt.
 - Behoben: Startete beim App-Start gleichzeitig ein Abgleich, konnte Supabase die Anmeldung als ungültig verwerfen, sodass man sich erneut anmelden musste.

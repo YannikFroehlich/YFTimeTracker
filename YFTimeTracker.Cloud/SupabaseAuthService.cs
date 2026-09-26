@@ -311,6 +311,15 @@ public sealed class SupabaseAuthService(
                 "Die E-Mail-Adresse ist noch nicht bestätigt. Bitte zuerst den Link aus der Bestätigungsmail öffnen.");
         }
 
+        // Supabase antwortet mit 422 und englischem Text; die Mindestlaenge steht
+        // im Projekt unter Authentication -> Email.
+        if (errorCode is "weak_password")
+        {
+            return new CloudAuthResult(
+                CloudAuthStatus.InvalidCredentials,
+                "Das Passwort ist zu schwach. Bitte mindestens 8 Zeichen verwenden.");
+        }
+
         if (statusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized)
         {
             return new CloudAuthResult(

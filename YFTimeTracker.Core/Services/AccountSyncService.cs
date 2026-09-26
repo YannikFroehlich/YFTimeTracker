@@ -69,6 +69,7 @@ public sealed class AccountSyncService(
 
             progress?.Report(new CloudProgress("Konto wird abgefragt", 1, 4));
             var remote = await syncClient.FetchAsync(progress, cancellationToken);
+            (local, remote) = ExcludeOpenSessions(local, remote);
 
             var plans = BuildPlans(local, remote);
 
@@ -165,6 +166,34 @@ public sealed class AccountSyncService(
     // -------------------------------------------------------------------------
     // Planung
     // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Nimmt laufende Sessions in beide Richtungen aus dem Abgleich.
+    ///
+    /// Eine offene Session gehoert dem Geraet, auf dem das Spiel laeuft. Laege
+    /// sie im Konto, uebernaehme ein zweiter PC sie als offen, faende dort
+    /// keinen passenden Prozess und schloesse sie; der naechste Abgleich
+    /// schriebe dieses Ende auf das spielende Geraet zurueck und teilte dort die
+    /// laufende Session. Deshalb wandert eine Session erst, wenn sie beendet ist.
+    /// Geloeschte offene Sessions aus dem Konto bleiben drin, damit die
+    /// Loeschung ankommt.
+    /// </summary>
+    public static (LocalSyncSnapshot Local, AccountSnapshot Remote) ExcludeOpenSessions(
+        LocalSyncSnapshot local,
+        AccountSnapshot remote)
+    {
+        var closedLocal = local.Sessions.Entries
+            .Where(entry => local.Sessions.ByIdentity.TryGetValue(entry.Identity, out var session)
+                && session.EndedAtUtc is not null)
+            .ToList();
+        var closedRemote = remote.Sessions
+            .Where(session => session.EndedAtUtc is not null || session.DeletedAt is not null)
+            .ToList();
+
+        return (
+            local with { Sessions = local.Sessions with { Entries = closedLocal } },
+            remote with { Sessions = closedRemote });
+    }
 
     private static Dictionary<SyncEntityKind, SyncPlan> BuildPlans(LocalSyncSnapshot local, AccountSnapshot remote)
     {

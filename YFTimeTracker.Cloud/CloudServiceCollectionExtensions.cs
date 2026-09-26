@@ -19,6 +19,7 @@ public static class CloudServiceCollectionExtensions
         services.AddSingleton<IAccountSyncClient>(provider => provider.GetRequiredService<SupabaseAccountClient>());
         services.AddSingleton<ICloudBackupClient>(provider => provider.GetRequiredService<SupabaseAccountClient>());
         services.AddSingleton<IAccountSyncService, AccountSyncService>();
+        services.AddSingleton<SessionSyncTrigger>();
         return services;
     }
 }

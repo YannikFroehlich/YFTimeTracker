@@ -113,6 +113,7 @@ public partial class App : Application
         Services.GetRequiredService<ITrayService>().Initialize(MainWindow);
         Services.GetRequiredService<IPlaytimeLimitNotifier>().Initialize();
         Services.GetRequiredService<IUpdateNotificationLogger>().Initialize();
+        Services.GetRequiredService<SessionSyncTrigger>().Initialize();
         MainWindow.Activate();
 
         var setupWasShown = await MainWindow.ShowFirstRunSetupIfRequiredAsync();
@@ -184,6 +185,10 @@ public partial class App : Application
         {
             if (app.host is not null)
             {
+                // Vor dem Stoppen abmelden: das Schliessen offener Sessions soll
+                // keinen Abgleich mehr anstossen, der mit dem Beenden des Hosts
+                // um die Datenbank konkurriert. Der naechste Start gleicht ab.
+                app.host.Services.GetRequiredService<SessionSyncTrigger>().Dispose();
                 await app.host.Services.GetRequiredService<IGameTrackingService>().StopAsync(CancellationToken.None);
                 app.host.Services.GetRequiredService<IPlaytimeLimitNotifier>().Dispose();
                 app.host.Services.GetRequiredService<IUpdateNotificationLogger>().Dispose();
