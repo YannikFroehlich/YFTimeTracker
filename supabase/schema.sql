@@ -555,3 +555,220 @@ revoke all on function public.search_players(text) from public;
 revoke all on function public.get_player_profile(text) from public;
 grant execute on function public.search_players(text) to anon, authenticated;
 grant execute on function public.get_player_profile(text) to anon, authenticated;
+
+-- -----------------------------------------------------------------------------
+-- Entdecken: Startseite, Bestenlisten und Spieleseiten der Website
+--
+-- Zaehlt ausschliesslich oeffentliche Profile. Spiele werden ueber den Namen
+-- zusammengefasst (ohne Gross-/Kleinschreibung), weil dasselbe Spiel bei zwei
+-- Spielern aus verschiedenen Launchern stammen kann.
+--
+-- ponytail: rechnet bei jedem Aufruf ueber alle oeffentlichen Profile. Ab
+-- einigen tausend Spielern als materialisierte Sicht per Cron auffrischen.
+-- -----------------------------------------------------------------------------
+
+-- Beendete Sessions oeffentlicher Profile, je Zeile mit Spiel, Tag und Dauer.
+create or replace view yf_private.public_sessions as
+select p.user_id,
+       g.name as game_name,
+       g.source,
+       s.ended_at_utc,
+       (s.started_at_utc at time zone 'Europe/Berlin')::date as day,
+       coalesce(s.duration_seconds,
+           extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint) as seconds
+from public.player_profiles p
+join public.games g
+    on g.user_id = p.user_id
+   and g.deleted_at is null
+join public.game_sessions s
+    on s.user_id = g.user_id
+   and s.game_identity = g.identity
+   and s.deleted_at is null
+   and s.ended_at_utc is not null
+where p.is_public;
+
+-- Spielzeit je Spiel und oeffentlichem Profil, genau wie auf der Profilseite
+-- (inklusive Basis-Spielzeit).
+create or replace view yf_private.public_game_totals as
+select p.user_id, t.*
+from public.player_profiles p
+cross join lateral yf_private.game_totals(p.user_id) t
+where p.is_public;
+
+revoke all on yf_private.public_sessions from public, anon, authenticated;
+revoke all on yf_private.public_game_totals from public, anon, authenticated;
+
+-- Name, Anzeigename und Farbe eines Spielers fuer Listen.
+create or replace function yf_private.player_card(p_user_id uuid)
+returns jsonb
+language sql
+stable
+set search_path = ''
+as $player_card$
+    select jsonb_build_object(
+        'username',     p.username,
+        'display_name', pr.display_name,
+        'accent_color', pr.accent_color)
+    from public.player_profiles p
+    left join public.profiles pr on pr.user_id = p.user_id
+    where p.user_id = p_user_id
+$player_card$;
+
+revoke all on function yf_private.player_card(uuid) from public, anon, authenticated;
+
+-- Alles fuer die Startseite in einem Aufruf.
+create or replace function public.get_discover()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $get_discover$
+    with today as (
+        select (now() at time zone 'Europe/Berlin')::date as day
+    ),
+    week as (
+        select s.user_id, sum(s.seconds)::bigint as seconds
+        from yf_private.public_sessions s, today
+        where s.day > today.day - 7
+        group by s.user_id
+    ),
+    month as (
+        select s.user_id, sum(s.seconds)::bigint as seconds
+        from yf_private.public_sessions s, today
+        where s.day > today.day - 30
+        group by s.user_id
+    ),
+    alltime as (
+        select user_id, sum(total_seconds)::bigint as seconds
+        from yf_private.public_game_totals
+        group by user_id
+    ),
+    popular as (
+        select min(s.game_name) as name,
+               mode() within group (order by s.source) as source,
+               count(distinct s.user_id) as players,
+               sum(s.seconds)::bigint as seconds
+        from yf_private.public_sessions s, today
+        where s.day > today.day - 30
+        group by lower(s.game_name)
+    ),
+    last_played as (
+        select distinct on (user_id) user_id, game_name, ended_at_utc
+        from yf_private.public_sessions
+        order by user_id, ended_at_utc desc
+    )
+    select jsonb_build_object(
+        'stats', jsonb_build_object(
+            'players',       (select count(*) from public.player_profiles where is_public),
+            'total_seconds', coalesce((select sum(seconds) from alltime), 0),
+            'games',         (select count(distinct lower(name)) from yf_private.public_game_totals),
+            'sessions',      (select count(*) from yf_private.public_sessions)),
+        'leaderboard_week', coalesce((
+            select jsonb_agg(yf_private.player_card(user_id) || jsonb_build_object('seconds', seconds)
+                             order by seconds desc)
+            from (select * from week order by seconds desc limit 10) ranked), '[]'::jsonb),
+        'leaderboard_month', coalesce((
+            select jsonb_agg(yf_private.player_card(user_id) || jsonb_build_object('seconds', seconds)
+                             order by seconds desc)
+            from (select * from month order by seconds desc limit 10) ranked), '[]'::jsonb),
+        'leaderboard_all', coalesce((
+            select jsonb_agg(yf_private.player_card(user_id) || jsonb_build_object('seconds', seconds)
+                             order by seconds desc)
+            from (select * from alltime where seconds > 0 order by seconds desc limit 10) ranked), '[]'::jsonb),
+        'popular_games', coalesce((
+            select jsonb_agg(jsonb_build_object(
+                       'name', name, 'source', source, 'players', players, 'seconds', seconds)
+                   order by players desc, seconds desc)
+            from (select * from popular order by players desc, seconds desc limit 8) ranked), '[]'::jsonb),
+        'recently_active', coalesce((
+            select jsonb_agg(yf_private.player_card(user_id)
+                             || jsonb_build_object('game', game_name, 'last_played_at', ended_at_utc)
+                             order by ended_at_utc desc)
+            from (select * from last_played order by ended_at_utc desc limit 6) recent), '[]'::jsonb),
+        'newest', coalesce((
+            select jsonb_agg(yf_private.player_card(user_id)
+                             || jsonb_build_object('member_since', created_at)
+                             order by created_at desc)
+            from (select user_id, created_at from public.player_profiles
+                  where is_public order by created_at desc limit 6) fresh), '[]'::jsonb))
+$get_discover$;
+
+-- Spiele, die oeffentliche Spieler gespielt haben, nach Name.
+create or replace function public.search_games(query text)
+returns table (
+    name          text,
+    source        smallint,
+    players       bigint,
+    total_seconds bigint)
+language sql
+stable
+security definer
+set search_path = ''
+as $search_games$
+    with pattern as (
+        select '%' || replace(replace(replace(trim(query), '\', '\\'), '%', '\%'), '_', '\_') || '%' as value
+    )
+    select min(t.name),
+           mode() within group (order by t.source),
+           count(distinct t.user_id),
+           sum(t.total_seconds)::bigint
+    from yf_private.public_game_totals t
+    cross join pattern
+    where length(trim(query)) >= 2
+      and t.name ilike pattern.value
+    group by lower(t.name)
+    order by count(distinct t.user_id) desc, sum(t.total_seconds) desc
+    limit 10
+$search_games$;
+
+-- Ein Spiel: Summen, Rangliste der oeffentlichen Spieler und die letzten 30
+-- Tage. null, wenn es kein oeffentlicher Spieler gespielt hat.
+create or replace function public.get_game(p_name text)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $get_game$
+    with players as (
+        select *
+        from yf_private.public_game_totals
+        where lower(name) = lower(trim(p_name))
+    ),
+    days as (
+        select d::date as day, coalesce(sum(s.seconds), 0)::bigint as seconds
+        from generate_series(
+                 ((now() at time zone 'Europe/Berlin')::date - 29)::timestamp,
+                 (now() at time zone 'Europe/Berlin')::date::timestamp,
+                 interval '1 day') as d
+        left join yf_private.public_sessions s
+            on s.day = d::date
+           and lower(s.game_name) = lower(trim(p_name))
+        group by d
+    )
+    select case when not exists (select 1 from players) then null else jsonb_build_object(
+        'name',          (select name from players order by total_seconds desc limit 1),
+        'source',        (select mode() within group (order by source) from players),
+        'players',       (select count(*) from players),
+        'total_seconds', (select sum(total_seconds) from players),
+        'session_count', (select sum(session_count) from players),
+        'ranking', (
+            select jsonb_agg(yf_private.player_card(user_id) || jsonb_build_object(
+                       'seconds',        total_seconds,
+                       'session_count',  session_count,
+                       'last_played_at', last_played_at)
+                   order by total_seconds desc)
+            from (select * from players order by total_seconds desc limit 50) ranked),
+        'daily', (
+            select jsonb_agg(jsonb_build_object('day', day, 'seconds', seconds) order by day)
+            from days))
+    end
+$get_game$;
+
+revoke all on function public.get_discover() from public;
+revoke all on function public.search_games(text) from public;
+revoke all on function public.get_game(text) from public;
+grant execute on function public.get_discover() to anon, authenticated;
+grant execute on function public.search_games(text) to anon, authenticated;
+grant execute on function public.get_game(text) to anon, authenticated;
