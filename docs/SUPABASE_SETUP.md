@@ -24,7 +24,9 @@ Sicherungsliste zurück. Eine Sicherung desselben Tages wird nie überschrieben,
 4. Zurück in der App **Anmelden**
 
 Direkt nach der Anmeldung läuft der erste Abgleich. Danach gleicht die App bei
-jedem Start automatisch ab; **Jetzt abgleichen** im Profil stößt es von Hand an.
+jedem Start sowie bei jedem Spielstart und -ende automatisch ab; **Jetzt abgleichen**
+im Profil stößt es von Hand an. Eine laufende Session bleibt bis zu ihrem Ende nur
+auf dem PC, auf dem gespielt wird – erst die beendete Session wandert ins Konto.
 
 > Der Bestätigungslink leitet nach erfolgreicher Bestätigung auf
 > `localhost:3000` weiter. Weil dort nichts läuft, zeigt der Browser
