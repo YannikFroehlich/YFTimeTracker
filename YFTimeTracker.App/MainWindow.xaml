@@ -93,11 +93,6 @@
                             FontWeight="SemiBold"
                             Foreground="{ThemeResource YFTextBrush}"
                             Text="YFTimeTracker" />
-                        <TextBlock
-                            FontSize="10"
-                            CharacterSpacing="80"
-                            Foreground="{ThemeResource YFBlueTextBrush}"
-                            Text="LOCAL EDITION" />
                     </StackPanel>
                 </Grid>
             </NavigationView.PaneHeader>
