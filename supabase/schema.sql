@@ -283,6 +283,7 @@ create index if not exists sync_runs_user_idx           on public.sync_runs (use
 create or replace function public.touch_updated_at()
 returns trigger
 language plpgsql
+set search_path = ''
 as $touch$
 begin
     new.updated_at := now();

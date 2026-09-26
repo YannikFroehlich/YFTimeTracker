@@ -90,6 +90,20 @@ public sealed class SupabaseAuthServiceTests
     }
 
     [TestMethod]
+    public async Task Too_short_password_on_sign_up_gets_a_german_message()
+    {
+        var (service, handler, _, _, _) = CreateService();
+        handler.RespondWith(
+            HttpStatusCode.UnprocessableEntity,
+            """{"error_code":"weak_password","msg":"Password should be at least 8 characters."}""");
+
+        var result = await service.SignUpAsync("spieler@example.de", "kurz", CancellationToken.None);
+
+        Assert.AreEqual(CloudAuthStatus.InvalidCredentials, result.Status);
+        StringAssert.Contains(result.Message, "mindestens 8 Zeichen");
+    }
+
+    [TestMethod]
     public async Task Sign_up_without_a_token_asks_the_user_to_confirm_the_email()
     {
         var (service, handler, secrets, _, _) = CreateService();
