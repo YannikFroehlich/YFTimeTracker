@@ -773,3 +773,29 @@ revoke all on function public.get_game(text) from public;
 grant execute on function public.get_discover() to anon, authenticated;
 grant execute on function public.search_games(text) to anon, authenticated;
 grant execute on function public.get_game(text) to anon, authenticated;
+
+-- -----------------------------------------------------------------------------
+-- Konto loeschen (Recht auf Loeschung, Art. 17 DSGVO)
+--
+-- Loescht den angemeldeten Benutzer. Alle Tabellen haengen per "on delete
+-- cascade" an auth.users und verschwinden mit. Dateien im Storage raeumt die
+-- Website vorher ueber die Storage-API ab: Supabase sperrt direktes Loeschen in
+-- storage.objects, und ohne das blieben Cover und Sicherungen verwaist liegen.
+-- -----------------------------------------------------------------------------
+create or replace function public.delete_my_account()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $delete_my_account$
+begin
+    if (select auth.uid()) is null then
+        raise exception 'Nicht angemeldet.' using errcode = '42501';
+    end if;
+
+    delete from auth.users where id = (select auth.uid());
+end
+$delete_my_account$;
+
+revoke all on function public.delete_my_account() from public, anon;
+grant execute on function public.delete_my_account() to authenticated;
