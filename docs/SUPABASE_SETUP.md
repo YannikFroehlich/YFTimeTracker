@@ -29,7 +29,7 @@ im Profil stößt es von Hand an. Eine laufende Session bleibt bis zu ihrem Ende
 auf dem PC, auf dem gespielt wird – erst die beendete Session wandert ins Konto.
 
 > Der Bestätigungslink führt nach erfolgreicher Bestätigung auf die Website
-> ([yf-time-tracker-web.vercel.app](https://yf-time-tracker-web.vercel.app)).
+> ([tracker.yfserver.de](https://tracker.yfserver.de)).
 > Dort meldet man sich mit demselben Konto an und kann unter „Mein Profil“ ein
 > öffentliches Profil anlegen.
 
