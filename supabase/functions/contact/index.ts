@@ -13,7 +13,6 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const allowedOrigins = [
   'https://tracker.yfserver.de',
-  'https://yf-time-tracker-web.vercel.app',
   'http://localhost:5173',
 ]
 
