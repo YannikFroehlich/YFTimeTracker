@@ -1,5 +1,5 @@
 -- =============================================================================
--- YFTimeTracker - Supabase-Schema (Schemaversion 3)
+-- YFTimeTracker - Supabase-Schema (Schemaversion 4)
 --
 -- Einspielen: Supabase-Dashboard -> SQL Editor -> Inhalt einfuegen -> "Run".
 -- Das Skript ist idempotent und kann gefahrlos erneut ausgefuehrt werden.
@@ -364,3 +364,194 @@ drop policy if exists "backups_owner_access" on storage.objects;
 create policy "backups_owner_access" on storage.objects for all to authenticated
     using (bucket_id = 'backups' and (storage.foldername(name))[1] = (select auth.uid())::text)
     with check (bucket_id = 'backups' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- =============================================================================
+-- Oeffentliche Spielerprofile (seit Schemaversion 4, fuer die Website)
+--
+-- Eigene Tabelle statt neuer Spalten in "profiles": die App schreibt "profiles"
+-- per Upsert und koennte die oeffentlichen Einstellungen sonst ueberschreiben.
+-- Jedes Konto ist privat, bis es auf der Website einen Benutzernamen waehlt und
+-- das Profil ausdruecklich oeffentlich schaltet.
+-- =============================================================================
+create table if not exists public.player_profiles (
+    user_id    uuid primary key references auth.users (id) on delete cascade,
+    username   text        not null,
+    is_public  boolean     not null default false,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    constraint player_profiles_username_format check (username ~ '^[A-Za-z0-9_]{3,20}$')
+);
+
+-- Gross-/Kleinschreibung zaehlt nicht: "Yannik" und "yannik" sind derselbe Name.
+create unique index if not exists player_profiles_username_unique
+    on public.player_profiles (lower(username));
+
+drop trigger if exists player_profiles_touch_updated_at on public.player_profiles;
+create trigger player_profiles_touch_updated_at before insert or update on public.player_profiles
+    for each row execute function public.touch_updated_at();
+
+alter table public.player_profiles enable row level security;
+drop policy if exists player_profiles_owner_access on public.player_profiles;
+create policy player_profiles_owner_access on public.player_profiles for all to authenticated
+    using ((select auth.uid()) = user_id)
+    with check ((select auth.uid()) = user_id);
+
+-- -----------------------------------------------------------------------------
+-- Lesen fremder Profile
+--
+-- Die Basistabellen bleiben per RLS gesperrt. Fremde Daten gibt es nur ueber
+-- die beiden Funktionen unten, die als "security definer" laufen und genau die
+-- freigegebenen Summen liefern: nie user_id, E-Mail, EXE-Pfade, Geraete,
+-- Einstellungen oder einzelne Sessions.
+--
+-- Hilfsfunktionen liegen im Schema yf_private. Das ist nicht ueber die API
+-- erreichbar; sonst liesse sich die Spielzeit jedes Kontos per user_id abfragen.
+-- -----------------------------------------------------------------------------
+create schema if not exists yf_private;
+revoke all on schema yf_private from public, anon, authenticated;
+
+-- Spielzeit je Spiel: beendete Sessions plus Basis-Spielzeit. Spiele ohne jede
+-- Spielzeit (nur in der Bibliothek erkannt) fallen heraus.
+create or replace function yf_private.game_totals(p_user_id uuid)
+returns table (
+    name           text,
+    source         smallint,
+    total_seconds  bigint,
+    session_count  bigint,
+    last_played_at timestamptz)
+language sql
+stable
+set search_path = ''
+as $game_totals$
+    select g.name,
+           g.source,
+           (coalesce(sum(coalesce(s.duration_seconds,
+                extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint)), 0)
+            + coalesce(g.baseline_minutes, 0)::bigint * 60)::bigint,
+           count(s.id),
+           max(s.ended_at_utc)
+    from public.games g
+    left join public.game_sessions s
+        on s.user_id = g.user_id
+       and s.game_identity = g.identity
+       and s.deleted_at is null
+       and s.ended_at_utc is not null
+    where g.user_id = p_user_id
+      and g.deleted_at is null
+    group by g.id, g.name, g.source, g.baseline_minutes
+    having coalesce(sum(coalesce(s.duration_seconds,
+                extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint)), 0)
+           + coalesce(g.baseline_minutes, 0) * 60 > 0
+$game_totals$;
+
+revoke all on function yf_private.game_totals(uuid) from public, anon, authenticated;
+
+-- Suche nach oeffentlichen Spielern ueber Benutzer- oder Anzeigename.
+create or replace function public.search_players(query text)
+returns table (
+    username      text,
+    display_name  text,
+    accent_color  text,
+    total_seconds bigint)
+language sql
+stable
+security definer
+set search_path = ''
+as $search_players$
+    with pattern as (
+        -- % und _ aus der Eingabe gelten woertlich, nicht als Platzhalter.
+        select '%' || replace(replace(replace(trim(query), '\', '\\'), '%', '\%'), '_', '\_') || '%' as value
+    )
+    select p.username,
+           pr.display_name,
+           pr.accent_color,
+           coalesce((select sum(t.total_seconds) from yf_private.game_totals(p.user_id) t), 0)::bigint
+    from public.player_profiles p
+    left join public.profiles pr on pr.user_id = p.user_id
+    cross join pattern
+    where p.is_public
+      and length(trim(query)) >= 2
+      and (p.username ilike pattern.value or pr.display_name ilike pattern.value)
+    order by lower(p.username) = lower(trim(query)) desc, lower(p.username)
+    limit 20
+$search_players$;
+
+-- Ein Profil als JSON. Liefert null, wenn es den Namen nicht gibt oder das
+-- Profil privat ist - ausser fuer den Eigentuemer selbst, der sein privates
+-- Profil auf der Website als Vorschau sieht.
+create or replace function public.get_player_profile(p_username text)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $get_player_profile$
+declare
+    target public.player_profiles;
+    today  date := (now() at time zone 'Europe/Berlin')::date;
+begin
+    select * into target
+    from public.player_profiles
+    where lower(username) = lower(trim(p_username));
+
+    -- "is not distinct from" statt "=": ohne Anmeldung ist auth.uid() null, und
+    -- "= null" ergaebe null statt false - das private Profil waere sichtbar.
+    if target.user_id is null
+        or not (target.is_public or target.user_id is not distinct from (select auth.uid()))
+    then
+        return null;
+    end if;
+
+    return (
+        with games as (
+            select * from yf_private.game_totals(target.user_id)
+        ),
+        -- ponytail: feste Zeitzone, Session zaehlt voll zum Starttag. Parameter
+        -- p_tz und Aufteilen ueber Mitternacht ergaenzen, falls das je stoert.
+        days as (
+            select day::date as day,
+                   coalesce(sum(coalesce(s.duration_seconds,
+                       extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint)), 0)::bigint as seconds
+            from generate_series((today - 29)::timestamp, today::timestamp, interval '1 day') as day
+            left join public.game_sessions s
+                on s.user_id = target.user_id
+               and s.deleted_at is null
+               and s.ended_at_utc is not null
+               and (s.started_at_utc at time zone 'Europe/Berlin')::date = day::date
+               and exists (
+                   select 1 from public.games g
+                   where g.user_id = s.user_id
+                     and g.identity = s.game_identity
+                     and g.deleted_at is null)
+            group by day
+        )
+        select jsonb_build_object(
+            'username',       target.username,
+            'display_name',   pr.display_name,
+            'accent_color',   pr.accent_color,
+            'is_public',      target.is_public,
+            'member_since',   target.created_at,
+            'total_seconds',  coalesce((select sum(total_seconds) from games), 0),
+            'session_count',  coalesce((select sum(session_count) from games), 0),
+            'last_played_at', (select max(last_played_at) from games),
+            'games', coalesce((
+                select jsonb_agg(jsonb_build_object(
+                    'name',           name,
+                    'source',         source,
+                    'total_seconds',  total_seconds,
+                    'session_count',  session_count,
+                    'last_played_at', last_played_at) order by total_seconds desc)
+                from games), '[]'::jsonb),
+            'daily', (
+                select jsonb_agg(jsonb_build_object('day', day, 'seconds', seconds) order by day)
+                from days))
+        from (select target.user_id as user_id) owner
+        left join public.profiles pr on pr.user_id = owner.user_id
+    );
+end
+$get_player_profile$;
+
+revoke all on function public.search_players(text) from public;
+revoke all on function public.get_player_profile(text) from public;
+grant execute on function public.search_players(text) to anon, authenticated;
+grant execute on function public.get_player_profile(text) to anon, authenticated;

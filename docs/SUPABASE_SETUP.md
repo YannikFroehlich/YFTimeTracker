@@ -59,7 +59,7 @@ eigenes Projekt.
 einfügen, **Run**. Das Skript ist idempotent und legt Tabellen, Indizes,
 Trigger, RLS-Policies und die Storage-Buckets `game-artwork` und `backups` an.
 
-Danach sollten unter **Table Editor** zehn Tabellen stehen, jede mit aktivem RLS.
+Danach sollten unter **Table Editor** elf Tabellen stehen, jede mit aktivem RLS.
 
 > **Wichtig:** Ohne die Row-Level-Security-Policies aus dem Skript könnte jeder
 > angemeldete Benutzer des Projekts alle Daten lesen. Niemals ohne diesen Block
@@ -73,7 +73,9 @@ Spalten per `alter table … add column if not exists` nach — seit Version 3
 Geräteverweise in `game_executables`, `game_sessions` und `sync_runs` durch
 Schlüssel über `(device_id, user_id)`, damit eine Zeile nur auf ein Gerät des
 eigenen Kontos zeigen kann (erfordert Postgres 15 oder neuer, Standard bei
-Supabase).
+Supabase). Seit Version 4 legt es außerdem die Tabelle `player_profiles` und die
+Funktionen `search_players` und `get_player_profile` für öffentliche Profile auf
+der Website an (siehe [Öffentliche Profile](#öffentliche-profile-website)).
 
 Wer von Schemaversion 1 kommt (geräteorientiert, vor dem Kontoabgleich), spielt
 vorher [`supabase/reset-schema-v1.sql`](../supabase/reset-schema-v1.sql) ein. Das
@@ -121,6 +123,34 @@ veröffentlichen. `New-Release.ps1` prüft außerdem, dass eine vorhandene
 
 Für ein Einzelnutzer-Projekt: **Authentication → Sign In / Providers → Email** →
 *Confirm email* aus. Dann meldet „Konto anlegen" direkt an.
+
+### 4. Adresse der Website eintragen
+
+Bestätigungs- und Passwort-Links führen auf die **Site URL** des Projekts. Ohne
+Website steht dort `localhost:3000` (daher die Fehlerseite nach der
+Bestätigung). Mit Website: **Authentication → URL Configuration** →
+*Site URL* auf die Adresse der Website setzen und unter *Redirect URLs*
+zusätzlich `<website>/passwort-neu` sowie für die Entwicklung
+`http://localhost:5173/**` eintragen.
+
+## Öffentliche Profile (Website)
+
+Die Website liest dasselbe Supabase-Projekt. Jedes Konto ist **privat**, bis man
+auf der Website einen Benutzernamen wählt und „Profil öffentlich“ einschaltet.
+Das steht in `player_profiles` – bewusst getrennt von `profiles`, das die App
+beim Abgleich überschreibt.
+
+Die Basistabellen bleiben per RLS gesperrt. Fremde Profile gibt es nur über zwei
+Funktionen, die ausschließlich Summen liefern:
+
+| Funktion | Liefert |
+|---|---|
+| `search_players(query)` | Benutzername, Anzeigename, Akzentfarbe, Gesamtspielzeit – nur öffentliche Profile, höchstens 20 |
+| `get_player_profile(username)` | Gesamtzeit, Anzahl Sessions, zuletzt gespielt, Zeit je Spiel, Spielzeit der letzten 30 Tage je Tag |
+
+Nie heraus gehen `user_id`, E-Mail, EXE-Pfade, Geräte, Einstellungen,
+Ausschlüsse oder einzelne Sessions mit Uhrzeit. Laufende Sessions zählen erst
+nach ihrem Ende mit, weil die App sie erst dann hochlädt.
 
 ## Wie der Abgleich arbeitet
 
