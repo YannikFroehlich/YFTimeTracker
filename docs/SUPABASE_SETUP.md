@@ -28,10 +28,10 @@ jedem Start sowie bei jedem Spielstart und -ende automatisch ab; **Jetzt abgleic
 im Profil stößt es von Hand an. Eine laufende Session bleibt bis zu ihrem Ende nur
 auf dem PC, auf dem gespielt wird – erst die beendete Session wandert ins Konto.
 
-> Der Bestätigungslink leitet nach erfolgreicher Bestätigung auf
-> `localhost:3000` weiter. Weil dort nichts läuft, zeigt der Browser
-> `ERR_CONNECTION_REFUSED`. Die Bestätigung ist zu diesem Zeitpunkt bereits
-> erfolgt — die Fehlerseite betrifft nur die Weiterleitung.
+> Der Bestätigungslink führt nach erfolgreicher Bestätigung auf die Website
+> ([yf-time-tracker-web.vercel.app](https://yf-time-tracker-web.vercel.app)).
+> Dort meldet man sich mit demselben Konto an und kann unter „Mein Profil“ ein
+> öffentliches Profil anlegen.
 
 ### Was im Konto landet
 
@@ -130,7 +130,7 @@ Bestätigungs- und Passwort-Links führen auf die **Site URL** des Projekts. Ohn
 Website steht dort `localhost:3000` (daher die Fehlerseite nach der
 Bestätigung). Mit Website: **Authentication → URL Configuration** →
 *Site URL* auf die Adresse der Website setzen und unter *Redirect URLs*
-zusätzlich `<website>/passwort-neu` sowie für die Entwicklung
+zusätzlich `<website>/**` sowie für die Entwicklung
 `http://localhost:5173/**` eintragen.
 
 ## Öffentliche Profile (Website)
