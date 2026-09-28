@@ -2,6 +2,9 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.8.1 – 2026-09-28
+- Verbessert: Aktualisierte Test- und Release-Werkzeuge. An der App selbst ändert sich nichts.
+
 ## 1.8.0 – 2026-09-27
 - Neu: Der Kontoabgleich läuft jetzt auch, sobald ein Spiel startet oder endet – nicht mehr nur beim Start der App. Eine beendete Session steht damit kurz nach dem Spielende im Konto und auf anderen PCs.
 - Neu: Die Website [tracker.yfserver.de](https://tracker.yfserver.de) nutzt dasselbe Konto wie die App. Dort lassen sich Spieler und Spiele suchen, Bestenlisten und Spieleseiten ansehen und ein eigenes öffentliches Profil anlegen. Jedes Konto bleibt privat, bis man das Profil dort ausdrücklich öffentlich schaltet; öffentlich sind nur Summen, keine einzelnen Sessions, Geräte oder Pfade.
