@@ -1,5 +1,5 @@
 -- =============================================================================
--- YFTimeTracker - Supabase-Schema (Schemaversion 4)
+-- YFTimeTracker - Supabase-Schema (Schemaversion 5)
 --
 -- Einspielen: Supabase-Dashboard -> SQL Editor -> Inhalt einfuegen -> "Run".
 -- Das Skript ist idempotent und kann gefahrlos erneut ausgefuehrt werden.
@@ -397,6 +397,26 @@ create policy player_profiles_owner_access on public.player_profiles for all to 
     using ((select auth.uid()) = user_id)
     with check ((select auth.uid()) = user_id);
 
+-- Seit Schemaversion 5: "Ueber mich" und was ein oeffentliches Profil zeigt.
+-- Alles standardmaessig an, damit bestehende oeffentliche Profile unveraendert
+-- bleiben. Die Funktionen unten setzen die Schalter durch, nicht die Website.
+alter table public.player_profiles add column if not exists bio text;
+alter table public.player_profiles add column if not exists show_in_leaderboards boolean not null default true;
+alter table public.player_profiles add column if not exists show_games boolean not null default true;
+alter table public.player_profiles add column if not exists show_activity boolean not null default true;
+
+do $player_profiles_bio$
+begin
+    if not exists (
+        select 1 from pg_constraint
+        where conname = 'player_profiles_bio_length' and conrelid = 'public.player_profiles'::regclass)
+    then
+        alter table public.player_profiles
+            add constraint player_profiles_bio_length check (char_length(bio) <= 200);
+    end if;
+end
+$player_profiles_bio$;
+
 -- -----------------------------------------------------------------------------
 -- Lesen fremder Profile
 --
@@ -480,6 +500,9 @@ $search_players$;
 -- Ein Profil als JSON. Liefert null, wenn es den Namen nicht gibt oder das
 -- Profil privat ist - ausser fuer den Eigentuemer selbst, der sein privates
 -- Profil auf der Website als Vorschau sieht.
+--
+-- Blendet der Eigentuemer Spiele oder Aktivitaet aus, sind "games" bzw.
+-- "daily" und alle Zeitpunkte fuer andere null. Er selbst bekommt alles.
 create or replace function public.get_player_profile(p_username text)
 returns jsonb
 language plpgsql
@@ -488,8 +511,11 @@ security definer
 set search_path = ''
 as $get_player_profile$
 declare
-    target public.player_profiles;
-    today  date := (now() at time zone 'Europe/Berlin')::date;
+    target        public.player_profiles;
+    today         date := (now() at time zone 'Europe/Berlin')::date;
+    is_owner      boolean;
+    sees_games    boolean;
+    sees_activity boolean;
 begin
     select * into target
     from public.player_profiles
@@ -497,11 +523,13 @@ begin
 
     -- "is not distinct from" statt "=": ohne Anmeldung ist auth.uid() null, und
     -- "= null" ergaebe null statt false - das private Profil waere sichtbar.
-    if target.user_id is null
-        or not (target.is_public or target.user_id is not distinct from (select auth.uid()))
-    then
+    is_owner := target.user_id is not distinct from (select auth.uid());
+    if target.user_id is null or not (target.is_public or is_owner) then
         return null;
     end if;
+
+    sees_games    := target.show_games or is_owner;
+    sees_activity := target.show_activity or is_owner;
 
     return (
         with games as (
@@ -531,21 +559,26 @@ begin
             'display_name',   pr.display_name,
             'accent_color',   pr.accent_color,
             'is_public',      target.is_public,
+            'bio',            target.bio,
+            'show_in_leaderboards', target.show_in_leaderboards,
+            'show_games',     target.show_games,
+            'show_activity',  target.show_activity,
             'member_since',   target.created_at,
             'total_seconds',  coalesce((select sum(total_seconds) from games), 0),
             'session_count',  coalesce((select sum(session_count) from games), 0),
-            'last_played_at', (select max(last_played_at) from games),
-            'games', coalesce((
+            'last_played_at', case when sees_activity then (select max(last_played_at) from games) end,
+            'games', case when sees_games then coalesce((
                 select jsonb_agg(jsonb_build_object(
                     'name',           name,
                     'source',         source,
                     'total_seconds',  total_seconds,
                     'session_count',  session_count,
-                    'last_played_at', last_played_at) order by total_seconds desc)
-                from games), '[]'::jsonb),
-            'daily', (
+                    'last_played_at', case when sees_activity then last_played_at end)
+                    order by total_seconds desc)
+                from games), '[]'::jsonb) end,
+            'daily', case when sees_activity then (
                 select jsonb_agg(jsonb_build_object('day', day, 'seconds', seconds) order by day)
-                from days))
+                from days) end)
         from (select target.user_id as user_id) owner
         left join public.profiles pr on pr.user_id = owner.user_id
     );
@@ -569,6 +602,8 @@ grant execute on function public.get_player_profile(text) to anon, authenticated
 -- -----------------------------------------------------------------------------
 
 -- Beendete Sessions oeffentlicher Profile, je Zeile mit Spiel, Tag und Dauer.
+-- Die Schalter stehen am Ende: "create or replace view" darf nur hinten
+-- Spalten anfuegen.
 create or replace view yf_private.public_sessions as
 select p.user_id,
        g.name as game_name,
@@ -576,7 +611,10 @@ select p.user_id,
        s.ended_at_utc,
        (s.started_at_utc at time zone 'Europe/Berlin')::date as day,
        coalesce(s.duration_seconds,
-           extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint) as seconds
+           extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint) as seconds,
+       p.show_in_leaderboards,
+       p.show_games,
+       p.show_activity
 from public.player_profiles p
 join public.games g
     on g.user_id = p.user_id
@@ -591,7 +629,7 @@ where p.is_public;
 -- Spielzeit je Spiel und oeffentlichem Profil, genau wie auf der Profilseite
 -- (inklusive Basis-Spielzeit).
 create or replace view yf_private.public_game_totals as
-select p.user_id, t.*
+select p.user_id, t.*, p.show_in_leaderboards, p.show_games, p.show_activity
 from public.player_profiles p
 cross join lateral yf_private.game_totals(p.user_id) t
 where p.is_public;
@@ -617,7 +655,9 @@ $player_card$;
 
 revoke all on function yf_private.player_card(uuid) from public, anon, authenticated;
 
--- Alles fuer die Startseite in einem Aufruf.
+-- Alles fuer die Startseite in einem Aufruf. Bestenlisten zeigen nur, wer
+-- darin erscheinen will; "Zuletzt aktiv" und der Tagesverlauf nur Profile mit
+-- sichtbarer Aktivitaet. Summen in "stats" zaehlen alle oeffentlichen Profile.
 create or replace function public.get_discover()
 returns jsonb
 language sql
@@ -632,16 +672,18 @@ as $get_discover$
         select s.user_id, sum(s.seconds)::bigint as seconds
         from yf_private.public_sessions s, today
         where s.day > today.day - 7
+          and s.show_in_leaderboards
         group by s.user_id
     ),
     month as (
         select s.user_id, sum(s.seconds)::bigint as seconds
         from yf_private.public_sessions s, today
         where s.day > today.day - 30
+          and s.show_in_leaderboards
         group by s.user_id
     ),
     alltime as (
-        select user_id, sum(total_seconds)::bigint as seconds
+        select user_id, bool_and(show_in_leaderboards) as ranked, sum(total_seconds)::bigint as seconds
         from yf_private.public_game_totals
         group by user_id
     ),
@@ -657,7 +699,17 @@ as $get_discover$
     last_played as (
         select distinct on (user_id) user_id, game_name, ended_at_utc
         from yf_private.public_sessions
+        where show_activity
         order by user_id, ended_at_utc desc
+    ),
+    days as (
+        select d::date as day, coalesce(sum(s.seconds), 0)::bigint as seconds
+        from today
+        cross join lateral generate_series((today.day - 29)::timestamp, today.day::timestamp, interval '1 day') as d
+        left join yf_private.public_sessions s
+            on s.day = d::date
+           and s.show_activity
+        group by d
     )
     select jsonb_build_object(
         'stats', jsonb_build_object(
@@ -676,7 +728,7 @@ as $get_discover$
         'leaderboard_all', coalesce((
             select jsonb_agg(yf_private.player_card(user_id) || jsonb_build_object('seconds', seconds)
                              order by seconds desc)
-            from (select * from alltime where seconds > 0 order by seconds desc limit 10) ranked), '[]'::jsonb),
+            from (select * from alltime where ranked and seconds > 0 order by seconds desc limit 10) ranked), '[]'::jsonb),
         'popular_games', coalesce((
             select jsonb_agg(jsonb_build_object(
                        'name', name, 'source', source, 'players', players, 'seconds', seconds)
@@ -692,7 +744,10 @@ as $get_discover$
                              || jsonb_build_object('member_since', created_at)
                              order by created_at desc)
             from (select user_id, created_at from public.player_profiles
-                  where is_public order by created_at desc limit 6) fresh), '[]'::jsonb))
+                  where is_public order by created_at desc limit 6) fresh), '[]'::jsonb),
+        'daily', (
+            select jsonb_agg(jsonb_build_object('day', day, 'seconds', seconds) order by day)
+            from days))
 $get_discover$;
 
 -- Spiele, die oeffentliche Spieler gespielt haben, nach Name.
@@ -724,7 +779,9 @@ as $search_games$
 $search_games$;
 
 -- Ein Spiel: Summen, Rangliste der oeffentlichen Spieler und die letzten 30
--- Tage. null, wenn es kein oeffentlicher Spieler gespielt hat.
+-- Tage. null, wenn es kein oeffentlicher Spieler gespielt hat. In der
+-- Rangliste steht nur, wer in Bestenlisten erscheinen will und seine Spiele
+-- zeigt; der Tagesverlauf zaehlt nur Profile mit sichtbarer Aktivitaet.
 create or replace function public.get_game(p_name text)
 returns jsonb
 language sql
@@ -746,6 +803,7 @@ as $get_game$
         left join yf_private.public_sessions s
             on s.day = d::date
            and lower(s.game_name) = lower(trim(p_name))
+           and s.show_activity
         group by d
     )
     select case when not exists (select 1 from players) then null else jsonb_build_object(
@@ -754,25 +812,62 @@ as $get_game$
         'players',       (select count(*) from players),
         'total_seconds', (select sum(total_seconds) from players),
         'session_count', (select sum(session_count) from players),
-        'ranking', (
+        'ranking', coalesce((
             select jsonb_agg(yf_private.player_card(user_id) || jsonb_build_object(
                        'seconds',        total_seconds,
                        'session_count',  session_count,
-                       'last_played_at', last_played_at)
+                       'last_played_at', case when show_activity then last_played_at end)
                    order by total_seconds desc)
-            from (select * from players order by total_seconds desc limit 50) ranked),
+            from (select * from players
+                  where show_in_leaderboards and show_games
+                  order by total_seconds desc limit 50) ranked), '[]'::jsonb),
         'daily', (
             select jsonb_agg(jsonb_build_object('day', day, 'seconds', seconds) order by day)
             from days))
     end
 $get_game$;
 
+-- Alle Spiele oeffentlicher Spieler fuer die Seite "Spiele", meistgespielte
+-- zuerst. Nur Summen; "zuletzt gespielt" nur aus Profilen mit sichtbarer
+-- Aktivitaet, sonst verriete ein Spiel mit einem einzigen Spieler dessen
+-- letzte Session.
+-- ponytail: feste Obergrenze von 200 Spielen; blaettern, falls es je mehr werden.
+create or replace function public.get_games()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $get_games$
+    select coalesce(jsonb_agg(jsonb_build_object(
+               'name',           name,
+               'source',         source,
+               'players',        players,
+               'total_seconds',  total_seconds,
+               'session_count',  session_count,
+               'last_played_at', last_played_at)
+           order by players desc, total_seconds desc), '[]'::jsonb)
+    from (
+        select min(t.name) as name,
+               mode() within group (order by t.source) as source,
+               count(distinct t.user_id) as players,
+               sum(t.total_seconds)::bigint as total_seconds,
+               sum(t.session_count)::bigint as session_count,
+               max(t.last_played_at) filter (where t.show_activity) as last_played_at
+        from yf_private.public_game_totals t
+        group by lower(t.name)
+        order by count(distinct t.user_id) desc, sum(t.total_seconds) desc
+        limit 200) g
+$get_games$;
+
 revoke all on function public.get_discover() from public;
 revoke all on function public.search_games(text) from public;
 revoke all on function public.get_game(text) from public;
+revoke all on function public.get_games() from public;
 grant execute on function public.get_discover() to anon, authenticated;
 grant execute on function public.search_games(text) to anon, authenticated;
 grant execute on function public.get_game(text) to anon, authenticated;
+grant execute on function public.get_games() to anon, authenticated;
 
 -- -----------------------------------------------------------------------------
 -- Konto loeschen (Recht auf Loeschung, Art. 17 DSGVO)

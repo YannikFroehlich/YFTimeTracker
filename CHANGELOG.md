@@ -2,6 +2,11 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.9.0 – 2026-09-28
+- Neu: Die Website hat eigene Einstellungen fürs Profil. Neben Benutzername und „Profil öffentlich“ gibt es dort einen Text „Über mich“ und Schalter, ob man in Bestenlisten erscheint und ob Spiele und Aktivität (Verlauf der letzten 30 Tage, zuletzt gespielt) öffentlich sichtbar sind. E-Mail-Adresse und Passwort lassen sich dort ebenfalls ändern, und „Überall abmelden“ beendet auch die Anmeldung in der App.
+- Neu: „Mein Profil“ auf der Website zeigt das eigene Profil so, wie andere es sehen – mit Launcher-Anteilen und Erfolgen. Dazu kommen die Seiten „Bestenlisten“ und „Spiele“.
+- Hinweis: Wer ein eigenes Supabase-Projekt betreibt, spielt `supabase/schema.sql` erneut ein (Schemaversion 5). Bestehende öffentliche Profile bleiben dabei unverändert sichtbar.
+
 ## 1.8.1 – 2026-09-28
 - Verbessert: Aktualisierte Test- und Release-Werkzeuge. An der App selbst ändert sich nichts.
 
