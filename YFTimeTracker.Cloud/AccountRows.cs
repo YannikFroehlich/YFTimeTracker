@@ -218,6 +218,8 @@ internal sealed record SessionRow
 
     [JsonPropertyName("boot_session_id")] public string BootSessionId { get; init; } = string.Empty;
 
+    [JsonPropertyName("is_manual")] public bool IsManual { get; init; }
+
     // Muss auch als null uebertragen werden: beim erneuten Hochladen hebt genau
     // dieser Wert einen frueheren Grabstein im Konto wieder auf. Die globalen
     // JSON-Optionen lassen Nullwerte sonst weg.
@@ -229,7 +231,7 @@ internal sealed record SessionRow
 
     public CloudGameSession ToModel() => new(
         Identity, Id, ContentHash, GameIdentity, StartedAtUtc, LastSeenAtUtc,
-        EndedAtUtc, DurationSeconds, BootSessionId, DeletedAt, UpdatedAt);
+        EndedAtUtc, DurationSeconds, BootSessionId, DeletedAt, UpdatedAt, IsManual);
 
     public static SessionRow From(CloudGameSession item, string userId, string deviceId) => new()
     {
@@ -243,6 +245,7 @@ internal sealed record SessionRow
         EndedAtUtc = item.EndedAtUtc,
         DurationSeconds = item.DurationSeconds,
         BootSessionId = item.BootSessionId,
+        IsManual = item.IsManual,
         DeletedAt = null
     };
 }

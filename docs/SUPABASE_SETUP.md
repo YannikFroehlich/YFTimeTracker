@@ -30,7 +30,7 @@ auf dem PC, auf dem gespielt wird – erst die beendete Session wandert ins Kont
 
 > Der Bestätigungslink führt nach erfolgreicher Bestätigung auf die Website
 > ([tracker.yfserver.de](https://tracker.yfserver.de)).
-> Dort meldet man sich mit demselben Konto an und kann unter „Mein Profil“ ein
+> Dort meldet man sich mit demselben Konto an und kann unter „Einstellungen“ ein
 > öffentliches Profil anlegen.
 
 ### Was im Konto landet
@@ -75,7 +75,13 @@ Schlüssel über `(device_id, user_id)`, damit eine Zeile nur auf ein Gerät des
 eigenen Kontos zeigen kann (erfordert Postgres 15 oder neuer, Standard bei
 Supabase). Seit Version 4 legt es außerdem die Tabelle `player_profiles` und die
 Funktionen `search_players` und `get_player_profile` für öffentliche Profile auf
-der Website an (siehe [Öffentliche Profile](#öffentliche-profile-website)).
+der Website an (siehe [Öffentliche Profile](#öffentliche-profile-website)). Seit
+Version 5 kommen in `player_profiles` die Spalten `bio`, `show_in_leaderboards`,
+`show_games` und `show_activity` dazu (alle Schalter standardmäßig an, bestehende
+öffentliche Profile bleiben also unverändert) sowie die Funktion `get_games` für
+die Spieleliste der Website. Seit Version 6 trägt `game_sessions` die Spalte
+`is_manual` für von Hand angelegte, bearbeitete oder verschobene Sessions; die
+App ab 1.9.0 schreibt sie beim Abgleich und braucht sie deshalb.
 
 Wer von Schemaversion 1 kommt (geräteorientiert, vor dem Kontoabgleich), spielt
 vorher [`supabase/reset-schema-v1.sql`](../supabase/reset-schema-v1.sql) ein. Das
@@ -136,17 +142,71 @@ zusätzlich `<website>/**` sowie für die Entwicklung
 ## Öffentliche Profile (Website)
 
 Die Website liest dasselbe Supabase-Projekt. Jedes Konto ist **privat**, bis man
-auf der Website einen Benutzernamen wählt und „Profil öffentlich“ einschaltet.
+auf der Website unter „Einstellungen“ einen Benutzernamen wählt und „Profil
+öffentlich“ einschaltet.
 Das steht in `player_profiles` – bewusst getrennt von `profiles`, das die App
 beim Abgleich überschreibt.
 
-Die Basistabellen bleiben per RLS gesperrt. Fremde Profile gibt es nur über zwei
+Die Basistabellen bleiben per RLS gesperrt. Fremde Profile gibt es nur über
 Funktionen, die ausschließlich Summen liefern:
 
 | Funktion | Liefert |
 |---|---|
 | `search_players(query)` | Benutzername, Anzeigename, Akzentfarbe, Gesamtspielzeit – nur öffentliche Profile, höchstens 20 |
-| `get_player_profile(username)` | Gesamtzeit, Anzahl Sessions, zuletzt gespielt, Zeit je Spiel, Spielzeit der letzten 30 Tage je Tag |
+| `get_player_profile(username)` | „Über mich“, Gesamtzeit, Anzahl Sessions, zuletzt gespielt, Zeit je Spiel, Spielzeit der letzten 30 Tage je Tag |
+| `get_discover()` | Startseite: Summen, Bestenlisten (7 Tage, 30 Tage, gesamt), beliebte Spiele, zuletzt aktiv, neue Profile, Spielzeit aller Spieler je Tag |
+| `get_game(name)` / `search_games(query)` | Ein Spiel mit Rangliste und Tagesverlauf bzw. Spielesuche |
+| `get_games()` | Alle Spiele öffentlicher Spieler mit Spielerzahl und Summen, höchstens 200 |
+
+Die Schalter in `player_profiles` setzen diese Funktionen selbst durch, nicht
+die Website:
+
+| Schalter aus | Wirkung für alle außer dem Eigentümer |
+|---|---|
+| `show_in_leaderboards` | fehlt in den Bestenlisten und in den Ranglisten der Spieleseiten |
+| `show_games` | Profil ohne Spieleliste (`games` ist `null`), fehlt in den Ranglisten der Spieleseiten |
+| `show_activity` | Profil ohne Tagesverlauf und Zeitpunkte (`daily`, `last_played_at` sind `null`), fehlt unter „Zuletzt aktiv“ und in allen Tagesverläufen; „zuletzt gespielt“ der Spieleliste berücksichtigt es nicht |
+
+Summen wie Spielerzahl, Gesamtzeit und beliebte Spiele zählen weiter alle
+öffentlichen Profile.
+
+Bestenlisten und die Ranglisten der Spieleseiten zählen nur vom Tracking
+erfasste Sessions. Von Hand angelegte, bearbeitete oder verschobene Sessions
+(`is_manual`) und die Basis-Spielzeit gehen dort nicht ein; auf dem eigenen
+Profil und in allen Summen zählen sie weiter. Außerdem zählen je Spieler und
+Tag (Starttag der Session) höchstens 24 Stunden, damit eine eingeschleuste
+Riesen-Session nicht mehr als einen Tag bringt (`yf_private.ranked_days`). Das hält die Bestenlisten frei von
+Spielzeit, die man sich über die App selbst einträgt – gegen jemanden, der die
+lokale Datenbank oder die API direkt manipuliert, schützt es nicht, denn die
+Daten stammen immer vom eigenen PC.
+
+### Moderation
+
+Dafür kann der Betreiber einzelne Konten aus Bestenlisten und den Ranglisten der
+Spieleseiten nehmen. Die Tabelle `yf_private.leaderboard_bans` ist nicht über
+die API erreichbar; der Betroffene kann den Eintrag weder sehen noch aufheben.
+Profil, Spieleliste und Summen der Website bleiben unverändert. Gepflegt wird
+sie im SQL Editor:
+
+```sql
+-- Sperren
+insert into yf_private.leaderboard_bans (user_id, reason)
+select user_id, 'Unplausible Spielzeit'
+from public.player_profiles
+where username = 'benutzername'
+on conflict (user_id) do nothing;
+
+-- Aufheben
+delete from yf_private.leaderboard_bans
+where user_id = (select user_id from public.player_profiles where username = 'benutzername');
+
+-- Übersicht
+select p.username, b.reason, b.created_at
+from yf_private.leaderboard_bans b
+left join public.player_profiles p on p.user_id = b.user_id;
+```
+
+Wird das Konto gelöscht, verschwindet der Eintrag mit.
 
 Nie heraus gehen `user_id`, E-Mail, EXE-Pfade, Geräte, Einstellungen,
 Ausschlüsse oder einzelne Sessions mit Uhrzeit. Laufende Sessions zählen erst

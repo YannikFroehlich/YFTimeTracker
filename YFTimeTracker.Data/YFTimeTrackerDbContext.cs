@@ -126,6 +126,7 @@ public sealed class YFTimeTrackerDbContext(DbContextOptions<YFTimeTrackerDbConte
             entity.Property(session => session.EndedAtUtc).HasConversion(NullableDateTimeOffsetConverter);
             entity.Property(session => session.DurationSeconds);
             entity.Property(session => session.BootSessionId).HasMaxLength(128).IsRequired();
+            entity.Property(session => session.IsManual);
             entity.HasOne(session => session.Game)
                 .WithMany()
                 .HasForeignKey(session => session.GameId)

@@ -287,6 +287,7 @@ public sealed partial class AccountSyncStore
                 existing.LastSeenAtUtc = incoming.LastSeenAtUtc;
                 existing.EndedAtUtc = incoming.EndedAtUtc;
                 existing.DurationSeconds = incoming.DurationSeconds;
+                existing.IsManual = incoming.IsManual;
                 existing.CloudIdentity = incoming.Identity;
                 existing.SyncedHash = incoming.ContentHash;
                 continue;
@@ -300,6 +301,7 @@ public sealed partial class AccountSyncStore
                 EndedAtUtc = incoming.EndedAtUtc,
                 DurationSeconds = incoming.DurationSeconds,
                 BootSessionId = incoming.BootSessionId,
+                IsManual = incoming.IsManual,
                 CloudId = incoming.CloudId,
                 CloudIdentity = incoming.Identity,
                 SyncedHash = incoming.ContentHash

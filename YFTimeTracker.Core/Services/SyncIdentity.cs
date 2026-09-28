@@ -111,12 +111,21 @@ public static class SyncIdentity
 
     public static string HashTag(GameTag tag) => Hash(tag.Tag);
 
-    public static string HashSession(GameSession session) => Hash(
-        session.StartedAtUtc.UtcTicks.ToString(CultureInfo.InvariantCulture),
-        session.LastSeenAtUtc.UtcTicks.ToString(CultureInfo.InvariantCulture),
-        session.EndedAtUtc?.UtcTicks.ToString(CultureInfo.InvariantCulture),
-        session.DurationSeconds?.ToString(CultureInfo.InvariantCulture),
-        session.BootSessionId);
+    // IsManual geht nur ein, wenn gesetzt: so behalten alle bisherigen Sessions
+    // ihren Hash und werden nach dem Update nicht erneut hochgeladen.
+    public static string HashSession(GameSession session)
+    {
+        string?[] parts =
+        [
+            session.StartedAtUtc.UtcTicks.ToString(CultureInfo.InvariantCulture),
+            session.LastSeenAtUtc.UtcTicks.ToString(CultureInfo.InvariantCulture),
+            session.EndedAtUtc?.UtcTicks.ToString(CultureInfo.InvariantCulture),
+            session.DurationSeconds?.ToString(CultureInfo.InvariantCulture),
+            session.BootSessionId
+        ];
+
+        return Hash(session.IsManual ? [.. parts, "manual"] : parts);
+    }
 
     public static string HashArtwork(GameArtwork artwork) => Hash(
         artwork.ContentType,

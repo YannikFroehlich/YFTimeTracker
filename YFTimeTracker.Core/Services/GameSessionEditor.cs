@@ -21,7 +21,8 @@ public sealed class GameSessionEditor(
             LastSeenAtUtc = endedAtUtc,
             EndedAtUtc = endedAtUtc,
             DurationSeconds = Convert.ToInt64(Math.Floor((endedAtUtc - startedAtUtc).TotalSeconds)),
-            BootSessionId = bootSessionProvider.GetCurrentBootSessionId()
+            BootSessionId = bootSessionProvider.GetCurrentBootSessionId(),
+            IsManual = true
         }, cancellationToken);
     }
 
@@ -41,6 +42,7 @@ public sealed class GameSessionEditor(
         session.LastSeenAtUtc = endedAtUtc;
         session.EndedAtUtc = endedAtUtc;
         session.DurationSeconds = Convert.ToInt64(Math.Floor((endedAtUtc - startedAtUtc).TotalSeconds));
+        session.IsManual = true;
 
         await sessions.UpdateAsync(session, cancellationToken);
     }
@@ -72,6 +74,7 @@ public sealed class GameSessionEditor(
 
         session.GameId = targetGameId;
         session.Game = null;
+        session.IsManual = true;
         await sessions.UpdateAsync(session, cancellationToken);
     }
 

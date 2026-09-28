@@ -88,6 +88,39 @@ public sealed class GameSessionEditorTests
         var stored = await sessions.GetByIdAsync(session.Id, CancellationToken.None);
         Assert.IsNotNull(stored);
         Assert.AreEqual(4500, stored.DurationSeconds);
+        Assert.IsTrue(stored.IsManual);
+    }
+
+    [TestMethod]
+    public async Task AddManualSessionAsync_marks_session_as_manual()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var games = new InMemoryGameRepository();
+        var game = await AddGameAsync(games, now);
+        var sessions = new InMemoryGameSessionRepository(id => id == game.Id ? game : null);
+        var editor = CreateEditor(games, sessions, now);
+
+        var added = await editor.AddManualSessionAsync(game.Id, now.AddHours(-2), now.AddHours(-1), CancellationToken.None);
+
+        Assert.IsTrue(added.IsManual);
+    }
+
+    [TestMethod]
+    public void HashSession_includes_manual_flag()
+    {
+        var session = new GameSession
+        {
+            StartedAtUtc = DateTimeOffset.Parse("2026-08-30T10:00:00Z"),
+            LastSeenAtUtc = DateTimeOffset.Parse("2026-08-30T11:00:00Z"),
+            EndedAtUtc = DateTimeOffset.Parse("2026-08-30T11:00:00Z"),
+            DurationSeconds = 3600,
+            BootSessionId = "boot"
+        };
+        var trackedHash = SyncIdentity.HashSession(session);
+
+        session.IsManual = true;
+
+        Assert.AreNotEqual(trackedHash, SyncIdentity.HashSession(session));
     }
 
     [TestMethod]
