@@ -329,7 +329,7 @@
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <FontIcon FontSize="13" Foreground="{ThemeResource YFBlueTextBrush}" Glyph="&#xE946;" />
-                                <TextBlock Grid.Column="1" Style="{StaticResource YFMutedTextStyle}" Text="Zeiten werden lokal eingegeben und intern sicher als UTC gespeichert." TextWrapping="Wrap" />
+                                <TextBlock Grid.Column="1" Style="{StaticResource YFMutedTextStyle}" Text="Zeiten werden lokal eingegeben und intern sicher als UTC gespeichert. Angelegte und bearbeitete Sessions zählen nicht für die Bestenlisten der Website." TextWrapping="Wrap" />
                             </Grid>
                         </Border>
 

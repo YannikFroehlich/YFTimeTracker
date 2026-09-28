@@ -1,5 +1,5 @@
 -- =============================================================================
--- YFTimeTracker - Supabase-Schema (Schemaversion 5)
+-- YFTimeTracker - Supabase-Schema (Schemaversion 6)
 --
 -- Einspielen: Supabase-Dashboard -> SQL Editor -> Inhalt einfuegen -> "Run".
 -- Das Skript ist idempotent und kann gefahrlos erneut ausgefuehrt werden.
@@ -215,6 +215,10 @@ create table if not exists public.sync_runs (
 -- ein aelteres Projekt dasselbe Schema bekommt wie ein frisch angelegtes.
 -- -----------------------------------------------------------------------------
 alter table public.games add column if not exists baseline_minutes integer;
+
+-- Seit Schemaversion 6: von Hand angelegte, bearbeitete oder verschobene
+-- Sessions. Sie zaehlen fuers eigene Profil, aber nicht fuer Bestenlisten.
+alter table public.game_sessions add column if not exists is_manual boolean not null default false;
 
 -- -----------------------------------------------------------------------------
 -- Geraeteverweise nur auf eigene Geraete
@@ -614,7 +618,8 @@ select p.user_id,
            extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint) as seconds,
        p.show_in_leaderboards,
        p.show_games,
-       p.show_activity
+       p.show_activity,
+       s.is_manual
 from public.player_profiles p
 join public.games g
     on g.user_id = p.user_id
@@ -637,6 +642,25 @@ where p.is_public;
 revoke all on yf_private.public_sessions from public, anon, authenticated;
 revoke all on yf_private.public_game_totals from public, anon, authenticated;
 
+-- Grundlage der Bestenlisten: erfasste Spielzeit je Spieler, Spiel und Tag,
+-- hoechstens 24 Stunden. Mehr kann an einem Tag nicht erfasst worden sein, und
+-- so bringt eine per API eingeschleuste Riesen-Session nicht mehr als einen Tag.
+-- Ein Tag ist der Starttag der Session, wie in public_sessions.
+create or replace view yf_private.ranked_days as
+select user_id,
+       lower(game_name) as game_key,
+       day,
+       least(sum(seconds), 86400)::bigint as seconds,
+       count(*) as session_count,
+       max(ended_at_utc) filter (where show_activity) as last_played_at,
+       bool_and(show_games) as show_games
+from yf_private.public_sessions
+where show_in_leaderboards
+  and not is_manual
+group by user_id, lower(game_name), day;
+
+revoke all on yf_private.ranked_days from public, anon, authenticated;
+
 -- Name, Anzeigename und Farbe eines Spielers fuer Listen.
 create or replace function yf_private.player_card(p_user_id uuid)
 returns jsonb
@@ -656,8 +680,11 @@ $player_card$;
 revoke all on function yf_private.player_card(uuid) from public, anon, authenticated;
 
 -- Alles fuer die Startseite in einem Aufruf. Bestenlisten zeigen nur, wer
--- darin erscheinen will; "Zuletzt aktiv" und der Tagesverlauf nur Profile mit
--- sichtbarer Aktivitaet. Summen in "stats" zaehlen alle oeffentlichen Profile.
+-- darin erscheinen will, und zaehlen nur erfasste Sessions (siehe ranked_days):
+-- keine von Hand angelegten oder bearbeiteten, keine Basis-Spielzeit und je
+-- Tag hoechstens 24 Stunden. "Zuletzt aktiv" und
+-- der Tagesverlauf nur Profile mit sichtbarer Aktivitaet. Summen in "stats"
+-- zaehlen alle oeffentlichen Profile.
 create or replace function public.get_discover()
 returns jsonb
 language sql
@@ -668,23 +695,27 @@ as $get_discover$
     with today as (
         select (now() at time zone 'Europe/Berlin')::date as day
     ),
+    -- Je Spieler und Tag hoechstens 24 Stunden, ueber alle Spiele zusammen.
+    ranked as (
+        select user_id, day, least(sum(seconds), 86400)::bigint as seconds
+        from yf_private.ranked_days
+        group by user_id, day
+    ),
     week as (
-        select s.user_id, sum(s.seconds)::bigint as seconds
-        from yf_private.public_sessions s, today
-        where s.day > today.day - 7
-          and s.show_in_leaderboards
-        group by s.user_id
+        select r.user_id, sum(r.seconds)::bigint as seconds
+        from ranked r, today
+        where r.day > today.day - 7
+        group by r.user_id
     ),
     month as (
-        select s.user_id, sum(s.seconds)::bigint as seconds
-        from yf_private.public_sessions s, today
-        where s.day > today.day - 30
-          and s.show_in_leaderboards
-        group by s.user_id
+        select r.user_id, sum(r.seconds)::bigint as seconds
+        from ranked r, today
+        where r.day > today.day - 30
+        group by r.user_id
     ),
     alltime as (
-        select user_id, bool_and(show_in_leaderboards) as ranked, sum(total_seconds)::bigint as seconds
-        from yf_private.public_game_totals
+        select user_id, sum(seconds)::bigint as seconds
+        from ranked
         group by user_id
     ),
     popular as (
@@ -714,7 +745,7 @@ as $get_discover$
     select jsonb_build_object(
         'stats', jsonb_build_object(
             'players',       (select count(*) from public.player_profiles where is_public),
-            'total_seconds', coalesce((select sum(seconds) from alltime), 0),
+            'total_seconds', coalesce((select sum(total_seconds) from yf_private.public_game_totals), 0),
             'games',         (select count(distinct lower(name)) from yf_private.public_game_totals),
             'sessions',      (select count(*) from yf_private.public_sessions)),
         'leaderboard_week', coalesce((
@@ -728,7 +759,7 @@ as $get_discover$
         'leaderboard_all', coalesce((
             select jsonb_agg(yf_private.player_card(user_id) || jsonb_build_object('seconds', seconds)
                              order by seconds desc)
-            from (select * from alltime where ranked and seconds > 0 order by seconds desc limit 10) ranked), '[]'::jsonb),
+            from (select * from alltime where seconds > 0 order by seconds desc limit 10) ranked), '[]'::jsonb),
         'popular_games', coalesce((
             select jsonb_agg(jsonb_build_object(
                        'name', name, 'source', source, 'players', players, 'seconds', seconds)
@@ -781,7 +812,8 @@ $search_games$;
 -- Ein Spiel: Summen, Rangliste der oeffentlichen Spieler und die letzten 30
 -- Tage. null, wenn es kein oeffentlicher Spieler gespielt hat. In der
 -- Rangliste steht nur, wer in Bestenlisten erscheinen will und seine Spiele
--- zeigt; der Tagesverlauf zaehlt nur Profile mit sichtbarer Aktivitaet.
+-- zeigt, und es zaehlen wie in den Bestenlisten nur erfasste Sessions; der
+-- Tagesverlauf zaehlt nur Profile mit sichtbarer Aktivitaet.
 create or replace function public.get_game(p_name text)
 returns jsonb
 language sql
@@ -793,6 +825,16 @@ as $get_game$
         select *
         from yf_private.public_game_totals
         where lower(name) = lower(trim(p_name))
+    ),
+    ranking as (
+        select user_id,
+               sum(seconds)::bigint as seconds,
+               sum(session_count)::bigint as session_count,
+               max(last_played_at) as last_played_at
+        from yf_private.ranked_days
+        where game_key = lower(trim(p_name))
+          and show_games
+        group by user_id
     ),
     days as (
         select d::date as day, coalesce(sum(s.seconds), 0)::bigint as seconds
@@ -814,13 +856,11 @@ as $get_game$
         'session_count', (select sum(session_count) from players),
         'ranking', coalesce((
             select jsonb_agg(yf_private.player_card(user_id) || jsonb_build_object(
-                       'seconds',        total_seconds,
+                       'seconds',        seconds,
                        'session_count',  session_count,
-                       'last_played_at', case when show_activity then last_played_at end)
-                   order by total_seconds desc)
-            from (select * from players
-                  where show_in_leaderboards and show_games
-                  order by total_seconds desc limit 50) ranked), '[]'::jsonb),
+                       'last_played_at', last_played_at)
+                   order by seconds desc)
+            from (select * from ranking order by seconds desc limit 50) ranked), '[]'::jsonb),
         'daily', (
             select jsonb_agg(jsonb_build_object('day', day, 'seconds', seconds) order by day)
             from days))

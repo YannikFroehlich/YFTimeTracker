@@ -21,6 +21,13 @@ public sealed class GameSession
     public string BootSessionId { get; set; } = string.Empty;
 
     /// <summary>
+    /// Von Hand angelegt, bearbeitet oder verschoben statt nur vom Tracking
+    /// erfasst. Zaehlt weiter fuer die eigene Spielzeit, aber nicht fuer die
+    /// Bestenlisten der Website.
+    /// </summary>
+    public bool IsManual { get; set; }
+
+    /// <summary>
     /// Kennung dieses Datensatzes im Konto. Bleibt <c>null</c>, solange nie
     /// synchronisiert wurde.
     /// </summary>

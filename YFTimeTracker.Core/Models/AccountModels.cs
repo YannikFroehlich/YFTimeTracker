@@ -55,7 +55,8 @@ public sealed record CloudGameSession(
     long? DurationSeconds,
     string BootSessionId,
     DateTimeOffset? DeletedAt = null,
-    DateTimeOffset UpdatedAt = default);
+    DateTimeOffset UpdatedAt = default,
+    bool IsManual = false);
 
 public sealed record CloudExclusion(
     string Identity,

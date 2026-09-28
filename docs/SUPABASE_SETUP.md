@@ -79,7 +79,9 @@ der Website an (siehe [Öffentliche Profile](#öffentliche-profile-website)). Se
 Version 5 kommen in `player_profiles` die Spalten `bio`, `show_in_leaderboards`,
 `show_games` und `show_activity` dazu (alle Schalter standardmäßig an, bestehende
 öffentliche Profile bleiben also unverändert) sowie die Funktion `get_games` für
-die Spieleliste der Website.
+die Spieleliste der Website. Seit Version 6 trägt `game_sessions` die Spalte
+`is_manual` für von Hand angelegte, bearbeitete oder verschobene Sessions; die
+App ab 1.9.0 schreibt sie beim Abgleich und braucht sie deshalb.
 
 Wer von Schemaversion 1 kommt (geräteorientiert, vor dem Kontoabgleich), spielt
 vorher [`supabase/reset-schema-v1.sql`](../supabase/reset-schema-v1.sql) ein. Das
@@ -167,6 +169,16 @@ die Website:
 
 Summen wie Spielerzahl, Gesamtzeit und beliebte Spiele zählen weiter alle
 öffentlichen Profile.
+
+Bestenlisten und die Ranglisten der Spieleseiten zählen nur vom Tracking
+erfasste Sessions. Von Hand angelegte, bearbeitete oder verschobene Sessions
+(`is_manual`) und die Basis-Spielzeit gehen dort nicht ein; auf dem eigenen
+Profil und in allen Summen zählen sie weiter. Außerdem zählen je Spieler und
+Tag (Starttag der Session) höchstens 24 Stunden, damit eine eingeschleuste
+Riesen-Session nicht mehr als einen Tag bringt (`yf_private.ranked_days`). Das hält die Bestenlisten frei von
+Spielzeit, die man sich über die App selbst einträgt – gegen jemanden, der die
+lokale Datenbank oder die API direkt manipuliert, schützt es nicht, denn die
+Daten stammen immer vom eigenen PC.
 
 Nie heraus gehen `user_id`, E-Mail, EXE-Pfade, Geräte, Einstellungen,
 Ausschlüsse oder einzelne Sessions mit Uhrzeit. Laufende Sessions zählen erst

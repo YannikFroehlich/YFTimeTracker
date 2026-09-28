@@ -419,6 +419,7 @@ internal sealed class InMemoryGameSessionRepository(Func<long, Game?> gameResolv
             EndedAtUtc = session.EndedAtUtc,
             DurationSeconds = session.DurationSeconds,
             BootSessionId = session.BootSessionId,
+            IsManual = session.IsManual,
             CloudIdentity = session.CloudIdentity
         };
     }

@@ -85,7 +85,7 @@ public sealed class SessionListItemViewModel : ObservableObject
 
     public bool CanModify => !IsOpen;
 
-    public string StatusText => IsOpen ? "AKTIV" : "ABGESCHLOSSEN";
+    public string StatusText => IsOpen ? "AKTIV" : session.IsManual ? "BEARBEITET" : "ABGESCHLOSSEN";
 
     public GameSession Model => session;
 

@@ -107,7 +107,8 @@ public sealed partial class AccountSyncStore(
             item => item.SyncedHash,
             (item, identity, hash) => new CloudGameSession(
                 identity, item.CloudId, hash, gameIdentityById[item.GameId],
-                item.StartedAtUtc, item.LastSeenAtUtc, item.EndedAtUtc, item.DurationSeconds, item.BootSessionId));
+                item.StartedAtUtc, item.LastSeenAtUtc, item.EndedAtUtc, item.DurationSeconds, item.BootSessionId,
+                IsManual: item.IsManual));
 
         var artworkSet = BuildSet(
             artworks.Where(item => gameIdentityById.ContainsKey(item.GameId)).ToList(),
