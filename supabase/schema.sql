@@ -642,6 +642,19 @@ where p.is_public;
 revoke all on yf_private.public_sessions from public, anon, authenticated;
 revoke all on yf_private.public_game_totals from public, anon, authenticated;
 
+-- Moderation: Konten, die der Betreiber aus Bestenlisten und Ranglisten der
+-- Spieleseiten nimmt. Liegt in yf_private und ist damit nicht ueber die API
+-- erreichbar - der Betroffene kann den Eintrag weder sehen noch aufheben.
+-- Gepflegt wird sie im SQL Editor (siehe docs/SUPABASE_SETUP.md). Profil und
+-- Summen bleiben unberuehrt.
+create table if not exists yf_private.leaderboard_bans (
+    user_id    uuid primary key references auth.users (id) on delete cascade,
+    reason     text,
+    created_at timestamptz not null default now()
+);
+
+revoke all on yf_private.leaderboard_bans from public, anon, authenticated;
+
 -- Grundlage der Bestenlisten: erfasste Spielzeit je Spieler, Spiel und Tag,
 -- hoechstens 24 Stunden. Mehr kann an einem Tag nicht erfasst worden sein, und
 -- so bringt eine per API eingeschleuste Riesen-Session nicht mehr als einen Tag.
@@ -654,9 +667,10 @@ select user_id,
        count(*) as session_count,
        max(ended_at_utc) filter (where show_activity) as last_played_at,
        bool_and(show_games) as show_games
-from yf_private.public_sessions
+from yf_private.public_sessions s
 where show_in_leaderboards
   and not is_manual
+  and not exists (select 1 from yf_private.leaderboard_bans b where b.user_id = s.user_id)
 group by user_id, lower(game_name), day;
 
 revoke all on yf_private.ranked_days from public, anon, authenticated;

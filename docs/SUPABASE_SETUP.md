@@ -180,6 +180,34 @@ Spielzeit, die man sich über die App selbst einträgt – gegen jemanden, der d
 lokale Datenbank oder die API direkt manipuliert, schützt es nicht, denn die
 Daten stammen immer vom eigenen PC.
 
+### Moderation
+
+Dafür kann der Betreiber einzelne Konten aus Bestenlisten und den Ranglisten der
+Spieleseiten nehmen. Die Tabelle `yf_private.leaderboard_bans` ist nicht über
+die API erreichbar; der Betroffene kann den Eintrag weder sehen noch aufheben.
+Profil, Spieleliste und Summen der Website bleiben unverändert. Gepflegt wird
+sie im SQL Editor:
+
+```sql
+-- Sperren
+insert into yf_private.leaderboard_bans (user_id, reason)
+select user_id, 'Unplausible Spielzeit'
+from public.player_profiles
+where username = 'benutzername'
+on conflict (user_id) do nothing;
+
+-- Aufheben
+delete from yf_private.leaderboard_bans
+where user_id = (select user_id from public.player_profiles where username = 'benutzername');
+
+-- Übersicht
+select p.username, b.reason, b.created_at
+from yf_private.leaderboard_bans b
+left join public.player_profiles p on p.user_id = b.user_id;
+```
+
+Wird das Konto gelöscht, verschwindet der Eintrag mit.
+
 Nie heraus gehen `user_id`, E-Mail, EXE-Pfade, Geräte, Einstellungen,
 Ausschlüsse oder einzelne Sessions mit Uhrzeit. Laufende Sessions zählen erst
 nach ihrem Ende mit, weil die App sie erst dann hochlädt.
