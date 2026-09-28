@@ -44,16 +44,20 @@ jobs:
 
       - name: Naechste Version aus Commits ermitteln
         id: next
-        uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
+        uses: mathieudutour/github-tag-action@af99e60ce8132224b8e6ebab5023449fe256ed46 # v7.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          default_bump: ${{ github.event_name == 'workflow_dispatch' && inputs.bump || 'patch' }}
+          default_bump: patch
+          # Seit v7 greift default_bump nur noch als Fallback; erzwingen geht nur ueber force_bump.
+          force_bump: ${{ github.event_name == 'workflow_dispatch' && inputs.bump || '' }}
           release_branches: main
           tag_prefix: v
           dry_run: true
 
   release:
     needs: determine-version
+    # v7 liefert keine Version, wenn seit dem letzten Tag keine relevanten Commits vorliegen.
+    if: needs.determine-version.outputs.version != ''
     uses: ./.github/workflows/release.yml
     with:
       version: ${{ needs.determine-version.outputs.version }}
