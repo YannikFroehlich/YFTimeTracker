@@ -1,5 +1,5 @@
 -- =============================================================================
--- YFTimeTracker - Supabase-Schema (Schemaversion 6)
+-- YFTimeTracker - Supabase-Schema (Schemaversion 7)
 --
 -- Einspielen: Supabase-Dashboard -> SQL Editor -> Inhalt einfuegen -> "Run".
 -- Das Skript ist idempotent und kann gefahrlos erneut ausgefuehrt werden.
@@ -320,6 +320,28 @@ $triggers$;
 -- "(select auth.uid())" statt "auth.uid()" laesst Postgres den Wert einmal pro
 -- Abfrage statt einmal pro Zeile auswerten.
 -- =============================================================================
+-- Zwei-Faktor-Anmeldung: Hat ein Konto einen bestaetigten zweiten Faktor
+-- (TOTP), reicht das Passwort allein nicht. Ein Token nur mit Passwort hat die
+-- Stufe aal1; erst nach dem Code aus der Authenticator-App gibt es aal2. Die
+-- einschraenkenden Policies unten lassen Konten mit zweitem Faktor nur mit aal2
+-- an ihre Daten - sonst koennte jeder mit dem Passwort die API direkt nutzen.
+-- security definer, weil authenticated auth.mfa_factors nicht lesen darf.
+create or replace function public.mfa_satisfied()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $mfa_satisfied$
+    select coalesce((select auth.jwt()) ->> 'aal', 'aal1') = 'aal2'
+        or not exists (
+            select 1 from auth.mfa_factors
+            where user_id = (select auth.uid()) and status = 'verified')
+$mfa_satisfied$;
+
+revoke all on function public.mfa_satisfied() from public, anon;
+grant execute on function public.mfa_satisfied() to authenticated;
+
 do $rls$
 declare
     target_table text;
@@ -339,6 +361,14 @@ begin
             || 'using ((select auth.uid()) = user_id) '
             || 'with check ((select auth.uid()) = user_id);',
             policy_name, target_table);
+
+        -- "as restrictive": gilt zusaetzlich zur Policy oben, nicht stattdessen.
+        execute format('drop policy if exists %I on public.%I;', target_table || '_mfa', target_table);
+        execute format(
+            'create policy %I on public.%I as restrictive for all to authenticated '
+            || 'using ((select public.mfa_satisfied())) '
+            || 'with check ((select public.mfa_satisfied()));',
+            target_table || '_mfa', target_table);
     end loop;
 end
 $rls$;
@@ -370,6 +400,12 @@ create policy "backups_owner_access" on storage.objects for all to authenticated
     using (bucket_id = 'backups' and (storage.foldername(name))[1] = (select auth.uid())::text)
     with check (bucket_id = 'backups' and (storage.foldername(name))[1] = (select auth.uid())::text);
 
+-- Zwei-Faktor-Pflicht fuer beide Buckets (siehe public.mfa_satisfied).
+drop policy if exists "storage_mfa" on storage.objects;
+create policy "storage_mfa" on storage.objects as restrictive for all to authenticated
+    using ((select public.mfa_satisfied()))
+    with check ((select public.mfa_satisfied()));
+
 -- =============================================================================
 -- Oeffentliche Spielerprofile (seit Schemaversion 4, fuer die Website)
 --
@@ -400,6 +436,11 @@ drop policy if exists player_profiles_owner_access on public.player_profiles;
 create policy player_profiles_owner_access on public.player_profiles for all to authenticated
     using ((select auth.uid()) = user_id)
     with check ((select auth.uid()) = user_id);
+
+drop policy if exists player_profiles_mfa on public.player_profiles;
+create policy player_profiles_mfa on public.player_profiles as restrictive for all to authenticated
+    using ((select public.mfa_satisfied()))
+    with check ((select public.mfa_satisfied()));
 
 -- Seit Schemaversion 5: "Ueber mich" und was ein oeffentliches Profil zeigt.
 -- Alles standardmaessig an, damit bestehende oeffentliche Profile unveraendert
@@ -577,7 +618,9 @@ begin
 
     -- "is not distinct from" statt "=": ohne Anmeldung ist auth.uid() null, und
     -- "= null" ergaebe null statt false - das private Profil waere sichtbar.
-    is_owner := target.user_id is not distinct from (select auth.uid());
+    -- Mit zweitem Faktor zaehlt nur ein aal2-Token als Eigentuemer, sonst saehe
+    -- ein Token nur mit Passwort das private Profil.
+    is_owner := target.user_id is not distinct from (select auth.uid()) and public.mfa_satisfied();
     if target.user_id is null or not (target.is_public or is_owner) then
         return null;
     end if;
@@ -998,6 +1041,10 @@ as $delete_my_account$
 begin
     if (select auth.uid()) is null then
         raise exception 'Nicht angemeldet.' using errcode = '42501';
+    end if;
+
+    if not public.mfa_satisfied() then
+        raise exception 'Zwei-Faktor-Code erforderlich.' using errcode = '42501';
     end if;
 
     delete from auth.users where id = (select auth.uid());

@@ -149,6 +149,9 @@ internal sealed class StubAuthService(string userId, string? accessToken) : IClo
     public Task<CloudAuthResult> SignUpAsync(string email, string password, CancellationToken cancellationToken) =>
         throw new NotSupportedException();
 
+    public Task<CloudAuthResult> VerifySecondFactorAsync(string code, CancellationToken cancellationToken) =>
+        throw new NotSupportedException();
+
     public Task<CloudAuthResult> RestoreSessionAsync(CancellationToken cancellationToken) =>
         throw new NotSupportedException();
 
