@@ -2,6 +2,12 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.10.0 – 2026-09-29
+- Neu: Zwei-Faktor-Anmeldung für das Konto. Eingerichtet wird sie in den Einstellungen der Website [tracker.yfserver.de](https://tracker.yfserver.de) mit einer Authenticator-App wie Google oder Microsoft Authenticator. Danach fragt auch die App beim Anmelden nach dem Code, und ohne Code kommt mit dem Passwort allein niemand an die Daten im Konto. Wer die Zwei-Faktor-Anmeldung einschaltet, meldet sich in der App einmal neu an.
+- Neu: Auf der Website zählt dasselbe Spiel aus verschiedenen Launchern als ein Eintrag, auch wenn der Name leicht abweicht (etwa „Battlefield™ 6“ und „Battlefield 6“). Spiele bekommen dort Cover-Bilder, auch Xbox- und EA-Spiele ohne Steam-ID.
+- Verbessert: Direkt nach der Anmeldung in der App läuft jetzt wie vorgesehen der erste Abgleich. Bisher kam er erst beim nächsten Start oder Spielende.
+- Hinweis: Wer ein eigenes Supabase-Projekt betreibt, spielt `supabase/schema.sql` erneut ein (Schemaversion 7) – aber erst, nachdem die App auf allen PCs aktualisiert ist. Ältere App-Versionen können sich bei Konten mit Zwei-Faktor-Anmeldung sonst nicht mehr abgleichen.
+
 ## 1.9.0 – 2026-09-28
 - Neu: Die Website hat eigene Einstellungen fürs Profil. Neben Benutzername und „Profil öffentlich“ gibt es dort einen Text „Über mich“ und Schalter, ob man in Bestenlisten erscheint und ob Spiele und Aktivität (Verlauf der letzten 30 Tage, zuletzt gespielt) öffentlich sichtbar sind. E-Mail-Adresse und Passwort lassen sich dort ebenfalls ändern, und „Überall abmelden“ beendet auch die Anmeldung in der App.
 - Neu: „Mein Profil“ auf der Website zeigt das eigene Profil so, wie andere es sehen – mit Launcher-Anteilen und Erfolgen. Dazu kommen die Seiten „Bestenlisten“ und „Spiele“.
