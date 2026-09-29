@@ -39,6 +39,9 @@ public enum CloudAuthStatus
     Success,
     InvalidCredentials,
     EmailConfirmationRequired,
+
+    /// <summary>Passwort stimmt, das Konto verlangt aber noch den Code aus der Authenticator-App.</summary>
+    SecondFactorRequired,
     NotConfigured,
     NetworkError,
     UnexpectedError

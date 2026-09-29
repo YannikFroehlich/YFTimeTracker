@@ -46,14 +46,15 @@ public sealed partial class MainWindow
             var result = await authenticate(email, password);
             ShowAccountStatus(result.Message);
 
+            if (result.Status == CloudAuthStatus.SecondFactorRequired)
+            {
+                ShowSecondFactorInput(true);
+                return;
+            }
+
             if (result.IsSuccess)
             {
-                await settingsStore.SetAsync(AppSettingKeys.CloudUserEmail, email, CancellationToken.None);
-                RefreshAccountPanels();
-
-                // Direkt nach der Anmeldung abgleichen: der Benutzer erwartet, dass
-                // seine Daten jetzt im Konto stehen, nicht erst beim naechsten Start.
-                await SyncAccountAsync();
+                await CompleteAccountSignInAsync(email);
                 return;
             }
         }
@@ -69,6 +70,82 @@ public sealed partial class MainWindow
             AccountPasswordInput.Password = string.Empty;
             SetAccountBusy(false);
             RefreshAccountPanels();
+        }
+    }
+
+    private async Task CompleteAccountSignInAsync(string email)
+    {
+        await settingsStore.SetAsync(AppSettingKeys.CloudUserEmail, email, CancellationToken.None);
+        RefreshAccountPanels();
+
+        // Direkt nach der Anmeldung abgleichen: der Benutzer erwartet, dass
+        // seine Daten jetzt im Konto stehen, nicht erst beim naechsten Start.
+        SetAccountBusy(false);
+        await SyncAccountAsync();
+    }
+
+    private async void AccountVerifyCode_Click(object sender, RoutedEventArgs e) => await VerifyAccountCodeAsync();
+
+    private async void AccountCodeInput_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (e.Key == global::Windows.System.VirtualKey.Enter)
+        {
+            e.Handled = true;
+            await VerifyAccountCodeAsync();
+        }
+    }
+
+    private async Task VerifyAccountCodeAsync()
+    {
+        var code = AccountCodeInput.Text.Trim();
+        if (string.IsNullOrEmpty(code) || accountBusy)
+        {
+            return;
+        }
+
+        SetAccountBusy(true, "Code wird geprüft …");
+        try
+        {
+            var result = await AuthService.VerifySecondFactorAsync(code, CancellationToken.None);
+            ShowAccountStatus(result.Message);
+
+            if (result.IsSuccess)
+            {
+                ShowSecondFactorInput(false);
+                await CompleteAccountSignInAsync(AccountEmailInput.Text.Trim());
+                return;
+            }
+
+            // Falscher Code: Feld leeren und erneut fragen. Abgelaufene Anmeldung:
+            // zurueck zu E-Mail und Passwort.
+            ShowSecondFactorInput(result.Status == CloudAuthStatus.SecondFactorRequired);
+        }
+        catch (Exception exception)
+        {
+            Log.Warning(exception, "Zwei-Faktor-Code konnte nicht geprüft werden");
+            ShowAccountStatus($"Anmeldung fehlgeschlagen: {exception.Message}");
+        }
+        finally
+        {
+            SetAccountBusy(false);
+            RefreshAccountPanels();
+        }
+    }
+
+    private void AccountCancelCode_Click(object sender, RoutedEventArgs e)
+    {
+        ShowSecondFactorInput(false);
+        ShowAccountStatus(string.Empty);
+    }
+
+    private void ShowSecondFactorInput(bool visible)
+    {
+        AccountCodeInput.Text = string.Empty;
+        AccountSecondFactorPanel.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        AccountCredentialsPanel.Visibility = visible ? Visibility.Collapsed : Visibility.Visible;
+        if (visible)
+        {
+            AccountCodeInput.Focus(FocusState.Programmatic);
         }
     }
 
@@ -166,6 +243,7 @@ public sealed partial class MainWindow
         accountBusy = busy;
         AccountSignInButton.IsEnabled = !busy;
         AccountSignUpButton.IsEnabled = !busy;
+        AccountVerifyCodeButton.IsEnabled = !busy;
         AccountSyncButton.IsEnabled = !busy;
 
         if (message is not null)

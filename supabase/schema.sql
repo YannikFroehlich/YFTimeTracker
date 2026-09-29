@@ -1,5 +1,5 @@
 -- =============================================================================
--- YFTimeTracker - Supabase-Schema (Schemaversion 6)
+-- YFTimeTracker - Supabase-Schema (Schemaversion 7)
 --
 -- Einspielen: Supabase-Dashboard -> SQL Editor -> Inhalt einfuegen -> "Run".
 -- Das Skript ist idempotent und kann gefahrlos erneut ausgefuehrt werden.
@@ -320,6 +320,28 @@ $triggers$;
 -- "(select auth.uid())" statt "auth.uid()" laesst Postgres den Wert einmal pro
 -- Abfrage statt einmal pro Zeile auswerten.
 -- =============================================================================
+-- Zwei-Faktor-Anmeldung: Hat ein Konto einen bestaetigten zweiten Faktor
+-- (TOTP), reicht das Passwort allein nicht. Ein Token nur mit Passwort hat die
+-- Stufe aal1; erst nach dem Code aus der Authenticator-App gibt es aal2. Die
+-- einschraenkenden Policies unten lassen Konten mit zweitem Faktor nur mit aal2
+-- an ihre Daten - sonst koennte jeder mit dem Passwort die API direkt nutzen.
+-- security definer, weil authenticated auth.mfa_factors nicht lesen darf.
+create or replace function public.mfa_satisfied()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $mfa_satisfied$
+    select coalesce((select auth.jwt()) ->> 'aal', 'aal1') = 'aal2'
+        or not exists (
+            select 1 from auth.mfa_factors
+            where user_id = (select auth.uid()) and status = 'verified')
+$mfa_satisfied$;
+
+revoke all on function public.mfa_satisfied() from public, anon;
+grant execute on function public.mfa_satisfied() to authenticated;
+
 do $rls$
 declare
     target_table text;
@@ -339,6 +361,14 @@ begin
             || 'using ((select auth.uid()) = user_id) '
             || 'with check ((select auth.uid()) = user_id);',
             policy_name, target_table);
+
+        -- "as restrictive": gilt zusaetzlich zur Policy oben, nicht stattdessen.
+        execute format('drop policy if exists %I on public.%I;', target_table || '_mfa', target_table);
+        execute format(
+            'create policy %I on public.%I as restrictive for all to authenticated '
+            || 'using ((select public.mfa_satisfied())) '
+            || 'with check ((select public.mfa_satisfied()));',
+            target_table || '_mfa', target_table);
     end loop;
 end
 $rls$;
@@ -370,6 +400,12 @@ create policy "backups_owner_access" on storage.objects for all to authenticated
     using (bucket_id = 'backups' and (storage.foldername(name))[1] = (select auth.uid())::text)
     with check (bucket_id = 'backups' and (storage.foldername(name))[1] = (select auth.uid())::text);
 
+-- Zwei-Faktor-Pflicht fuer beide Buckets (siehe public.mfa_satisfied).
+drop policy if exists "storage_mfa" on storage.objects;
+create policy "storage_mfa" on storage.objects as restrictive for all to authenticated
+    using ((select public.mfa_satisfied()))
+    with check ((select public.mfa_satisfied()));
+
 -- =============================================================================
 -- Oeffentliche Spielerprofile (seit Schemaversion 4, fuer die Website)
 --
@@ -400,6 +436,11 @@ drop policy if exists player_profiles_owner_access on public.player_profiles;
 create policy player_profiles_owner_access on public.player_profiles for all to authenticated
     using ((select auth.uid()) = user_id)
     with check ((select auth.uid()) = user_id);
+
+drop policy if exists player_profiles_mfa on public.player_profiles;
+create policy player_profiles_mfa on public.player_profiles as restrictive for all to authenticated
+    using ((select public.mfa_satisfied()))
+    with check ((select public.mfa_satisfied()));
 
 -- Seit Schemaversion 5: "Ueber mich" und was ein oeffentliches Profil zeigt.
 -- Alles standardmaessig an, damit bestehende oeffentliche Profile unveraendert
@@ -435,8 +476,25 @@ $player_profiles_bio$;
 create schema if not exists yf_private;
 revoke all on schema yf_private from public, anon, authenticated;
 
+-- Schluessel, unter dem die Website ein Spiel ueber Launcher hinweg
+-- zusammenfasst: ohne Gross-/Kleinschreibung, Leer- und Satzzeichen, (TM)/(R).
+-- "Battlefield(TM) 6" von EA und "Battlefield 6" von Steam sind so ein Spiel.
+-- Abweichende Editionen ("... Deluxe Edition") bleiben getrennt.
+create or replace function yf_private.game_key(p_name text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $game_key$
+    select regexp_replace(lower(p_name), '[^[:alnum:]]+', '', 'g')
+$game_key$;
+
+revoke all on function yf_private.game_key(text) from public, anon, authenticated;
+
 -- Spielzeit je Spiel: beendete Sessions plus Basis-Spielzeit. Spiele ohne jede
--- Spielzeit (nur in der Bibliothek erkannt) fallen heraus.
+-- Spielzeit (nur in der Bibliothek erkannt) fallen heraus. Hat ein Konto
+-- dasselbe Spiel in mehreren Launchern (siehe game_key), ist es eine Zeile;
+-- Name und Launcher kommen vom meistgespielten Eintrag.
 create or replace function yf_private.game_totals(p_user_id uuid)
 returns table (
     name           text,
@@ -448,28 +506,61 @@ language sql
 stable
 set search_path = ''
 as $game_totals$
-    select g.name,
-           g.source,
-           (coalesce(sum(coalesce(s.duration_seconds,
-                extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint)), 0)
-            + coalesce(g.baseline_minutes, 0)::bigint * 60)::bigint,
-           count(s.id),
-           max(s.ended_at_utc)
-    from public.games g
-    left join public.game_sessions s
-        on s.user_id = g.user_id
-       and s.game_identity = g.identity
-       and s.deleted_at is null
-       and s.ended_at_utc is not null
-    where g.user_id = p_user_id
-      and g.deleted_at is null
-    group by g.id, g.name, g.source, g.baseline_minutes
-    having coalesce(sum(coalesce(s.duration_seconds,
-                extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint)), 0)
-           + coalesce(g.baseline_minutes, 0) * 60 > 0
+    with per_game as (
+        select g.name,
+               g.source,
+               (coalesce(sum(coalesce(s.duration_seconds,
+                    extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint)), 0)
+                + coalesce(g.baseline_minutes, 0)::bigint * 60)::bigint as total_seconds,
+               count(s.id) as session_count,
+               max(s.ended_at_utc) as last_played_at
+        from public.games g
+        left join public.game_sessions s
+            on s.user_id = g.user_id
+           and s.game_identity = g.identity
+           and s.deleted_at is null
+           and s.ended_at_utc is not null
+        where g.user_id = p_user_id
+          and g.deleted_at is null
+        group by g.id, g.name, g.source, g.baseline_minutes
+        having coalesce(sum(coalesce(s.duration_seconds,
+                    extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint)), 0)
+               + coalesce(g.baseline_minutes, 0) * 60 > 0
+    )
+    select (array_agg(name order by total_seconds desc))[1],
+           (array_agg(source order by total_seconds desc))[1],
+           sum(total_seconds)::bigint,
+           sum(session_count)::bigint,
+           max(last_played_at)
+    from per_game
+    group by yf_private.game_key(name)
 $game_totals$;
 
 revoke all on function yf_private.game_totals(uuid) from public, anon, authenticated;
+
+-- Steam-App-ID zu einem Spielnamen, damit die Website das Cover zeigen kann.
+-- Zaehlt nur oeffentliche Profile und das eigene Konto; bei abweichenden IDs
+-- gewinnt die haeufigste. Nur Ziffern, weil die ID in einer Bild-URL landet.
+create or replace function yf_private.steam_app_id(p_name text)
+returns text
+language sql
+stable
+set search_path = ''
+as $steam_app_id$
+    select g.external_game_id
+    from public.games g
+    left join public.player_profiles p on p.user_id = g.user_id
+    where yf_private.game_key(g.name) = yf_private.game_key(p_name)
+      and g.source = 1
+      and g.deleted_at is null
+      and g.external_game_id ~ '^[0-9]{1,10}$'
+      and (p.is_public or g.user_id is not distinct from (select auth.uid()))
+    group by g.external_game_id
+    order by count(*) desc, g.external_game_id
+    limit 1
+$steam_app_id$;
+
+revoke all on function yf_private.steam_app_id(text) from public, anon, authenticated;
 
 -- Suche nach oeffentlichen Spielern ueber Benutzer- oder Anzeigename.
 create or replace function public.search_players(query text)
@@ -527,7 +618,9 @@ begin
 
     -- "is not distinct from" statt "=": ohne Anmeldung ist auth.uid() null, und
     -- "= null" ergaebe null statt false - das private Profil waere sichtbar.
-    is_owner := target.user_id is not distinct from (select auth.uid());
+    -- Mit zweitem Faktor zaehlt nur ein aal2-Token als Eigentuemer, sonst saehe
+    -- ein Token nur mit Passwort das private Profil.
+    is_owner := target.user_id is not distinct from (select auth.uid()) and public.mfa_satisfied();
     if target.user_id is null or not (target.is_public or is_owner) then
         return null;
     end if;
@@ -575,6 +668,7 @@ begin
                 select jsonb_agg(jsonb_build_object(
                     'name',           name,
                     'source',         source,
+                    'steam_app_id',   yf_private.steam_app_id(name),
                     'total_seconds',  total_seconds,
                     'session_count',  session_count,
                     'last_played_at', case when sees_activity then last_played_at end)
@@ -598,8 +692,8 @@ grant execute on function public.get_player_profile(text) to anon, authenticated
 -- Entdecken: Startseite, Bestenlisten und Spieleseiten der Website
 --
 -- Zaehlt ausschliesslich oeffentliche Profile. Spiele werden ueber den Namen
--- zusammengefasst (ohne Gross-/Kleinschreibung), weil dasselbe Spiel bei zwei
--- Spielern aus verschiedenen Launchern stammen kann.
+-- zusammengefasst (yf_private.game_key), weil dasselbe Spiel aus verschiedenen
+-- Launchern stammen kann.
 --
 -- ponytail: rechnet bei jedem Aufruf ueber alle oeffentlichen Profile. Ab
 -- einigen tausend Spielern als materialisierte Sicht per Cron auffrischen.
@@ -661,7 +755,7 @@ revoke all on yf_private.leaderboard_bans from public, anon, authenticated;
 -- Ein Tag ist der Starttag der Session, wie in public_sessions.
 create or replace view yf_private.ranked_days as
 select user_id,
-       lower(game_name) as game_key,
+       yf_private.game_key(game_name) as game_key,
        day,
        least(sum(seconds), 86400)::bigint as seconds,
        count(*) as session_count,
@@ -671,7 +765,7 @@ from yf_private.public_sessions s
 where show_in_leaderboards
   and not is_manual
   and not exists (select 1 from yf_private.leaderboard_bans b where b.user_id = s.user_id)
-group by user_id, lower(game_name), day;
+group by user_id, yf_private.game_key(game_name), day;
 
 revoke all on yf_private.ranked_days from public, anon, authenticated;
 
@@ -739,7 +833,7 @@ as $get_discover$
                sum(s.seconds)::bigint as seconds
         from yf_private.public_sessions s, today
         where s.day > today.day - 30
-        group by lower(s.game_name)
+        group by yf_private.game_key(s.game_name)
     ),
     last_played as (
         select distinct on (user_id) user_id, game_name, ended_at_utc
@@ -760,7 +854,7 @@ as $get_discover$
         'stats', jsonb_build_object(
             'players',       (select count(*) from public.player_profiles where is_public),
             'total_seconds', coalesce((select sum(total_seconds) from yf_private.public_game_totals), 0),
-            'games',         (select count(distinct lower(name)) from yf_private.public_game_totals),
+            'games',         (select count(distinct yf_private.game_key(name)) from yf_private.public_game_totals),
             'sessions',      (select count(*) from yf_private.public_sessions)),
         'leaderboard_week', coalesce((
             select jsonb_agg(yf_private.player_card(user_id) || jsonb_build_object('seconds', seconds)
@@ -776,7 +870,8 @@ as $get_discover$
             from (select * from alltime where seconds > 0 order by seconds desc limit 10) ranked), '[]'::jsonb),
         'popular_games', coalesce((
             select jsonb_agg(jsonb_build_object(
-                       'name', name, 'source', source, 'players', players, 'seconds', seconds)
+                       'name', name, 'source', source, 'players', players, 'seconds', seconds,
+                       'steam_app_id', yf_private.steam_app_id(name))
                    order by players desc, seconds desc)
             from (select * from popular order by players desc, seconds desc limit 8) ranked), '[]'::jsonb),
         'recently_active', coalesce((
@@ -795,13 +890,16 @@ as $get_discover$
             from days))
 $get_discover$;
 
--- Spiele, die oeffentliche Spieler gespielt haben, nach Name.
-create or replace function public.search_games(query text)
+-- Spiele, die oeffentliche Spieler gespielt haben, nach Name. Das drop ist
+-- noetig, weil "create or replace" keine neue Ergebnisspalte erlaubt.
+drop function if exists public.search_games(text);
+create function public.search_games(query text)
 returns table (
     name          text,
     source        smallint,
     players       bigint,
-    total_seconds bigint)
+    total_seconds bigint,
+    steam_app_id  text)
 language sql
 stable
 security definer
@@ -813,12 +911,13 @@ as $search_games$
     select min(t.name),
            mode() within group (order by t.source),
            count(distinct t.user_id),
-           sum(t.total_seconds)::bigint
+           sum(t.total_seconds)::bigint,
+           yf_private.steam_app_id(min(t.name))
     from yf_private.public_game_totals t
     cross join pattern
     where length(trim(query)) >= 2
       and t.name ilike pattern.value
-    group by lower(t.name)
+    group by yf_private.game_key(t.name)
     order by count(distinct t.user_id) desc, sum(t.total_seconds) desc
     limit 10
 $search_games$;
@@ -838,7 +937,7 @@ as $get_game$
     with players as (
         select *
         from yf_private.public_game_totals
-        where lower(name) = lower(trim(p_name))
+        where yf_private.game_key(name) = yf_private.game_key(p_name)
     ),
     ranking as (
         select user_id,
@@ -846,7 +945,7 @@ as $get_game$
                sum(session_count)::bigint as session_count,
                max(last_played_at) as last_played_at
         from yf_private.ranked_days
-        where game_key = lower(trim(p_name))
+        where game_key = yf_private.game_key(p_name)
           and show_games
         group by user_id
     ),
@@ -858,13 +957,14 @@ as $get_game$
                  interval '1 day') as d
         left join yf_private.public_sessions s
             on s.day = d::date
-           and lower(s.game_name) = lower(trim(p_name))
+           and yf_private.game_key(s.game_name) = yf_private.game_key(p_name)
            and s.show_activity
         group by d
     )
     select case when not exists (select 1 from players) then null else jsonb_build_object(
         'name',          (select name from players order by total_seconds desc limit 1),
         'source',        (select mode() within group (order by source) from players),
+        'steam_app_id',  yf_private.steam_app_id(p_name),
         'players',       (select count(*) from players),
         'total_seconds', (select sum(total_seconds) from players),
         'session_count', (select sum(session_count) from players),
@@ -896,6 +996,7 @@ as $get_games$
     select coalesce(jsonb_agg(jsonb_build_object(
                'name',           name,
                'source',         source,
+               'steam_app_id',   yf_private.steam_app_id(name),
                'players',        players,
                'total_seconds',  total_seconds,
                'session_count',  session_count,
@@ -909,7 +1010,7 @@ as $get_games$
                sum(t.session_count)::bigint as session_count,
                max(t.last_played_at) filter (where t.show_activity) as last_played_at
         from yf_private.public_game_totals t
-        group by lower(t.name)
+        group by yf_private.game_key(t.name)
         order by count(distinct t.user_id) desc, sum(t.total_seconds) desc
         limit 200) g
 $get_games$;
@@ -940,6 +1041,10 @@ as $delete_my_account$
 begin
     if (select auth.uid()) is null then
         raise exception 'Nicht angemeldet.' using errcode = '42501';
+    end if;
+
+    if not public.mfa_satisfied() then
+        raise exception 'Zwei-Faktor-Code erforderlich.' using errcode = '42501';
     end if;
 
     delete from auth.users where id = (select auth.uid());

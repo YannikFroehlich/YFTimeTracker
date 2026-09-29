@@ -265,4 +265,115 @@ public sealed class SupabaseAuthServiceTests
         Assert.IsFalse(service.IsSignedIn);
         Assert.IsFalse(secrets.Contains(SupabaseAuthService.RefreshTokenSecretName));
     }
+
+    private static string Jwt(string aal) =>
+        "header." + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($$"""{"sub":"user-1","aal":"{{aal}}"}"""))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_') + ".signature";
+
+    private static string TokenWithFactor(string aal, string refreshToken) => $$"""
+        {
+          "access_token": "{{Jwt(aal)}}",
+          "refresh_token": "{{refreshToken}}",
+          "expires_in": 3600,
+          "user": {
+            "id": "user-1",
+            "email": "spieler@example.de",
+            "factors": [{ "id": "factor-1", "status": "verified", "factor_type": "totp" }]
+          }
+        }
+        """;
+
+    [TestMethod]
+    public async Task Password_alone_does_not_sign_in_an_account_with_a_second_factor()
+    {
+        var (service, handler, secrets, _, _) = CreateService();
+        handler.RespondWith(HttpStatusCode.OK, TokenWithFactor("aal1", "refresh-aal1"));
+
+        var result = await service.SignInAsync("spieler@example.de", "geheim", CancellationToken.None);
+
+        Assert.AreEqual(CloudAuthStatus.SecondFactorRequired, result.Status);
+        Assert.IsFalse(service.IsSignedIn);
+        Assert.IsFalse(
+            secrets.Contains(SupabaseAuthService.RefreshTokenSecretName),
+            "Der Token nur mit Passwort darf nicht gespeichert werden.");
+    }
+
+    [TestMethod]
+    public async Task Correct_code_completes_the_sign_in_with_the_aal2_session()
+    {
+        var (service, handler, secrets, _, _) = CreateService();
+        handler.RespondWith(HttpStatusCode.OK, TokenWithFactor("aal1", "refresh-aal1"));
+        await service.SignInAsync("spieler@example.de", "geheim", CancellationToken.None);
+
+        handler.RespondWith(HttpStatusCode.OK, """{"id":"challenge-1","type":"totp"}""");
+        handler.RespondWith(HttpStatusCode.OK, TokenWithFactor("aal2", "refresh-aal2"));
+        var result = await service.VerifySecondFactorAsync("123 456", CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual("refresh-aal2", secrets.Read(SupabaseAuthService.RefreshTokenSecretName));
+        StringAssert.EndsWith(handler.Requests[1].Uri.ToString(), "/auth/v1/factors/factor-1/challenge");
+        StringAssert.EndsWith(handler.Requests[2].Uri.ToString(), "/auth/v1/factors/factor-1/verify");
+        StringAssert.Contains(handler.Requests[2].Body, "\"challenge_id\":\"challenge-1\"");
+        StringAssert.Contains(handler.Requests[2].Body, "\"code\":\"123456\"");
+        Assert.AreEqual($"Bearer {Jwt("aal1")}", handler.Requests[2].Headers["Authorization"]);
+    }
+
+    [TestMethod]
+    public async Task Wrong_code_keeps_the_pending_sign_in_for_another_try()
+    {
+        var (service, handler, _, _, _) = CreateService();
+        handler.RespondWith(HttpStatusCode.OK, TokenWithFactor("aal1", "refresh-aal1"));
+        await service.SignInAsync("spieler@example.de", "geheim", CancellationToken.None);
+
+        handler.RespondWith(HttpStatusCode.OK, """{"id":"challenge-1"}""");
+        handler.RespondWith(HttpStatusCode.UnprocessableEntity, """{"error_code":"mfa_verification_failed","msg":"Invalid TOTP code entered"}""");
+        var wrong = await service.VerifySecondFactorAsync("000000", CancellationToken.None);
+
+        handler.RespondWith(HttpStatusCode.OK, """{"id":"challenge-2"}""");
+        handler.RespondWith(HttpStatusCode.OK, TokenWithFactor("aal2", "refresh-aal2"));
+        var right = await service.VerifySecondFactorAsync("123456", CancellationToken.None);
+
+        Assert.AreEqual(CloudAuthStatus.SecondFactorRequired, wrong.Status);
+        Assert.IsTrue(right.IsSuccess);
+    }
+
+    [TestMethod]
+    public async Task Stored_aal1_session_is_dropped_once_the_account_has_a_second_factor()
+    {
+        // Zwei-Faktor-Anmeldung spaeter auf der Website eingeschaltet: der alte
+        // Refresh-Token liefert weiter aal1 und kommt nicht mehr an die Daten.
+        var (service, handler, secrets, _, _) = CreateService();
+        secrets.Write(SupabaseAuthService.RefreshTokenSecretName, "refresh-alt");
+        handler.RespondWith(HttpStatusCode.OK, TokenWithFactor("aal1", "refresh-neu"));
+
+        var result = await service.RestoreSessionAsync(CancellationToken.None);
+
+        Assert.AreEqual(CloudAuthStatus.SecondFactorRequired, result.Status);
+        Assert.IsFalse(service.IsSignedIn);
+        Assert.IsFalse(secrets.Contains(SupabaseAuthService.RefreshTokenSecretName));
+    }
+
+    [TestMethod]
+    public async Task Stored_aal2_session_is_restored_normally()
+    {
+        var (service, handler, secrets, _, _) = CreateService();
+        secrets.Write(SupabaseAuthService.RefreshTokenSecretName, "refresh-alt");
+        handler.RespondWith(HttpStatusCode.OK, TokenWithFactor("aal2", "refresh-neu"));
+
+        var result = await service.RestoreSessionAsync(CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual("refresh-neu", secrets.Read(SupabaseAuthService.RefreshTokenSecretName));
+    }
+
+    [TestMethod]
+    public async Task Code_without_a_pending_sign_in_does_not_call_the_network()
+    {
+        var (service, handler, _, _, _) = CreateService();
+
+        var result = await service.VerifySecondFactorAsync("123456", CancellationToken.None);
+
+        Assert.AreEqual(CloudAuthStatus.InvalidCredentials, result.Status);
+        Assert.AreEqual(0, handler.Requests.Count);
+    }
 }

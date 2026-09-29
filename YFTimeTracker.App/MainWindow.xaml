@@ -462,27 +462,54 @@
                                                 Foreground="{ThemeResource YFMutedBrush}"
                                                 Text="Mit einem Konto werden Spiele und Spielzeiten in der YFDatenbank gespeichert und stehen auf jedem PC zur Verfügung."
                                                 TextWrapping="Wrap" />
-                                            <TextBox
-                                                x:Name="AccountEmailInput"
-                                                Header="E-Mail"
-                                                PlaceholderText="name@beispiel.de"
-                                                Style="{StaticResource YFTextBoxStyle}" />
-                                            <PasswordBox
-                                                x:Name="AccountPasswordInput"
-                                                Header="Passwort"
-                                                Style="{StaticResource YFPasswordBoxStyle}" />
-                                            <Button
-                                                x:Name="AccountSignInButton"
-                                                HorizontalAlignment="Stretch"
-                                                Click="AccountSignIn_Click"
-                                                Content="Anmelden"
-                                                Style="{StaticResource YFAccentButtonStyle}" />
-                                            <Button
-                                                x:Name="AccountSignUpButton"
-                                                HorizontalAlignment="Stretch"
-                                                Click="AccountSignUp_Click"
-                                                Content="Konto anlegen"
-                                                Style="{StaticResource YFOutlineButtonStyle}" />
+                                            <StackPanel x:Name="AccountCredentialsPanel" Spacing="8">
+                                                <TextBox
+                                                    x:Name="AccountEmailInput"
+                                                    Header="E-Mail"
+                                                    PlaceholderText="name@beispiel.de"
+                                                    Style="{StaticResource YFTextBoxStyle}" />
+                                                <PasswordBox
+                                                    x:Name="AccountPasswordInput"
+                                                    Header="Passwort"
+                                                    Style="{StaticResource YFPasswordBoxStyle}" />
+                                                <Button
+                                                    x:Name="AccountSignInButton"
+                                                    HorizontalAlignment="Stretch"
+                                                    Click="AccountSignIn_Click"
+                                                    Content="Anmelden"
+                                                    Style="{StaticResource YFAccentButtonStyle}" />
+                                                <Button
+                                                    x:Name="AccountSignUpButton"
+                                                    HorizontalAlignment="Stretch"
+                                                    Click="AccountSignUp_Click"
+                                                    Content="Konto anlegen"
+                                                    Style="{StaticResource YFOutlineButtonStyle}" />
+                                            </StackPanel>
+                                            <!--  Zwei-Faktor-Anmeldung: nach dem Passwort der Code aus der Authenticator-App  -->
+                                            <StackPanel
+                                                x:Name="AccountSecondFactorPanel"
+                                                Spacing="8"
+                                                Visibility="Collapsed">
+                                                <TextBox
+                                                    x:Name="AccountCodeInput"
+                                                    Header="Code aus der Authenticator-App"
+                                                    InputScope="Number"
+                                                    KeyDown="AccountCodeInput_KeyDown"
+                                                    MaxLength="7"
+                                                    PlaceholderText="123456"
+                                                    Style="{StaticResource YFTextBoxStyle}" />
+                                                <Button
+                                                    x:Name="AccountVerifyCodeButton"
+                                                    HorizontalAlignment="Stretch"
+                                                    Click="AccountVerifyCode_Click"
+                                                    Content="Bestätigen"
+                                                    Style="{StaticResource YFAccentButtonStyle}" />
+                                                <Button
+                                                    HorizontalAlignment="Stretch"
+                                                    Click="AccountCancelCode_Click"
+                                                    Content="Abbrechen"
+                                                    Style="{StaticResource YFOutlineButtonStyle}" />
+                                            </StackPanel>
                                             <!--  Art. 13 DSGVO: Hinweis zum Zeitpunkt der Erhebung  -->
                                             <TextBlock
                                                 FontSize="11"

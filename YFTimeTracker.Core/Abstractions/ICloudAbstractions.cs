@@ -48,6 +48,12 @@ public interface ICloudAuthService
 
     Task<CloudAuthResult> SignUpAsync(string email, string password, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Schliesst eine Anmeldung ab, die mit <see cref="CloudAuthStatus.SecondFactorRequired"/>
+    /// endete, mit dem Code aus der Authenticator-App.
+    /// </summary>
+    Task<CloudAuthResult> VerifySecondFactorAsync(string code, CancellationToken cancellationToken);
+
     /// <summary>Stellt eine Sitzung aus dem gespeicherten Refresh-Token wieder her.</summary>
     Task<CloudAuthResult> RestoreSessionAsync(CancellationToken cancellationToken);
 
