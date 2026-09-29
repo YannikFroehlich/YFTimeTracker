@@ -435,8 +435,25 @@ $player_profiles_bio$;
 create schema if not exists yf_private;
 revoke all on schema yf_private from public, anon, authenticated;
 
+-- Schluessel, unter dem die Website ein Spiel ueber Launcher hinweg
+-- zusammenfasst: ohne Gross-/Kleinschreibung, Leer- und Satzzeichen, (TM)/(R).
+-- "Battlefield(TM) 6" von EA und "Battlefield 6" von Steam sind so ein Spiel.
+-- Abweichende Editionen ("... Deluxe Edition") bleiben getrennt.
+create or replace function yf_private.game_key(p_name text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $game_key$
+    select regexp_replace(lower(p_name), '[^[:alnum:]]+', '', 'g')
+$game_key$;
+
+revoke all on function yf_private.game_key(text) from public, anon, authenticated;
+
 -- Spielzeit je Spiel: beendete Sessions plus Basis-Spielzeit. Spiele ohne jede
--- Spielzeit (nur in der Bibliothek erkannt) fallen heraus.
+-- Spielzeit (nur in der Bibliothek erkannt) fallen heraus. Hat ein Konto
+-- dasselbe Spiel in mehreren Launchern (siehe game_key), ist es eine Zeile;
+-- Name und Launcher kommen vom meistgespielten Eintrag.
 create or replace function yf_private.game_totals(p_user_id uuid)
 returns table (
     name           text,
@@ -448,25 +465,34 @@ language sql
 stable
 set search_path = ''
 as $game_totals$
-    select g.name,
-           g.source,
-           (coalesce(sum(coalesce(s.duration_seconds,
-                extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint)), 0)
-            + coalesce(g.baseline_minutes, 0)::bigint * 60)::bigint,
-           count(s.id),
-           max(s.ended_at_utc)
-    from public.games g
-    left join public.game_sessions s
-        on s.user_id = g.user_id
-       and s.game_identity = g.identity
-       and s.deleted_at is null
-       and s.ended_at_utc is not null
-    where g.user_id = p_user_id
-      and g.deleted_at is null
-    group by g.id, g.name, g.source, g.baseline_minutes
-    having coalesce(sum(coalesce(s.duration_seconds,
-                extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint)), 0)
-           + coalesce(g.baseline_minutes, 0) * 60 > 0
+    with per_game as (
+        select g.name,
+               g.source,
+               (coalesce(sum(coalesce(s.duration_seconds,
+                    extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint)), 0)
+                + coalesce(g.baseline_minutes, 0)::bigint * 60)::bigint as total_seconds,
+               count(s.id) as session_count,
+               max(s.ended_at_utc) as last_played_at
+        from public.games g
+        left join public.game_sessions s
+            on s.user_id = g.user_id
+           and s.game_identity = g.identity
+           and s.deleted_at is null
+           and s.ended_at_utc is not null
+        where g.user_id = p_user_id
+          and g.deleted_at is null
+        group by g.id, g.name, g.source, g.baseline_minutes
+        having coalesce(sum(coalesce(s.duration_seconds,
+                    extract(epoch from s.ended_at_utc - s.started_at_utc)::bigint)), 0)
+               + coalesce(g.baseline_minutes, 0) * 60 > 0
+    )
+    select (array_agg(name order by total_seconds desc))[1],
+           (array_agg(source order by total_seconds desc))[1],
+           sum(total_seconds)::bigint,
+           sum(session_count)::bigint,
+           max(last_played_at)
+    from per_game
+    group by yf_private.game_key(name)
 $game_totals$;
 
 revoke all on function yf_private.game_totals(uuid) from public, anon, authenticated;
@@ -483,7 +509,7 @@ as $steam_app_id$
     select g.external_game_id
     from public.games g
     left join public.player_profiles p on p.user_id = g.user_id
-    where lower(g.name) = lower(trim(p_name))
+    where yf_private.game_key(g.name) = yf_private.game_key(p_name)
       and g.source = 1
       and g.deleted_at is null
       and g.external_game_id ~ '^[0-9]{1,10}$'
@@ -623,8 +649,8 @@ grant execute on function public.get_player_profile(text) to anon, authenticated
 -- Entdecken: Startseite, Bestenlisten und Spieleseiten der Website
 --
 -- Zaehlt ausschliesslich oeffentliche Profile. Spiele werden ueber den Namen
--- zusammengefasst (ohne Gross-/Kleinschreibung), weil dasselbe Spiel bei zwei
--- Spielern aus verschiedenen Launchern stammen kann.
+-- zusammengefasst (yf_private.game_key), weil dasselbe Spiel aus verschiedenen
+-- Launchern stammen kann.
 --
 -- ponytail: rechnet bei jedem Aufruf ueber alle oeffentlichen Profile. Ab
 -- einigen tausend Spielern als materialisierte Sicht per Cron auffrischen.
@@ -686,7 +712,7 @@ revoke all on yf_private.leaderboard_bans from public, anon, authenticated;
 -- Ein Tag ist der Starttag der Session, wie in public_sessions.
 create or replace view yf_private.ranked_days as
 select user_id,
-       lower(game_name) as game_key,
+       yf_private.game_key(game_name) as game_key,
        day,
        least(sum(seconds), 86400)::bigint as seconds,
        count(*) as session_count,
@@ -696,7 +722,7 @@ from yf_private.public_sessions s
 where show_in_leaderboards
   and not is_manual
   and not exists (select 1 from yf_private.leaderboard_bans b where b.user_id = s.user_id)
-group by user_id, lower(game_name), day;
+group by user_id, yf_private.game_key(game_name), day;
 
 revoke all on yf_private.ranked_days from public, anon, authenticated;
 
@@ -764,7 +790,7 @@ as $get_discover$
                sum(s.seconds)::bigint as seconds
         from yf_private.public_sessions s, today
         where s.day > today.day - 30
-        group by lower(s.game_name)
+        group by yf_private.game_key(s.game_name)
     ),
     last_played as (
         select distinct on (user_id) user_id, game_name, ended_at_utc
@@ -785,7 +811,7 @@ as $get_discover$
         'stats', jsonb_build_object(
             'players',       (select count(*) from public.player_profiles where is_public),
             'total_seconds', coalesce((select sum(total_seconds) from yf_private.public_game_totals), 0),
-            'games',         (select count(distinct lower(name)) from yf_private.public_game_totals),
+            'games',         (select count(distinct yf_private.game_key(name)) from yf_private.public_game_totals),
             'sessions',      (select count(*) from yf_private.public_sessions)),
         'leaderboard_week', coalesce((
             select jsonb_agg(yf_private.player_card(user_id) || jsonb_build_object('seconds', seconds)
@@ -848,7 +874,7 @@ as $search_games$
     cross join pattern
     where length(trim(query)) >= 2
       and t.name ilike pattern.value
-    group by lower(t.name)
+    group by yf_private.game_key(t.name)
     order by count(distinct t.user_id) desc, sum(t.total_seconds) desc
     limit 10
 $search_games$;
@@ -868,7 +894,7 @@ as $get_game$
     with players as (
         select *
         from yf_private.public_game_totals
-        where lower(name) = lower(trim(p_name))
+        where yf_private.game_key(name) = yf_private.game_key(p_name)
     ),
     ranking as (
         select user_id,
@@ -876,7 +902,7 @@ as $get_game$
                sum(session_count)::bigint as session_count,
                max(last_played_at) as last_played_at
         from yf_private.ranked_days
-        where game_key = lower(trim(p_name))
+        where game_key = yf_private.game_key(p_name)
           and show_games
         group by user_id
     ),
@@ -888,7 +914,7 @@ as $get_game$
                  interval '1 day') as d
         left join yf_private.public_sessions s
             on s.day = d::date
-           and lower(s.game_name) = lower(trim(p_name))
+           and yf_private.game_key(s.game_name) = yf_private.game_key(p_name)
            and s.show_activity
         group by d
     )
@@ -941,7 +967,7 @@ as $get_games$
                sum(t.session_count)::bigint as session_count,
                max(t.last_played_at) filter (where t.show_activity) as last_played_at
         from yf_private.public_game_totals t
-        group by lower(t.name)
+        group by yf_private.game_key(t.name)
         order by count(distinct t.user_id) desc, sum(t.total_seconds) desc
         limit 200) g
 $get_games$;
