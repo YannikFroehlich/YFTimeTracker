@@ -927,6 +927,7 @@ as $get_games$
     select coalesce(jsonb_agg(jsonb_build_object(
                'name',           name,
                'source',         source,
+               'steam_app_id',   yf_private.steam_app_id(name),
                'players',        players,
                'total_seconds',  total_seconds,
                'session_count',  session_count,
