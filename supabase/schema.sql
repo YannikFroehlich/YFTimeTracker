@@ -471,6 +471,30 @@ $game_totals$;
 
 revoke all on function yf_private.game_totals(uuid) from public, anon, authenticated;
 
+-- Steam-App-ID zu einem Spielnamen, damit die Website das Cover zeigen kann.
+-- Zaehlt nur oeffentliche Profile und das eigene Konto; bei abweichenden IDs
+-- gewinnt die haeufigste. Nur Ziffern, weil die ID in einer Bild-URL landet.
+create or replace function yf_private.steam_app_id(p_name text)
+returns text
+language sql
+stable
+set search_path = ''
+as $steam_app_id$
+    select g.external_game_id
+    from public.games g
+    left join public.player_profiles p on p.user_id = g.user_id
+    where lower(g.name) = lower(trim(p_name))
+      and g.source = 1
+      and g.deleted_at is null
+      and g.external_game_id ~ '^[0-9]{1,10}$'
+      and (p.is_public or g.user_id is not distinct from (select auth.uid()))
+    group by g.external_game_id
+    order by count(*) desc, g.external_game_id
+    limit 1
+$steam_app_id$;
+
+revoke all on function yf_private.steam_app_id(text) from public, anon, authenticated;
+
 -- Suche nach oeffentlichen Spielern ueber Benutzer- oder Anzeigename.
 create or replace function public.search_players(query text)
 returns table (
@@ -575,6 +599,7 @@ begin
                 select jsonb_agg(jsonb_build_object(
                     'name',           name,
                     'source',         source,
+                    'steam_app_id',   yf_private.steam_app_id(name),
                     'total_seconds',  total_seconds,
                     'session_count',  session_count,
                     'last_played_at', case when sees_activity then last_played_at end)
@@ -776,7 +801,8 @@ as $get_discover$
             from (select * from alltime where seconds > 0 order by seconds desc limit 10) ranked), '[]'::jsonb),
         'popular_games', coalesce((
             select jsonb_agg(jsonb_build_object(
-                       'name', name, 'source', source, 'players', players, 'seconds', seconds)
+                       'name', name, 'source', source, 'players', players, 'seconds', seconds,
+                       'steam_app_id', yf_private.steam_app_id(name))
                    order by players desc, seconds desc)
             from (select * from popular order by players desc, seconds desc limit 8) ranked), '[]'::jsonb),
         'recently_active', coalesce((
@@ -795,13 +821,16 @@ as $get_discover$
             from days))
 $get_discover$;
 
--- Spiele, die oeffentliche Spieler gespielt haben, nach Name.
-create or replace function public.search_games(query text)
+-- Spiele, die oeffentliche Spieler gespielt haben, nach Name. Das drop ist
+-- noetig, weil "create or replace" keine neue Ergebnisspalte erlaubt.
+drop function if exists public.search_games(text);
+create function public.search_games(query text)
 returns table (
     name          text,
     source        smallint,
     players       bigint,
-    total_seconds bigint)
+    total_seconds bigint,
+    steam_app_id  text)
 language sql
 stable
 security definer
@@ -813,7 +842,8 @@ as $search_games$
     select min(t.name),
            mode() within group (order by t.source),
            count(distinct t.user_id),
-           sum(t.total_seconds)::bigint
+           sum(t.total_seconds)::bigint,
+           yf_private.steam_app_id(min(t.name))
     from yf_private.public_game_totals t
     cross join pattern
     where length(trim(query)) >= 2
@@ -865,6 +895,7 @@ as $get_game$
     select case when not exists (select 1 from players) then null else jsonb_build_object(
         'name',          (select name from players order by total_seconds desc limit 1),
         'source',        (select mode() within group (order by source) from players),
+        'steam_app_id',  yf_private.steam_app_id(p_name),
         'players',       (select count(*) from players),
         'total_seconds', (select sum(total_seconds) from players),
         'session_count', (select sum(session_count) from players),
