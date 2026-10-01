@@ -1059,8 +1059,9 @@ grant execute on function public.delete_my_account() to authenticated;
 --
 -- Nur die Edge Function "contact" (supabase/functions/contact) schreibt und
 -- liest hier, mit dem Secret Key. RLS ohne jede Policy sperrt die Tabelle fuer
--- Besucher und angemeldete Nutzer vollstaendig. Die Funktion loescht
--- Nachrichten nach 180 Tagen selbst; IP-Adressen werden nicht gespeichert.
+-- Besucher und angemeldete Nutzer vollstaendig. Nachrichten werden nach 180
+-- Tagen geloescht (taeglicher Cron-Job unten, zusaetzlich bei jedem Aufruf der
+-- Funktion); IP-Adressen werden nicht gespeichert.
 -- -----------------------------------------------------------------------------
 create table if not exists public.contact_messages (
     id         uuid primary key default gen_random_uuid(),
@@ -1073,3 +1074,14 @@ create table if not exists public.contact_messages (
 
 create index if not exists contact_messages_created_idx on public.contact_messages (created_at desc);
 alter table public.contact_messages enable row level security;
+
+-- Die Datenschutzerklaerung verspricht Loeschung nach spaetestens 180 Tagen,
+-- auch wenn lange niemand das Formular nutzt. cron.schedule mit demselben
+-- Namen ersetzt den Job, das Skript bleibt also idempotent.
+create extension if not exists pg_cron;
+
+select cron.schedule(
+    'contact-messages-retention',
+    '17 3 * * *',
+    $retention$delete from public.contact_messages where created_at < now() - interval '180 days'$retention$
+);
