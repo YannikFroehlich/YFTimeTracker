@@ -176,10 +176,10 @@
                                             Initials="{Binding Initials}" />
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                             <TextBlock FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock FontSize="11" Foreground="{Binding ExecutableColor}" Text="{Binding ExecutableDisplay}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock FontSize="11" controls:ThemeInk.Foreground="{Binding ExecutableColor}" Text="{Binding ExecutableDisplay}" TextTrimming="CharacterEllipsis" />
                                             <StackPanel Orientation="Horizontal" Spacing="7">
                                                 <TextBlock FontSize="9" Foreground="{ThemeResource YFCyanTextBrush}" Text="{Binding SourceLabel}" />
-                                                <TextBlock FontSize="10" Foreground="{Binding ActivityColor}" Text="{Binding ActivityText}" />
+                                                <TextBlock FontSize="10" controls:ThemeInk.Foreground="{Binding ActivityColor}" Text="{Binding ActivityText}" />
                                                 <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding LastPlayedText}" TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
                                             <ItemsControl ItemsSource="{Binding Tags}">
@@ -373,7 +373,7 @@
 
                         <Button
                             HorizontalAlignment="Left"
-                            Command="{Binding DeleteSelectedSessionCommand}"
+                            Click="DeleteSession_Click"
                             Style="{StaticResource YFDangerButtonStyle}"
                             Content="Ausgewählte Session löschen" />
                     </StackPanel>
@@ -381,10 +381,14 @@
             </Grid>
 
             <Border Grid.Row="3" Margin="0,12,0,0" Padding="12,9" Background="{ThemeResource YFStatusBarBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="9">
-                <StackPanel Orientation="Horizontal" Spacing="9">
+                <Grid ColumnSpacing="9">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
                     <FontIcon FontSize="13" Foreground="{ThemeResource YFBlueTextBrush}" Glyph="&#xE946;" />
-                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
-                </StackPanel>
+                    <TextBlock Grid.Column="1" Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+                </Grid>
             </Border>
         </Grid>
     </ScrollViewer>

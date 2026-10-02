@@ -75,6 +75,35 @@ public sealed partial class GamesPage : Page
         }
     }
 
+    private async void DeleteSession_Click(object sender, RoutedEventArgs e)
+    {
+        var session = ViewModel.SelectedSession;
+        if (session is null || LibraryRoot.XamlRoot is null)
+        {
+            return;
+        }
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = LibraryRoot.XamlRoot,
+            Title = "Session löschen?",
+            Content = new TextBlock
+            {
+                MaxWidth = 430,
+                Text = $"Die Session von {ViewModel.SelectedGame?.Name ?? session.GameName} am {session.StartedAt} wird dauerhaft gelöscht.",
+                TextWrapping = TextWrapping.Wrap
+            },
+            PrimaryButtonText = "Löschen",
+            CloseButtonText = "Abbrechen",
+            DefaultButton = ContentDialogButton.Close
+        };
+
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        {
+            await ViewModel.DeleteSelectedSessionCommand.ExecuteAsync(null);
+        }
+    }
+
     private async void MergeGame_Click(object sender, RoutedEventArgs e)
     {
         var source = ViewModel.SelectedGame;

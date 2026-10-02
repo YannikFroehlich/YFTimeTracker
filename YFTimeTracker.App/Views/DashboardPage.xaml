@@ -75,7 +75,7 @@
                             <TextBlock Grid.Row="1" Margin="0,4,0,0" FontSize="28" FontWeight="SemiBold" Text="{Binding TodayText}" />
                             <Grid Grid.Row="2" Margin="0,5,0,0">
                                 <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding TodaySessionText}" />
-                                <TextBlock HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" Foreground="{Binding TodayComparisonBrush}" Text="{Binding TodayComparisonText}" />
+                                <TextBlock HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" controls:ThemeInk.Foreground="{Binding TodayComparisonBrush}" Text="{Binding TodayComparisonText}" />
                             </Grid>
                         </Grid>
                     </Grid>
@@ -109,7 +109,7 @@
                             <TextBlock Grid.Row="1" Margin="0,4,0,0" FontSize="28" FontWeight="SemiBold" Text="{Binding WeekText}" />
                             <Grid Grid.Row="2" Margin="0,5,0,0">
                                 <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding WeekSessionText}" />
-                                <TextBlock HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" Foreground="{Binding WeekComparisonBrush}" Text="{Binding WeekComparisonText}" />
+                                <TextBlock HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" controls:ThemeInk.Foreground="{Binding WeekComparisonBrush}" Text="{Binding WeekComparisonText}" />
                             </Grid>
                         </Grid>
                     </Grid>
@@ -167,6 +167,7 @@
                             <Border
                                 Padding="9,4"
                                 HorizontalAlignment="Right"
+                                Visibility="{Binding ActiveGameVisibility}"
                                 Background="{ThemeResource YFStatusChipSuccessBackgroundBrush}"
                                 BorderBrush="{ThemeResource YFStatusChipSuccessBorderBrush}"
                                 BorderThickness="1"
@@ -320,7 +321,7 @@
                                 <TextBlock FontWeight="SemiBold" Foreground="{ThemeResource YFBlueTextBrush}" Text="{Binding WeekText}" />
                                 <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="insgesamt" />
                             </StackPanel>
-                            <TextBlock HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" Foreground="{Binding WeekComparisonBrush}" Text="{Binding WeekComparisonText}" />
+                            <TextBlock HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" controls:ThemeInk.Foreground="{Binding WeekComparisonBrush}" Text="{Binding WeekComparisonText}" />
                         </Grid>
                     </Grid>
                 </Border>
@@ -379,7 +380,7 @@
                                             <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
                                         <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{ThemeResource YFTextBrush}" Text="{Binding TotalPlaytime}" />
-                                        <TextBlock Grid.Column="2" VerticalAlignment="Center" Foreground="{Binding LastSessionBrush}" Text="{Binding LastSession}" />
+                                        <TextBlock Grid.Column="2" VerticalAlignment="Center" controls:ThemeInk.Foreground="{Binding LastSessionBrush}" Text="{Binding LastSession}" />
                                         <FontIcon Grid.Column="3" VerticalAlignment="Center" FontSize="14" Foreground="{ThemeResource YFMutedBrush}" Glyph="&#xE76C;" />
                                     </Grid>
                                 </Border>

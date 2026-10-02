@@ -92,7 +92,7 @@
                                 <StackPanel VerticalAlignment="Center" Spacing="5">
                                     <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{ThemeResource YFCyanTextBrush}" Text="{Binding YearTitle}" />
                                     <TextBlock FontFamily="Segoe UI Variable Display" FontSize="46" FontWeight="SemiBold" Text="{Binding TotalPlaytimeText}" />
-                                    <TextBlock FontSize="13" Foreground="{Binding ComparisonColor}" Text="{Binding ComparisonText}" />
+                                    <TextBlock FontSize="13" controls:ThemeInk.Foreground="{Binding ComparisonColor}" Text="{Binding ComparisonText}" />
                                     <TextBlock Margin="0,4,0,0" Style="{StaticResource YFMutedTextStyle}" Text="{Binding YearSubtitle}" />
                                 </StackPanel>
                                 <Border Grid.Column="1" Width="86" Height="86" VerticalAlignment="Center" Background="{ThemeResource YFBlueTintBrush}" BorderBrush="{ThemeResource YFBlueCardBorderBrush}" BorderThickness="1" CornerRadius="43">

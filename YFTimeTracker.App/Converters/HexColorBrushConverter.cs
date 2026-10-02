@@ -9,7 +9,11 @@ public sealed class HexColorBrushConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
-        var text = value as string;
+        return ToBrush(value as string);
+    }
+
+    public static SolidColorBrush ToBrush(string? text)
+    {
         if (string.IsNullOrWhiteSpace(text))
         {
             return new SolidColorBrush(Color.FromArgb(255, 131, 145, 168));

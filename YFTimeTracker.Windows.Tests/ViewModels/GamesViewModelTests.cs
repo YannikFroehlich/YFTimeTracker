@@ -168,6 +168,38 @@ public sealed class GamesViewModelTests
         Assert.AreEqual(string.Empty, viewModel.ExecutablePath);
     }
 
+    [TestMethod]
+    public async Task Background_refresh_keeps_list_entries_and_unsaved_editor_input()
+    {
+        var now = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
+        var alpha = CreateGame(1, "Alpha", GameSource.Steam, "alpha.exe");
+        var beta = CreateGame(2, "Beta", GameSource.Epic, "beta.exe");
+        var games = new List<Game> { alpha, beta };
+        var tracking = new FakeTrackingService(TrackingState.Stopped);
+        var viewModel = CreateViewModel(games, new FakeSessionRepository([]), tracking, now);
+
+        await viewModel.RefreshAsync();
+        var selected = viewModel.Games.Single(game => game.Id == alpha.Id);
+        viewModel.SelectedGame = selected;
+
+        // Der Katalog liefert bei jedem Laden neue Objekte, wie die Datenbank.
+        games[0] = CreateGame(1, "Alpha Remastered", GameSource.Steam, "alpha.exe");
+        await viewModel.RefreshAsync();
+        Assert.AreEqual("Alpha Remastered", viewModel.DisplayName, "Ein unveränderter Editor folgt dem neuen Stand.");
+
+        viewModel.DisplayName = "Noch nicht gespeichert";
+        tracking.SetState(new TrackingState(
+            true,
+            false,
+            [new RunningGameInfo(beta.Id, beta.Name, now.AddMinutes(-5), TimeSpan.FromMinutes(5))]));
+        await viewModel.RefreshAsync();
+
+        Assert.AreSame(selected, viewModel.SelectedGame);
+        Assert.AreSame(selected, viewModel.Games.Single(game => game.Id == alpha.Id), "Der Eintrag wird aktualisiert, nicht ersetzt.");
+        Assert.AreEqual("Beta", viewModel.Games[0].Name, "Das gestartete Spiel rückt nach oben.");
+        Assert.AreEqual("Noch nicht gespeichert", viewModel.DisplayName);
+    }
+
     private static GamesViewModel CreateViewModel(
         IReadOnlyList<Game> games,
         FakeSessionRepository sessions,
