@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
+using static YFTimeTracker.App.Views.GridDefinitions;
 
 namespace YFTimeTracker.App.Views;
 
@@ -155,13 +156,23 @@ public sealed partial class GamesPage : Page
     {
         var compactFilters = width < 1080;
         var narrowFilters = width < 650;
-        LibraryFilterGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-        LibraryFilterGrid.ColumnDefinitions[1].Width = narrowFilters
-            ? new GridLength(0)
-            : compactFilters ? new GridLength(1, GridUnitType.Star) : new GridLength(175);
-        LibraryFilterGrid.ColumnDefinitions[2].Width = compactFilters ? new GridLength(0) : new GridLength(175);
-        LibraryFilterGrid.ColumnDefinitions[3].Width = compactFilters ? new GridLength(0) : new GridLength(190);
-        LibraryFilterGrid.ColumnDefinitions[4].Width = compactFilters ? new GridLength(0) : GridLength.Auto;
+        if (narrowFilters)
+        {
+            SetColumns(LibraryFilterGrid, Star());
+            SetRows(LibraryFilterGrid, 6);
+        }
+        else if (compactFilters)
+        {
+            SetColumns(LibraryFilterGrid, Star(), Star());
+            SetRows(LibraryFilterGrid, 4);
+        }
+        else
+        {
+            SetColumns(LibraryFilterGrid, Star(), new GridLength(175), new GridLength(175), new GridLength(190), GridLength.Auto);
+            SetRows(LibraryFilterGrid, 2);
+        }
+
+        TagFilterBox.HorizontalAlignment = narrowFilters ? HorizontalAlignment.Stretch : HorizontalAlignment.Left;
         PositionFilter(LibrarySearchBox, 0, 0, compactFilters && !narrowFilters ? 2 : 1);
         PositionFilter(SourceFilterBox, compactFilters ? 1 : 0, compactFilters ? 0 : 1);
         PositionFilter(StatusFilterBox, narrowFilters ? 2 : compactFilters ? 1 : 0, narrowFilters ? 0 : compactFilters ? 1 : 2);
@@ -179,6 +190,7 @@ public sealed partial class GamesPage : Page
         Grid.SetRow(EditorCard, compact ? 1 : 0);
         GamesListCard.Margin = compact ? new Thickness(0, 0, 0, 12) : new Thickness(0);
         EditorCard.Margin = compact ? new Thickness(0) : new Thickness(14, 0, 0, 0);
+        EditorActions.Orientation = width < 560 ? Orientation.Vertical : Orientation.Horizontal;
     }
 
     private void TrackingService_StateChanged(object? sender, TrackingState state)

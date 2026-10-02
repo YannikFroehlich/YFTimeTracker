@@ -43,8 +43,6 @@
             Grid.Row="1"
             AlwaysShowHeader="True"
             Background="{ThemeResource YFBackgroundBrush}"
-            CompactModeThresholdWidth="860"
-            ExpandedModeThresholdWidth="1180"
             IsBackButtonVisible="Collapsed"
             IsPaneOpen="True"
             IsPaneToggleButtonVisible="False"
@@ -52,7 +50,8 @@
             ItemInvoked="Navigation_ItemInvoked"
             OpenPaneLength="272"
             PaneDisplayMode="Left"
-            SelectionFollowsFocus="Disabled">
+            SelectionFollowsFocus="Disabled"
+            SizeChanged="Navigation_SizeChanged">
             <NavigationView.Resources>
                 <SolidColorBrush x:Key="NavigationViewContentBackground" Color="{ThemeResource YFBackgroundColor}" />
                 <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="{ThemeResource YFStrokeColor}" />
@@ -70,7 +69,7 @@
             </NavigationView.Resources>
 
             <NavigationView.PaneHeader>
-                <Grid Height="78" Margin="12,2,12,8">
+                <Grid x:Name="PaneBrand" Height="78" Margin="12,2,12,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="54" />
                         <ColumnDefinition Width="*" />
@@ -106,7 +105,7 @@
                 </NavigationViewItem>
                 <NavigationViewItem Content="Sessions" Tag="sessions">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE787;" />
+                        <FontIcon Glyph="&#xE81C;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Statistiken" Tag="statistics">
@@ -127,6 +126,7 @@
 
             <NavigationView.PaneFooter>
                 <Border
+                    x:Name="TrackingStatusCard"
                     Margin="14,8,14,14"
                     Padding="16"
                     Background="{ThemeResource YFTrackingCardGradientBrush}"
@@ -172,7 +172,7 @@
                                 CornerRadius="7">
                                 <StackPanel Orientation="Horizontal" Spacing="7">
                                     <FontIcon FontSize="12" Foreground="{ThemeResource YFBlueTextBrush}" Glyph="&#xE9CE;" />
-                                    <TextBlock FontSize="11" Foreground="{ThemeResource YFTextBrush}" Text="LOKAL &amp; PRIVAT" />
+                                    <TextBlock x:Name="PrivacyChipText" FontSize="11" Foreground="{ThemeResource YFTextBrush}" Text="LOKAL &amp; PRIVAT" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -637,7 +637,7 @@
                                 </Border>
                                 <StackPanel VerticalAlignment="Center" Spacing="0">
                                     <TextBlock x:Name="ProfileNameText" FontSize="12" FontWeight="SemiBold" Foreground="{ThemeResource YFTextBrush}" Text="Lokales Profil" />
-                                    <TextBlock FontSize="9" Foreground="{ThemeResource YFMutedBrush}" Text="Lokal" />
+                                    <TextBlock x:Name="ProfileScopeLabel" FontSize="9" Foreground="{ThemeResource YFMutedBrush}" Text="Lokal" />
                                 </StackPanel>
                             </StackPanel>
                         </Button>

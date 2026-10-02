@@ -223,6 +223,20 @@ public sealed partial class MainWindow
         ProfileScopeText.Text = signedIn
             ? "Name und Farbe gehören zum Konto und gelten auf allen deinen PCs."
             : "Name und Farbe werden auf diesem Gerät gespeichert.";
+        ApplyAccountScope();
+    }
+
+    private void AuthService_SessionChanged(object? sender, EventArgs e)
+    {
+        DispatcherQueue.TryEnqueue(ApplyAccountScope);
+    }
+
+    /// <summary>Profil und Seitenleiste sagen nur „lokal“, solange kein Konto angemeldet ist.</summary>
+    private void ApplyAccountScope()
+    {
+        var signedIn = AuthService.CurrentSession is not null;
+        ProfileScopeLabel.Text = signedIn ? "Mit Konto" : "Lokal";
+        PrivacyChipText.Text = signedIn ? "LOKAL + KONTO" : "LOKAL & PRIVAT";
     }
 
     private async Task RefreshAccountLastSyncAsync()

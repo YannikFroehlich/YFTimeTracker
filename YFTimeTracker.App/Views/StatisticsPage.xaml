@@ -283,16 +283,25 @@
                                             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" controls:ThemeInk.Foreground="{Binding AccentColor}" Text="{Binding Initials}" />
                                         </Border>
                                         <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4">
-                                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                            <Grid HorizontalAlignment="Left" ColumnSpacing="7">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
                                                 <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock FontSize="9" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding Source}" />
-                                            </StackPanel>
+                                                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="9" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding Source}" />
+                                            </Grid>
                                             <ProgressBar Height="5" Maximum="100" Background="{ThemeResource YFButtonBackgroundBrush}" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Value="{Binding Progress}" />
-                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <Grid ColumnSpacing="5">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
                                                 <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding SessionText}" />
-                                                <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="·" />
-                                                <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding LastPlayedText}" TextTrimming="CharacterEllipsis" />
-                                            </StackPanel>
+                                                <TextBlock Grid.Column="1" FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="·" />
+                                                <TextBlock Grid.Column="2" FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding LastPlayedText}" TextTrimming="CharacterEllipsis" />
+                                            </Grid>
                                         </StackPanel>
                                         <StackPanel Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center">
                                             <TextBlock HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" controls:ThemeInk.Foreground="{Binding AccentColor}" Text="{Binding DurationText}" />

@@ -278,10 +278,14 @@
                                                     IconPath="{Binding IconPath}"
                                                     Initials="{Binding Initials}" />
                                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="5">
-                                                    <StackPanel Orientation="Horizontal" Spacing="7">
+                                                    <Grid HorizontalAlignment="Left" ColumnSpacing="7">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
                                                         <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                                        <TextBlock FontSize="9" Foreground="{ThemeResource YFCyanTextBrush}" Text="{Binding Source}" />
-                                                    </StackPanel>
+                                                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="9" Foreground="{ThemeResource YFCyanTextBrush}" Text="{Binding Source}" />
+                                                    </Grid>
                                                     <ProgressBar Height="5" Maximum="100" Background="{ThemeResource YFButtonBackgroundBrush}" Foreground="{ThemeResource YFBlueTextBrush}" Value="{Binding Progress}" />
                                                     <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding SessionText}" />
                                                 </StackPanel>

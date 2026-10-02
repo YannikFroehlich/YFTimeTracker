@@ -17,12 +17,16 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Grid Margin="0,0,0,14">
+            <Grid Margin="0,0,0,14" ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Style="{StaticResource YFPageTitleStyle}" Text="Einstellungen" />
-                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Passe Tracking, Windows-Integration und lokale Datensicherung an" />
+                    <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Passe Tracking, Windows-Integration und lokale Datensicherung an" TextWrapping="Wrap" />
                 </StackPanel>
-                <Button HorizontalAlignment="Right" Command="{Binding SaveCommand}" Style="{StaticResource YFAccentButtonStyle}" Content="Änderungen speichern" />
+                <Button Grid.Column="1" VerticalAlignment="Center" Command="{Binding SaveCommand}" Style="{StaticResource YFAccentButtonStyle}" Content="Änderungen speichern" />
             </Grid>
 
             <Grid x:Name="SettingsGrid" Grid.Row="1">
@@ -329,7 +333,7 @@
                         <Grid>
                             <StackPanel Margin="0,0,44,0">
                                 <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="DATEN &amp; SICHERUNG" />
-                                <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Alle Daten bleiben lokal auf diesem Computer" />
+                                <TextBlock Margin="0,5,0,0" Style="{StaticResource YFMutedTextStyle}" Text="Alle Daten liegen auf diesem Computer. Kopien ins Konto gibt es nur, wenn du sie einschaltest." TextWrapping="Wrap" />
                             </StackPanel>
                             <Border Width="34" Height="34" HorizontalAlignment="Right" VerticalAlignment="Top" Background="{ThemeResource YFCyanTintBrush}" CornerRadius="10">
                                 <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15" Foreground="{ThemeResource YFCyanTextBrush}" Glyph="&#xE8F1;" />
