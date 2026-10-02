@@ -4,7 +4,11 @@ namespace YFTimeTracker.Core.Abstractions;
 
 public interface INotificationLogRepository
 {
-    event EventHandler? EntryAdded;
+    /// <summary>
+    /// Wird ausgelöst, wenn ein Eintrag hinzugefügt oder im Hintergrund entfernt wurde
+    /// (<see cref="AddAsync"/>, <see cref="DeleteByKindAsync"/>).
+    /// </summary>
+    event EventHandler? Changed;
 
     Task<NotificationLogEntry> AddAsync(NotificationLogEntry entry, CancellationToken cancellationToken);
 
@@ -17,6 +21,8 @@ public interface INotificationLogRepository
     Task MarkAllAsReadAsync(CancellationToken cancellationToken);
 
     Task DeleteAsync(long id, CancellationToken cancellationToken);
+
+    Task DeleteByKindAsync(NotificationKind kind, CancellationToken cancellationToken);
 
     Task ClearAllAsync(CancellationToken cancellationToken);
 }

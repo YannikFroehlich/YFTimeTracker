@@ -55,7 +55,7 @@ public sealed partial class MainWindow : Window
         settingsStore = App.Services.GetRequiredService<ISettingsStore>();
         appUpdateService = App.Services.GetRequiredService<IAppUpdateService>();
         notificationLog = App.Services.GetRequiredService<INotificationLogRepository>();
-        notificationLog.EntryAdded += NotificationLog_EntryAdded;
+        notificationLog.Changed += NotificationLog_Changed;
         firstRunSetupService = App.Services.GetRequiredService<IFirstRunSetupService>();
         trackingService = App.Services.GetRequiredService<IGameTrackingService>();
         themeService = App.Services.GetRequiredService<IThemeService>();
@@ -540,12 +540,12 @@ public sealed partial class MainWindow : Window
 
     private async void DashboardRefreshTimer_Tick(object? sender, object e)
     {
-        // Das Glocken-Symbol wird über INotificationLogRepository.EntryAdded aktualisiert und
+        // Das Glocken-Symbol wird über INotificationLogRepository.Changed aktualisiert und
         // braucht deshalb keine eigene Abfrage im Takt des Dashboards.
         await dashboardViewModel.RefreshAsync();
     }
 
-    private void NotificationLog_EntryAdded(object? sender, EventArgs e)
+    private void NotificationLog_Changed(object? sender, EventArgs e)
     {
         DispatcherQueue.TryEnqueue(async () => await RefreshNotificationBadgeAsync());
     }

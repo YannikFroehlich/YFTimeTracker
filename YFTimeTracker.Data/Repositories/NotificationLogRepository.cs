@@ -6,14 +6,14 @@ namespace YFTimeTracker.Data.Repositories;
 
 public sealed class NotificationLogRepository(IDbContextFactory<YFTimeTrackerDbContext> contextFactory) : INotificationLogRepository
 {
-    public event EventHandler? EntryAdded;
+    public event EventHandler? Changed;
 
     public async Task<NotificationLogEntry> AddAsync(NotificationLogEntry entry, CancellationToken cancellationToken)
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         context.NotificationLogEntries.Add(entry);
         await context.SaveChangesAsync(cancellationToken);
-        EntryAdded?.Invoke(this, EventArgs.Empty);
+        Changed?.Invoke(this, EventArgs.Empty);
         return entry;
     }
 
@@ -59,6 +59,18 @@ public sealed class NotificationLogRepository(IDbContextFactory<YFTimeTrackerDbC
         await context.NotificationLogEntries
             .Where(entry => entry.Id == id)
             .ExecuteDeleteAsync(cancellationToken);
+    }
+
+    public async Task DeleteByKindAsync(NotificationKind kind, CancellationToken cancellationToken)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        var deleted = await context.NotificationLogEntries
+            .Where(entry => entry.Kind == kind)
+            .ExecuteDeleteAsync(cancellationToken);
+        if (deleted > 0)
+        {
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     public async Task ClearAllAsync(CancellationToken cancellationToken)
