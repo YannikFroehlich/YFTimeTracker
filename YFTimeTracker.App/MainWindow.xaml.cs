@@ -55,7 +55,7 @@ public sealed partial class MainWindow : Window
         settingsStore = App.Services.GetRequiredService<ISettingsStore>();
         appUpdateService = App.Services.GetRequiredService<IAppUpdateService>();
         notificationLog = App.Services.GetRequiredService<INotificationLogRepository>();
-        notificationLog.EntryAdded += NotificationLog_EntryAdded;
+        notificationLog.Changed += NotificationLog_Changed;
         firstRunSetupService = App.Services.GetRequiredService<IFirstRunSetupService>();
         trackingService = App.Services.GetRequiredService<IGameTrackingService>();
         themeService = App.Services.GetRequiredService<IThemeService>();
@@ -67,6 +67,7 @@ public sealed partial class MainWindow : Window
         SetTitleBar(TitleBarDragRegion);
         appWindow = ConfigureWindow();
         appWindow.Closing += AppWindow_Closing;
+        AuthService.SessionChanged += AuthService_SessionChanged;
         RootGrid.ActualThemeChanged += (_, _) => ApplyTitleBarButtonColors();
         ApplyTitleBarButtonColors();
 
@@ -82,6 +83,7 @@ public sealed partial class MainWindow : Window
             var profileName = await settingsStore.GetAsync(AppSettingKeys.ProfileDisplayName, CancellationToken.None);
             var profileAccentColor = await settingsStore.GetAsync(AppSettingKeys.ProfileAccentColor, CancellationToken.None);
             ApplyProfileHeader(profileName, profileAccentColor);
+            ApplyAccountScope();
             UpdateDashboardRefreshTimer();
             await RefreshNotificationBadgeAsync();
             await dashboardViewModel.RefreshAsync();
@@ -194,6 +196,22 @@ public sealed partial class MainWindow : Window
         {
             dashboardRefreshTimer.Stop();
         }
+    }
+
+    private void Navigation_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        // In schmalen Fenstern bleibt nur die Symbolleiste, damit der Inhalt Platz hat.
+        var compact = e.NewSize.Width < 1000;
+        var mode = compact ? NavigationViewPaneDisplayMode.LeftCompact : NavigationViewPaneDisplayMode.Left;
+        if (Navigation.PaneDisplayMode == mode)
+        {
+            return;
+        }
+
+        Navigation.PaneDisplayMode = mode;
+        Navigation.IsPaneOpen = !compact;
+        PaneBrand.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        TrackingStatusCard.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private void ThemeService_ThemeChanged(object? sender, ElementTheme theme)
@@ -540,12 +558,12 @@ public sealed partial class MainWindow : Window
 
     private async void DashboardRefreshTimer_Tick(object? sender, object e)
     {
-        // Das Glocken-Symbol wird über INotificationLogRepository.EntryAdded aktualisiert und
+        // Das Glocken-Symbol wird über INotificationLogRepository.Changed aktualisiert und
         // braucht deshalb keine eigene Abfrage im Takt des Dashboards.
         await dashboardViewModel.RefreshAsync();
     }
 
-    private void NotificationLog_EntryAdded(object? sender, EventArgs e)
+    private void NotificationLog_Changed(object? sender, EventArgs e)
     {
         DispatcherQueue.TryEnqueue(async () => await RefreshNotificationBadgeAsync());
     }
@@ -1046,6 +1064,12 @@ public sealed partial class MainWindow : Window
         var y = displayArea.WorkArea.Y + (displayArea.WorkArea.Height - height) / 2;
 
         appWindow.MoveAndResize(new RectInt32(x, y, width, height));
+        if (appWindow.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.PreferredMinimumWidth = 720;
+            presenter.PreferredMinimumHeight = 560;
+        }
+
         appWindow.Title = "YFTimeTracker";
         var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "YFTimeTracker.ico");
         if (File.Exists(iconPath))

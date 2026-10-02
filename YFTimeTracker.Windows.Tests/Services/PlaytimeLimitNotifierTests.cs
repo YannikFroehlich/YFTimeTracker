@@ -214,13 +214,13 @@ public sealed class PlaytimeLimitNotifierTests
     {
         public List<NotificationLogEntry> Entries { get; } = [];
 
-        public event EventHandler? EntryAdded;
+        public event EventHandler? Changed;
 
         public Task<NotificationLogEntry> AddAsync(NotificationLogEntry entry, CancellationToken cancellationToken)
         {
             entry.Id = Entries.Count + 1;
             Entries.Add(entry);
-            EntryAdded?.Invoke(this, EventArgs.Empty);
+            Changed?.Invoke(this, EventArgs.Empty);
             return Task.FromResult(entry);
         }
 
@@ -248,6 +248,12 @@ public sealed class PlaytimeLimitNotifierTests
         public Task DeleteAsync(long id, CancellationToken cancellationToken)
         {
             Entries.RemoveAll(entry => entry.Id == id);
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteByKindAsync(NotificationKind kind, CancellationToken cancellationToken)
+        {
+            Entries.RemoveAll(entry => entry.Kind == kind);
             return Task.CompletedTask;
         }
 

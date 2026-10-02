@@ -5,7 +5,7 @@ namespace YFTimeTracker.App.ViewModels;
 
 public sealed class SessionListItemViewModel : ObservableObject
 {
-    private readonly GameSession session;
+    private GameSession session;
     private DateTimeOffset nowUtc;
 
     public SessionListItemViewModel(
@@ -26,7 +26,7 @@ public sealed class SessionListItemViewModel : ObservableObject
 
     public string GameName => session.Game?.Name ?? "Unbekanntes Spiel";
 
-    public string? IconPath { get; }
+    public string? IconPath { get; private set; }
 
     public string GameInitials
     {
@@ -55,7 +55,7 @@ public sealed class SessionListItemViewModel : ObservableObject
     /// Geraet, auf dem die Session entstand. Bleibt <c>null</c>, solange nur
     /// dieser PC bekannt ist - dann ist die Angabe ueberfluessig.
     /// </summary>
-    public string? DeviceName { get; }
+    public string? DeviceName { get; private set; }
 
     public string SourceAndDeviceLabel => string.IsNullOrWhiteSpace(DeviceName)
         ? SourceLabel
@@ -88,6 +88,19 @@ public sealed class SessionListItemViewModel : ObservableObject
     public string StatusText => IsOpen ? "AKTIV" : session.IsManual ? "BEARBEITET" : "ABGESCHLOSSEN";
 
     public GameSession Model => session;
+
+    /// <summary>
+    /// Übernimmt einen neu geladenen Stand, damit die Liste den Eintrag behält statt ihn neu
+    /// aufzubauen.
+    /// </summary>
+    public void Update(GameSession session, DateTimeOffset currentUtc, string? iconPath, string? deviceName)
+    {
+        this.session = session;
+        nowUtc = currentUtc;
+        IconPath = iconPath;
+        DeviceName = deviceName;
+        OnPropertyChanged(string.Empty);
+    }
 
     public void RefreshDuration(DateTimeOffset currentUtc)
     {

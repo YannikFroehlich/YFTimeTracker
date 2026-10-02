@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Navigation;
 using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
+using static YFTimeTracker.App.Views.GridDefinitions;
 
 namespace YFTimeTracker.App.Views;
 
@@ -145,26 +146,39 @@ public sealed partial class SessionsPage : Page
         HeaderActions.Margin = compactHeader ? new Thickness(0, 12, 0, 0) : new Thickness(0);
 
         var stackSummary = width < 760;
-        SummaryGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-        SummaryGrid.ColumnDefinitions[1].Width = stackSummary ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
-        SummaryGrid.ColumnDefinitions[2].Width = stackSummary ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+        SetColumns(SummaryGrid, Enumerable.Repeat(Star(), stackSummary ? 1 : 3).ToArray());
+        SetRows(SummaryGrid, stackSummary ? 3 : 1);
         PositionSummaryCard(CountCard, 0, 0);
         PositionSummaryCard(TotalCard, stackSummary ? 1 : 0, stackSummary ? 0 : 1);
         PositionSummaryCard(AverageCard, stackSummary ? 2 : 0, stackSummary ? 0 : 2);
 
         var stackFilters = width < 900;
-        FilterGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-        FilterGrid.ColumnDefinitions[1].Width = stackFilters ? new GridLength(1, GridUnitType.Star) : new GridLength(220);
-        FilterGrid.ColumnDefinitions[2].Width = stackFilters ? new GridLength(0) : new GridLength(200);
-        FilterGrid.ColumnDefinitions[3].Width = stackFilters ? new GridLength(0) : GridLength.Auto;
+        if (stackFilters)
+        {
+            SetColumns(FilterGrid, Star(), Star());
+        }
+        else
+        {
+            SetColumns(FilterGrid, Star(), new GridLength(220), new GridLength(200), GridLength.Auto);
+        }
+
+        SetRows(FilterGrid, stackFilters ? 3 : 1);
         PositionFilter(SearchBox, 0, 0, stackFilters ? 2 : 1);
         PositionFilter(GameFilterBox, stackFilters ? 1 : 0, stackFilters ? 0 : 1);
         PositionFilter(PeriodFilterBox, stackFilters ? 1 : 0, stackFilters ? 1 : 2);
         PositionFilter(FilterButtons, stackFilters ? 2 : 0, stackFilters ? 0 : 3, stackFilters ? 2 : 1);
 
         var stackContent = width < 1080;
-        SessionContent.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-        SessionContent.ColumnDefinitions[1].Width = stackContent ? new GridLength(0) : new GridLength(390);
+        if (stackContent)
+        {
+            SetColumns(SessionContent, Star());
+        }
+        else
+        {
+            SetColumns(SessionContent, Star(), new GridLength(390));
+        }
+
+        SetRows(SessionContent, stackContent ? 2 : 1);
         Grid.SetColumn(TimelineCard, 0);
         Grid.SetRow(TimelineCard, 0);
         Grid.SetColumn(EditorCard, stackContent ? 0 : 1);

@@ -5,12 +5,19 @@ using YFTimeTracker.Core.Services;
 
 namespace YFTimeTracker.App.ViewModels;
 
-public sealed class GameListItemViewModel(Game game, string? iconPath = null) : ObservableObject
+public sealed class GameListItemViewModel : ObservableObject
 {
     private const string ProgressNormalColor = "#3182FF";
     private const string ProgressLimitReachedColor = "#FF5368";
-    private readonly IReadOnlyList<GameSession> gameSessions = [];
-    private readonly DateTimeOffset nowUtc = DateTimeOffset.UtcNow;
+    private Game game;
+    private IReadOnlyList<GameSession> gameSessions = [];
+    private DateTimeOffset nowUtc = DateTimeOffset.UtcNow;
+
+    public GameListItemViewModel(Game game, string? iconPath = null)
+    {
+        this.game = game;
+        IconPath = iconPath;
+    }
 
     public GameListItemViewModel(
         Game game,
@@ -29,7 +36,7 @@ public sealed class GameListItemViewModel(Game game, string? iconPath = null) : 
 
     public string Name => game.Name;
 
-    public string? IconPath { get; } = iconPath;
+    public string? IconPath { get; private set; }
 
     public string ExecutablePath => game.PrimaryExecutable?.ExecutablePath ?? string.Empty;
 
@@ -72,7 +79,7 @@ public sealed class GameListItemViewModel(Game game, string? iconPath = null) : 
 
     public string PathStatus => Exists ? "EXE gefunden" : "EXE fehlt oder wurde verschoben";
 
-    public bool IsRunning { get; }
+    public bool IsRunning { get; private set; }
 
     public bool IsPinned
     {
@@ -152,4 +159,24 @@ public sealed class GameListItemViewModel(Game game, string? iconPath = null) : 
             .Concat(Tags));
 
     public Game Model => game;
+
+    /// <summary>
+    /// Übernimmt einen neu geladenen Stand in diesen Eintrag, statt ihn durch ein neues Objekt
+    /// zu ersetzen. So bleibt der Eintrag in der Liste ausgewählt, wenn im Hintergrund neu
+    /// geladen wird.
+    /// </summary>
+    public void Update(
+        Game game,
+        IReadOnlyList<GameSession>? sessions,
+        bool isRunning,
+        DateTimeOffset nowUtc,
+        string? iconPath)
+    {
+        this.game = game;
+        gameSessions = sessions ?? [];
+        this.nowUtc = nowUtc;
+        IsRunning = isRunning;
+        IconPath = iconPath;
+        OnPropertyChanged(string.Empty);
+    }
 }

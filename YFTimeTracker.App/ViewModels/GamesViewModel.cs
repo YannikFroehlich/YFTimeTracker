@@ -37,6 +37,7 @@ public sealed class GamesViewModel : ObservableObject
     private string manualStartText = DateTime.Now.AddHours(-1).ToString("g", CultureInfo.CurrentCulture);
     private string manualEndText = DateTime.Now.ToString("g", CultureInfo.CurrentCulture);
     private string statusMessage = "Bereit";
+    private bool isSyncingGames;
 
     public GamesViewModel(
         IGameCatalogService catalog,
@@ -198,7 +199,9 @@ public sealed class GamesViewModel : ObservableObject
         get => selectedGame;
         set
         {
-            if (!SetProperty(ref selectedGame, value))
+            // Beim Abgleich der Liste meldet die ListView kurz null, wenn sie den ausgewählten
+            // Eintrag verschiebt. Das ist keine Auswahl des Nutzers und darf die Eingaben nicht leeren.
+            if (isSyncingGames || !SetProperty(ref selectedGame, value))
             {
                 return;
             }
@@ -306,20 +309,40 @@ public sealed class GamesViewModel : ObservableObject
                 .ToHashSet();
             var iconPaths = await ResolveIconPathsAsync(storedGames);
 
+            // Ungespeicherte Eingaben im Editor überleben den Refresh. Hat der Nutzer nichts
+            // geändert, folgt der Editor dem neu geladenen Stand (etwa einer Umbenennung).
+            var editorUnchanged = SelectedGame is { } selected
+                && DisplayName == selected.Name
+                && ExecutablePath == selected.ExecutablePath;
+
+            var existingById = allGames.ToDictionary(item => item.Id);
             allGames.Clear();
             foreach (var game in storedGames)
             {
                 sessionsByGame.TryGetValue(game.Id, out var gameSessions);
-                allGames.Add(new GameListItemViewModel(
-                    game,
-                    gameSessions,
-                    runningGameIds.Contains(game.Id),
-                    clock.UtcNow,
-                    iconPaths.GetValueOrDefault(game.Id)));
+                var isRunning = runningGameIds.Contains(game.Id);
+                var iconPath = iconPaths.GetValueOrDefault(game.Id);
+                if (existingById.TryGetValue(game.Id, out var item))
+                {
+                    item.Update(game, gameSessions, isRunning, clock.UtcNow, iconPath);
+                }
+                else
+                {
+                    item = new GameListItemViewModel(game, gameSessions, isRunning, clock.UtcNow, iconPath);
+                }
+
+                allGames.Add(item);
             }
 
             UpdateTagFilters();
             ApplyFilters();
+            if (editorUnchanged && SelectedGame is { } refreshed)
+            {
+                DisplayName = refreshed.Name;
+                ExecutablePath = refreshed.ExecutablePath;
+            }
+
+            await LoadSessionsAsync();
             StatusMessage = allGames.Count == 0
                 ? "Noch keine Spiele registriert"
                 : $"{allGames.Count} {(allGames.Count == 1 ? "Spiel" : "Spiele")} registriert";
@@ -376,10 +399,14 @@ public sealed class GamesViewModel : ObservableObject
         };
 
         var filtered = query.ToArray();
-        Games.Clear();
-        foreach (var game in filtered)
+        isSyncingGames = true;
+        try
         {
-            Games.Add(game);
+            Games.SyncWith(filtered);
+        }
+        finally
+        {
+            isSyncingGames = false;
         }
 
         var matchingSelection = selectedId is null
@@ -388,6 +415,11 @@ public sealed class GamesViewModel : ObservableObject
         if (!ReferenceEquals(SelectedGame, matchingSelection))
         {
             SelectedGame = matchingSelection;
+        }
+        else
+        {
+            // Stellt die Auswahl der ListView wieder her, falls sie beim Abgleich verloren ging.
+            OnPropertyChanged(nameof(SelectedGame));
         }
 
         if (SelectedGame is null)
@@ -518,6 +550,12 @@ public sealed class GamesViewModel : ObservableObject
             }
 
             await RefreshAsync();
+            if (SelectedGame is { } saved)
+            {
+                DisplayName = saved.Name;
+                ExecutablePath = saved.ExecutablePath;
+            }
+
             StatusMessage = "Spiel gespeichert";
         }
         catch (YFTimeTrackerException ex)
@@ -647,11 +685,14 @@ public sealed class GamesViewModel : ObservableObject
             return;
         }
 
+        var selectedSessionId = SelectedSession?.Id;
         Sessions.Clear();
         foreach (var session in storedSessions)
         {
             Sessions.Add(new SessionListItemViewModel(session, iconPath: game.IconPath));
         }
+
+        SelectedSession = Sessions.FirstOrDefault(session => session.Id == selectedSessionId);
     }
 
     private async Task<IReadOnlyDictionary<long, string?>> ResolveIconPathsAsync(IReadOnlyList<Game> games)

@@ -2,6 +2,7 @@
     x:Class="YFTimeTracker.App.Views.StatisticsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:YFTimeTracker.App.Controls"
     xmlns:converters="using:YFTimeTracker.App.Converters"
     Loaded="Page_Loaded"
     Unloaded="Page_Unloaded">
@@ -93,7 +94,7 @@
                             <FontIcon HorizontalAlignment="Right" FontSize="18" Foreground="{ThemeResource YFBlueTextBrush}" Glyph="&#xE823;" />
                         </Grid>
                         <TextBlock Grid.Row="1" Margin="0,8,0,4" VerticalAlignment="Center" FontFamily="Segoe UI Variable Display" FontSize="28" FontWeight="SemiBold" Text="{Binding TotalDurationText}" />
-                        <TextBlock Grid.Row="2" FontSize="12" Foreground="{Binding ComparisonColor, Converter={StaticResource HexColorBrushConverter}}" Text="{Binding ComparisonText}" TextWrapping="Wrap" />
+                        <TextBlock Grid.Row="2" FontSize="12" controls:ThemeInk.Foreground="{Binding ComparisonColor}" Text="{Binding ComparisonText}" TextWrapping="Wrap" />
                     </Grid>
                 </Border>
 
@@ -279,22 +280,31 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock VerticalAlignment="Center" FontSize="12" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding Rank}" />
                                         <Border Grid.Column="1" Width="40" Height="40" Background="{ThemeResource YFBlueTintBrush}" BorderBrush="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" BorderThickness="1" CornerRadius="10">
-                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Text="{Binding Initials}" />
+                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" controls:ThemeInk.Foreground="{Binding AccentColor}" Text="{Binding Initials}" />
                                         </Border>
                                         <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4">
-                                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                            <Grid HorizontalAlignment="Left" ColumnSpacing="7">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
                                                 <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock FontSize="9" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding Source}" />
-                                            </StackPanel>
+                                                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="9" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding Source}" />
+                                            </Grid>
                                             <ProgressBar Height="5" Maximum="100" Background="{ThemeResource YFButtonBackgroundBrush}" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Value="{Binding Progress}" />
-                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <Grid ColumnSpacing="5">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
                                                 <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding SessionText}" />
-                                                <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="·" />
-                                                <TextBlock FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding LastPlayedText}" TextTrimming="CharacterEllipsis" />
-                                            </StackPanel>
+                                                <TextBlock Grid.Column="1" FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="·" />
+                                                <TextBlock Grid.Column="2" FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding LastPlayedText}" TextTrimming="CharacterEllipsis" />
+                                            </Grid>
                                         </StackPanel>
                                         <StackPanel Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                            <TextBlock HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Text="{Binding DurationText}" />
+                                            <TextBlock HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" controls:ThemeInk.Foreground="{Binding AccentColor}" Text="{Binding DurationText}" />
                                             <TextBlock HorizontalAlignment="Right" FontSize="10" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding ShareText}" />
                                         </StackPanel>
                                     </Grid>
@@ -341,7 +351,7 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock VerticalAlignment="Center" FontSize="12" Text="{Binding DayName}" />
                                         <ProgressBar Grid.Column="1" Height="7" Maximum="100" Background="{ThemeResource YFButtonBackgroundBrush}" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Value="{Binding Progress}" />
-                                        <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Text="{Binding DurationText}" />
+                                        <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11" controls:ThemeInk.Foreground="{Binding AccentColor}" Text="{Binding DurationText}" />
                                     </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -431,7 +441,7 @@
                                                 <TextBlock Margin="0,3,0,0" Style="{StaticResource YFMutedTextStyle}" Text="{Binding PreviousDurationText}" />
                                             </StackPanel>
                                             <TextBlock Grid.Column="1" HorizontalAlignment="Right" FontFamily="Segoe UI Variable Display" FontSize="19" FontWeight="SemiBold" Text="{Binding CurrentDurationText}" />
-                                            <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Margin="0,7,0,0" FontSize="11" Foreground="{Binding ChangeColor, Converter={StaticResource HexColorBrushConverter}}" Text="{Binding ChangeText}" TextWrapping="Wrap" />
+                                            <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Margin="0,7,0,0" FontSize="11" controls:ThemeInk.Foreground="{Binding ChangeColor}" Text="{Binding ChangeText}" TextWrapping="Wrap" />
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
@@ -457,7 +467,7 @@
                                         <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Text="{Binding Name}" />
                                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding RangeText}" />
                                         <ProgressBar Grid.Column="2" Height="7" Maximum="100" Background="{ThemeResource YFButtonBackgroundBrush}" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Value="{Binding Progress}" />
-                                        <TextBlock Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11" Foreground="{Binding AccentColor, Converter={StaticResource HexColorBrushConverter}}" Text="{Binding DurationText}" />
+                                        <TextBlock Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11" controls:ThemeInk.Foreground="{Binding AccentColor}" Text="{Binding DurationText}" />
                                     </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -712,10 +722,14 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Spacing="9">
+                    <Grid VerticalAlignment="Center" ColumnSpacing="9">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
                         <FontIcon FontSize="13" Foreground="{ThemeResource YFBlueTextBrush}" Glyph="&#xE946;" />
-                        <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
-                    </StackPanel>
+                        <TextBlock Grid.Column="1" Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+                    </Grid>
                     <Button
                         Grid.Column="1"
                         Padding="10,6"

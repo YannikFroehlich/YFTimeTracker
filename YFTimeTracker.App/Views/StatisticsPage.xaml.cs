@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using YFTimeTracker.App.ViewModels;
 using YFTimeTracker.Core.Abstractions;
 using YFTimeTracker.Core.Models;
+using static YFTimeTracker.App.Views.GridDefinitions;
 
 namespace YFTimeTracker.App.Views;
 
@@ -77,25 +78,21 @@ public sealed partial class StatisticsPage : Page
         PositionSummaryCards(width);
 
         var stackMain = width < 1050;
-        MainContentGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-        MainContentGrid.ColumnDefinitions[1].Width = stackMain ? new GridLength(0) : new GridLength(0.65, GridUnitType.Star);
+        SetSideBySide(MainContentGrid, stackMain, Star(), Star(0.65));
         Grid.SetRow(TrendCard, 0);
         Grid.SetColumn(TrendCard, 0);
         Grid.SetRow(TopGamesCard, stackMain ? 1 : 0);
         Grid.SetColumn(TopGamesCard, stackMain ? 0 : 1);
 
         var stackLower = width < 980;
-        LowerContentGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-        LowerContentGrid.ColumnDefinitions[1].Width = stackLower ? new GridLength(0) : new GridLength(0.95, GridUnitType.Star);
+        SetSideBySide(LowerContentGrid, stackLower, Star(), Star(0.95));
         Grid.SetRow(WeekdayCard, 0);
         Grid.SetColumn(WeekdayCard, 0);
         Grid.SetRow(InsightsCard, stackLower ? 1 : 0);
         Grid.SetColumn(InsightsCard, stackLower ? 0 : 1);
 
         var stackInsights = width < 640;
-        InsightsGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-        InsightsGrid.ColumnDefinitions[1].Width = stackInsights ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
-        InsightsGrid.ColumnDefinitions[2].Width = stackInsights ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+        SetColumns(InsightsGrid, Enumerable.Repeat(Star(), stackInsights ? 1 : 3).ToArray());
         Grid.SetRow(TopGameInsight, 0);
         Grid.SetColumn(TopGameInsight, 0);
         Grid.SetRow(WeekdayInsight, stackInsights ? 1 : 0);
@@ -106,17 +103,15 @@ public sealed partial class StatisticsPage : Page
         LongestInsight.Margin = stackInsights ? new Thickness(0, 10, 0, 0) : new Thickness(0);
 
         var stackAdvanced = width < 980;
-        AdvancedGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-        AdvancedGrid.ColumnDefinitions[1].Width = stackAdvanced ? new GridLength(0) : new GridLength(1.2, GridUnitType.Star);
+        SetSideBySide(AdvancedGrid, stackAdvanced, Star(), Star(1.2));
         Grid.SetRow(ComparisonCard, 0);
         Grid.SetColumn(ComparisonCard, 0);
         Grid.SetRow(HabitsCard, stackAdvanced ? 1 : 0);
         Grid.SetColumn(HabitsCard, stackAdvanced ? 0 : 1);
 
         var stackHabitHighlights = width < 700;
-        HabitHighlightsGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-        HabitHighlightsGrid.ColumnDefinitions[1].Width = stackHabitHighlights ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
-        HabitHighlightsGrid.ColumnDefinitions[2].Width = stackHabitHighlights ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+        SetColumns(HabitHighlightsGrid, Enumerable.Repeat(Star(), stackHabitHighlights ? 1 : 3).ToArray());
+        SetRows(HabitHighlightsGrid, stackHabitHighlights ? 3 : 1);
         Grid.SetRow(MedianHabit, 0);
         Grid.SetColumn(MedianHabit, 0);
         Grid.SetRow(PreferredTimeHabit, stackHabitHighlights ? 1 : 0);
@@ -156,12 +151,22 @@ public sealed partial class StatisticsPage : Page
 
     private void SetSummaryColumns(int visibleColumns)
     {
-        for (var index = 0; index < SummaryGrid.ColumnDefinitions.Count; index++)
+        SetColumns(SummaryGrid, Enumerable.Repeat(Star(), visibleColumns).ToArray());
+        SetRows(SummaryGrid, 4 / visibleColumns);
+    }
+
+    private static void SetSideBySide(Grid grid, bool stacked, GridLength main, GridLength side)
+    {
+        if (stacked)
         {
-            SummaryGrid.ColumnDefinitions[index].Width = index < visibleColumns
-                ? new GridLength(1, GridUnitType.Star)
-                : new GridLength(0);
+            SetColumns(grid, main);
         }
+        else
+        {
+            SetColumns(grid, main, side);
+        }
+
+        SetRows(grid, stacked ? 2 : 1);
     }
 
     private static void Position(FrameworkElement element, int row, int column)

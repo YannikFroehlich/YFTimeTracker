@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using YFTimeTracker.App.ViewModels;
+using static YFTimeTracker.App.Views.GridDefinitions;
 
 namespace YFTimeTracker.App.Views;
 
@@ -168,8 +169,16 @@ public sealed partial class SettingsPage : Page
         DiagnosticsSettingsCard.Margin = compact ? new Thickness(0) : new Thickness(0, 14, 0, 0);
 
         var compactDiagnostics = width < 650;
-        DiagnosticsOverviewGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-        DiagnosticsOverviewGrid.ColumnDefinitions[1].Width = compactDiagnostics ? new GridLength(0) : GridLength.Auto;
+        if (compactDiagnostics)
+        {
+            SetColumns(DiagnosticsOverviewGrid, Star());
+        }
+        else
+        {
+            SetColumns(DiagnosticsOverviewGrid, Star(), GridLength.Auto);
+        }
+
+        SetRows(DiagnosticsOverviewGrid, compactDiagnostics ? 2 : 1);
         Grid.SetRow(DiagnosticsActions, compactDiagnostics ? 1 : 0);
         Grid.SetColumn(DiagnosticsActions, compactDiagnostics ? 0 : 1);
         DiagnosticsActions.Margin = compactDiagnostics ? new Thickness(0, 4, 0, 0) : new Thickness(0);

@@ -107,7 +107,7 @@ public sealed class NotificationLogRepositoryTests
     }
 
     [TestMethod]
-    public async Task AddAsync_raises_EntryAdded()
+    public async Task AddAsync_raises_Changed()
     {
         using var paths = new TempAppPathProvider();
         var factory = new TestDbContextFactory(paths.DatabasePath);
@@ -118,7 +118,7 @@ public sealed class NotificationLogRepositoryTests
 
         var repository = new NotificationLogRepository(factory);
         var raised = 0;
-        repository.EntryAdded += (_, _) => raised++;
+        repository.Changed += (_, _) => raised++;
 
         await repository.AddAsync(new NotificationLogEntry
         {
@@ -162,6 +162,40 @@ public sealed class NotificationLogRepositoryTests
         var remaining = await repository.GetRecentAsync(10, CancellationToken.None);
         Assert.HasCount(1, remaining);
         Assert.AreEqual(NotificationKind.PlaytimeLimitReached, remaining[0].Kind);
+    }
+
+    [TestMethod]
+    public async Task DeleteByKindAsync_removes_only_that_kind_and_raises_Changed_once()
+    {
+        using var paths = new TempAppPathProvider();
+        var factory = new TestDbContextFactory(paths.DatabasePath);
+        await using (var context = factory.CreateDbContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var repository = new NotificationLogRepository(factory);
+        foreach (var kind in new[] { NotificationKind.UpdateAvailable, NotificationKind.UpdateAvailable, NotificationKind.PlaytimeLimitReached })
+        {
+            await repository.AddAsync(new NotificationLogEntry
+            {
+                Kind = kind,
+                Title = "Test",
+                Message = "Test",
+                CreatedAtUtc = DateTimeOffset.Parse("2026-09-03T10:00:00Z")
+            }, CancellationToken.None);
+        }
+
+        var raised = 0;
+        repository.Changed += (_, _) => raised++;
+
+        await repository.DeleteByKindAsync(NotificationKind.UpdateAvailable, CancellationToken.None);
+        await repository.DeleteByKindAsync(NotificationKind.UpdateAvailable, CancellationToken.None);
+
+        var remaining = await repository.GetRecentAsync(10, CancellationToken.None);
+        Assert.HasCount(1, remaining);
+        Assert.AreEqual(NotificationKind.PlaytimeLimitReached, remaining[0].Kind);
+        Assert.AreEqual(1, raised);
     }
 
     [TestMethod]

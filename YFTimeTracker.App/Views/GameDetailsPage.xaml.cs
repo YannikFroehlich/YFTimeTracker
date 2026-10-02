@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using YFTimeTracker.App.ViewModels;
+using static YFTimeTracker.App.Views.GridDefinitions;
 
 namespace YFTimeTracker.App.Views;
 
@@ -81,21 +82,25 @@ public sealed partial class GameDetailsPage : Page
     {
         CoverActions.Orientation = width < 620 ? Orientation.Vertical : Orientation.Horizontal;
         var compactHero = width < 900;
-        HeroGrid.ColumnDefinitions[0].Width = new GridLength(94);
-        HeroGrid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
-        HeroGrid.ColumnDefinitions[2].Width = compactHero ? new GridLength(0) : new GridLength(330);
+        if (compactHero)
+        {
+            SetColumns(HeroGrid, new GridLength(94), Star());
+        }
+        else
+        {
+            SetColumns(HeroGrid, new GridLength(94), Star(), new GridLength(330));
+        }
+
+        SetRows(HeroGrid, compactHero ? 2 : 1);
         Grid.SetRow(NameEditor, compactHero ? 1 : 0);
         Grid.SetColumn(NameEditor, compactHero ? 0 : 2);
         Grid.SetColumnSpan(NameEditor, compactHero ? 3 : 1);
 
         var stackSummary = width < 720;
         var twoColumnSummary = !stackSummary && width < 1080;
-        for (var index = 0; index < SummaryGrid.ColumnDefinitions.Count; index++)
-        {
-            SummaryGrid.ColumnDefinitions[index].Width = index < (stackSummary ? 1 : twoColumnSummary ? 2 : 4)
-                ? new GridLength(1, GridUnitType.Star)
-                : new GridLength(0);
-        }
+        var summaryColumns = stackSummary ? 1 : twoColumnSummary ? 2 : 4;
+        SetColumns(SummaryGrid, Enumerable.Repeat(Star(), summaryColumns).ToArray());
+        SetRows(SummaryGrid, 4 / summaryColumns);
 
         PositionSummaryCard(TotalCard, 0, 0);
         PositionSummaryCard(SessionCountCard, stackSummary ? 1 : 0, stackSummary ? 0 : 1);
@@ -103,8 +108,16 @@ public sealed partial class GameDetailsPage : Page
         PositionSummaryCard(LastPlayedCard, stackSummary ? 3 : twoColumnSummary ? 1 : 0, stackSummary ? 0 : twoColumnSummary ? 1 : 3);
 
         var stackContent = width < 1050;
-        ContentGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-        ContentGrid.ColumnDefinitions[1].Width = stackContent ? new GridLength(0) : new GridLength(380);
+        if (stackContent)
+        {
+            SetColumns(ContentGrid, Star());
+        }
+        else
+        {
+            SetColumns(ContentGrid, Star(), new GridLength(380));
+        }
+
+        SetRows(ContentGrid, stackContent ? 2 : 1);
         Grid.SetColumn(MainColumn, 0);
         Grid.SetRow(MainColumn, 0);
         Grid.SetColumn(SideColumn, stackContent ? 0 : 1);

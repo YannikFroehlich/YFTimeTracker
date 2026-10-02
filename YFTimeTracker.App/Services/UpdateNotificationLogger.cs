@@ -31,13 +31,20 @@ public sealed class UpdateNotificationLogger(
 
     private async void UpdateService_StateChanged(object? sender, AppUpdateState state)
     {
-        if (!state.HasAvailableUpdate || state.AvailableVersion is not { } version)
-        {
-            return;
-        }
-
         try
         {
+            // Die installierte Version ist aktuell: frühere „Update verfügbar“-Meldungen sind überholt.
+            if (state.Stage == AppUpdateStage.UpToDate)
+            {
+                await notificationLog.DeleteByKindAsync(NotificationKind.UpdateAvailable, CancellationToken.None);
+                return;
+            }
+
+            if (!state.HasAvailableUpdate || state.AvailableVersion is not { } version)
+            {
+                return;
+            }
+
             var lastLoggedVersion = await settings.GetAsync(AppSettingKeys.LastLoggedUpdateVersion, CancellationToken.None);
             if (string.Equals(lastLoggedVersion, version, StringComparison.OrdinalIgnoreCase))
             {
@@ -45,6 +52,9 @@ public sealed class UpdateNotificationLogger(
             }
 
             await settings.SetAsync(AppSettingKeys.LastLoggedUpdateVersion, version, CancellationToken.None);
+
+            // Eine neuere Version ersetzt die Meldung zur älteren, statt sie zu stapeln.
+            await notificationLog.DeleteByKindAsync(NotificationKind.UpdateAvailable, CancellationToken.None);
             await notificationLog.AddAsync(new NotificationLogEntry
             {
                 Kind = NotificationKind.UpdateAvailable,
@@ -55,7 +65,7 @@ public sealed class UpdateNotificationLogger(
         }
         catch (Exception exception)
         {
-            logger.LogError(exception, "Failed to write update notification log entry for version {Version}.", version);
+            logger.LogError(exception, "Failed to update the notification log for update stage {Stage} (version {Version}).", state.Stage, state.AvailableVersion);
         }
     }
 }

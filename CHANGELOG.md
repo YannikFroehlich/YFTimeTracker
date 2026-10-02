@@ -2,6 +2,16 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.10.1 – 2026-10-02
+- Behoben: Die Meldung „Update verfügbar“ verschwindet jetzt, sobald die App auf dem neuesten Stand ist. Erscheint eine noch neuere Version, ersetzt sie die alte Meldung, statt sich daneben zu stapeln.
+- Behoben: Startet oder endet im Hintergrund ein Spiel, gehen in der Bibliothek ungespeicherte Eingaben nicht mehr verloren. Bibliothek und Session-Liste flackern dabei nicht mehr und behalten die Auswahl.
+- Behoben: Das Löschen einer Session in der Bibliothek fragt jetzt vorher nach, wie auf der Sessions-Seite.
+- Verbessert: Im hellen Design sind farbige Texte wie Vergleichswerte, „Jetzt aktiv“ oder Statistik-Dauern deutlich besser lesbar.
+- Verbessert: Schmale Fenster: Die Navigation schrumpft auf Symbole, Kopfzeilen überlappen nicht mehr, das Wochendiagramm passt sich der Breite an, und gestapelte Karten schließen bündig ab. Das Fenster hat eine Mindestgröße.
+- Verbessert: Lange Statusmeldungen brechen um, statt abgeschnitten zu werden, und lange Spielnamen enden mit „…“.
+- Verbessert: „LIVE“ auf dem Dashboard erscheint nur, während ein Spiel erfasst wird. Mit angemeldetem Konto steht im Profil „Mit Konto“ statt „Lokal“.
+- Hinweis: Wer ein eigenes Supabase-Projekt betreibt, spielt `supabase/schema.sql` erneut ein. Ein täglicher Job löscht Nachrichten aus dem Kontaktformular jetzt zuverlässig nach 180 Tagen; dafür braucht das Projekt die Erweiterung `pg_cron`.
+
 ## 1.10.0 – 2026-09-29
 - Neu: Zwei-Faktor-Anmeldung für das Konto. Eingerichtet wird sie in den Einstellungen der Website [tracker.yfserver.de](https://tracker.yfserver.de) mit einer Authenticator-App wie Google oder Microsoft Authenticator. Danach fragt auch die App beim Anmelden nach dem Code, und ohne Code kommt mit dem Passwort allein niemand an die Daten im Konto. Wer die Zwei-Faktor-Anmeldung einschaltet, meldet sich in der App einmal neu an.
 - Neu: Auf der Website zählt dasselbe Spiel aus verschiedenen Launchern als ein Eintrag, auch wenn der Name leicht abweicht (etwa „Battlefield™ 6“ und „Battlefield 6“). Spiele bekommen dort Cover-Bilder, auch Xbox- und EA-Spiele ohne Steam-ID.

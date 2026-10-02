@@ -534,6 +534,7 @@ public sealed class SessionsViewModel : ObservableObject
         var gameId = SelectedGameFilter?.GameId;
         var machineKey = SelectedDeviceFilter?.MachineKey;
         var showDevice = DeviceFilterVisibility == Visibility.Visible;
+        var existingById = Sessions.ToDictionary(item => item.Id);
         var filtered = loadedSessions
             .Where(session => gameId is null || session.GameId == gameId)
             .Where(session => machineKey is null || GetMachineKey(session) == machineKey)
@@ -541,18 +542,21 @@ public sealed class SessionsViewModel : ObservableObject
                 || (session.Game?.Name?.Contains(search, StringComparison.CurrentCultureIgnoreCase) ?? false)
                 || session.StartedAtUtc.LocalDateTime.ToString("g").Contains(search, StringComparison.CurrentCultureIgnoreCase))
             .OrderByDescending(session => session.StartedAtUtc)
-            .Select(session => new SessionListItemViewModel(
-                session,
-                clock.UtcNow,
-                iconPathsByGame.GetValueOrDefault(session.GameId),
-                showDevice ? GetDeviceName(session) : null))
+            .Select(session =>
+            {
+                var iconPath = iconPathsByGame.GetValueOrDefault(session.GameId);
+                var deviceName = showDevice ? GetDeviceName(session) : null;
+                if (existingById.TryGetValue(session.Id, out var item))
+                {
+                    item.Update(session, clock.UtcNow, iconPath, deviceName);
+                    return item;
+                }
+
+                return new SessionListItemViewModel(session, clock.UtcNow, iconPath, deviceName);
+            })
             .ToArray();
 
-        Sessions.Clear();
-        foreach (var session in filtered)
-        {
-            Sessions.Add(session);
-        }
+        Sessions.SyncWith(filtered);
 
         var matchingSelection = selectedId is null
             ? null

@@ -7,6 +7,7 @@ using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
 using YFTimeTracker.App.Services;
 using YFTimeTracker.App.ViewModels;
+using static YFTimeTracker.App.Views.GridDefinitions;
 
 namespace YFTimeTracker.App.Views;
 
@@ -115,8 +116,16 @@ public sealed partial class YearReviewPage : Page
         PositionSummaryCards(summaryColumns);
 
         var stackContent = width < 980;
-        ReviewContentGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-        ReviewContentGrid.ColumnDefinitions[1].Width = stackContent ? new GridLength(0) : new GridLength(0.65, GridUnitType.Star);
+        if (stackContent)
+        {
+            SetColumns(ReviewContentGrid, Star());
+        }
+        else
+        {
+            SetColumns(ReviewContentGrid, Star(), Star(0.65));
+        }
+
+        SetRows(ReviewContentGrid, stackContent ? 2 : 1);
         Grid.SetRow(MonthCard, 0);
         Grid.SetColumn(MonthCard, 0);
         Grid.SetRow(HighlightsCard, stackContent ? 1 : 0);
@@ -125,12 +134,8 @@ public sealed partial class YearReviewPage : Page
 
     private void PositionSummaryCards(int columns)
     {
-        for (var index = 0; index < SummaryGrid.ColumnDefinitions.Count; index++)
-        {
-            SummaryGrid.ColumnDefinitions[index].Width = index < columns
-                ? new GridLength(1, GridUnitType.Star)
-                : new GridLength(0);
-        }
+        SetColumns(SummaryGrid, Enumerable.Repeat(Star(), columns).ToArray());
+        SetRows(SummaryGrid, (3 + columns - 1) / columns);
 
         Position(ActiveDaysCard, 0, 0);
         Position(GamesCard, columns == 1 ? 1 : 0, columns == 1 ? 0 : 1);

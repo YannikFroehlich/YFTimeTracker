@@ -137,6 +137,7 @@
                     <ComboBox
                         x:Name="GameFilterBox"
                         Grid.Column="1"
+                        HorizontalAlignment="Stretch"
                         DisplayMemberPath="Name"
                         ItemsSource="{Binding GameFilters}"
                         PlaceholderText="Alle Spiele"
@@ -144,6 +145,7 @@
                     <ComboBox
                         x:Name="PeriodFilterBox"
                         Grid.Column="2"
+                        HorizontalAlignment="Stretch"
                         DisplayMemberPath="Label"
                         ItemsSource="{Binding PeriodOptions}"
                         SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}" />
@@ -346,10 +348,14 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Spacing="9">
+                    <Grid VerticalAlignment="Center" ColumnSpacing="9">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
                         <FontIcon FontSize="13" Foreground="{ThemeResource YFBlueTextBrush}" Glyph="&#xE946;" />
-                        <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
-                    </StackPanel>
+                        <TextBlock Grid.Column="1" Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+                    </Grid>
                     <Button
                         Grid.Column="1"
                         Padding="10,6"
