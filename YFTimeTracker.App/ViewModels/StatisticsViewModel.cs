@@ -15,12 +15,13 @@ namespace YFTimeTracker.App.ViewModels;
 public sealed class StatisticsViewModel : ObservableObject
 {
     private static readonly CultureInfo GermanCulture = CultureInfo.GetCultureInfo("de-DE");
-    private const string BlueColor = "#387BFF";
-    private const string CyanColor = "#2CE5F3";
-    private const string PurpleColor = "#8A4DFF";
-    private const string GreenColor = "#29E7A4";
-    private const string MutedColor = "#8391A8";
-    private const string RedColor = "#FF6B7A";
+    private const string BarColor = "#77736A";
+    private const string AccentColor = "#FF6A2B";
+    private const string SandColor = "#C9A46A";
+    private const string SageColor = "#6F9C88";
+    private const string GreenColor = "#6FD49A";
+    private const string MutedColor = "#9D9A91";
+    private const string RedColor = "#FF7B70";
     private const double TimelineChartHeight = 160;
     private const double TimelineItemSpacing = 8;
     private const double DonutCenter = 70;
@@ -420,7 +421,7 @@ public sealed class StatisticsViewModel : ObservableObject
                 ? 4
                 : Math.Max(10, point.Duration.TotalHours / maximumHours * 152);
             var containsToday = point.StartDate <= today && point.EndDateExclusive > today;
-            var color = containsToday ? CyanColor : index % 3 == 2 ? PurpleColor : BlueColor;
+            var color = containsToday ? AccentColor : BarColor;
             Timeline.Add(new StatisticsTrendPointViewModel(
                 FormatTimelineLabel(point, report.Period),
                 TimeFormatter.FormatCompact(point.Duration),
@@ -683,12 +684,12 @@ public sealed class StatisticsViewModel : ObservableObject
 
     private static string GetHeatmapColor(int level) => level switch
     {
-        4 => BlueColor,
-        3 => "#99387BFF",
-        2 => "#66387BFF",
-        1 => "#33387BFF",
-        -1 => "#148391A8",
-        _ => "#1F9AA8BF"
+        4 => AccentColor,
+        3 => "#B3FF6A2B",
+        2 => "#73FF6A2B",
+        1 => "#38FF6A2B",
+        -1 => "#149D9A91",
+        _ => "#1F9D9A91"
     };
 
     private void UpdateHeatmapMonths(DateOnly gridStart, DateOnly gridEndExclusive, int year)
@@ -766,8 +767,8 @@ public sealed class StatisticsViewModel : ObservableObject
                 TimeFormatter.Format(day.Duration),
                 maximumSeconds <= 0 ? 0 : day.Duration.TotalSeconds / maximumSeconds * 100,
                 day.Duration == report.Weekdays.Max(candidate => candidate.Duration) && day.Duration > TimeSpan.Zero
-                    ? CyanColor
-                    : BlueColor));
+                    ? AccentColor
+                    : BarColor));
         }
     }
 
@@ -819,7 +820,7 @@ public sealed class StatisticsViewModel : ObservableObject
                 FormatTimeOfDayRange(item.Kind),
                 TimeFormatter.Format(item.Duration),
                 maximumSeconds <= 0 ? 0 : item.Duration.TotalSeconds / maximumSeconds * 100,
-                item.Kind == preferred?.Kind ? CyanColor : BlueColor));
+                item.Kind == preferred?.Kind ? AccentColor : BarColor));
         }
 
         PreferredTimeOfDayText = preferred is null
@@ -899,7 +900,7 @@ public sealed class StatisticsViewModel : ObservableObject
     {
         if (previous is null)
         {
-            return ("Gesamte aufgezeichnete Spielzeit", CyanColor);
+            return ("Gesamte aufgezeichnete Spielzeit", AccentColor);
         }
 
         if (previous <= TimeSpan.Zero)
@@ -939,9 +940,9 @@ public sealed class StatisticsViewModel : ObservableObject
 
     private static string GetAccentColor(int index) => (index % 3) switch
     {
-        1 => PurpleColor,
-        2 => CyanColor,
-        _ => BlueColor
+        1 => SandColor,
+        2 => SageColor,
+        _ => AccentColor
     };
 }
 

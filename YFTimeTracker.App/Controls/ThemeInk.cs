@@ -6,7 +6,7 @@ using YFTimeTracker.App.Converters;
 namespace YFTimeTracker.App.Controls;
 
 /// <summary>
-/// Setzt die Textfarbe aus einem Hexwert der ViewModels. Im hellen Design sind die Neonfarben
+/// Setzt die Textfarbe aus einem Hexwert der ViewModels. Im hellen Design sind die hellen Signalfarben
 /// auf hellem Grund kaum lesbar (Kontrast teils unter 2:1); dort wird die passende Textfarbe
 /// aus den hellen Theme-Ressourcen in App.xaml verwendet. Im dunklen Design bleibt der Hexwert.
 /// </summary>
@@ -14,17 +14,14 @@ public static class ThemeInk
 {
     private static readonly Dictionary<string, string> LightInkKeys = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["#29E7A4"] = "YFGreenTextBrush",
-        ["#2CE5F3"] = "YFCyanTextBrush",
-        ["#3182FF"] = "YFBlueTextBrush",
-        ["#387BFF"] = "YFBlueTextBrush",
-        ["#8A4DFF"] = "YFPurpleTextBrush",
+        ["#6FD49A"] = "YFGreenTextBrush",
+        ["#FF6A2B"] = "YFAccentTextBrush",
+        ["#FF7B70"] = "YFDangerTextBrush",
         ["#FF5368"] = "YFDangerTextBrush",
-        ["#FF6B7A"] = "YFDangerTextBrush",
-        ["#F5B942"] = "YFWarningTextBrush",
-        ["#8391A8"] = "YFMutedBrush",
-        ["#9AA8BF"] = "YFMutedBrush",
-        ["#A7B2C7"] = "YFMutedBrush"
+        ["#F0C36A"] = "YFWarningTextBrush",
+        ["#9D9A91"] = "YFMutedBrush",
+        ["#B5B1A7"] = "YFMutedBrush",
+        ["#77736A"] = "YFMutedBrush"
     };
 
     public static readonly DependencyProperty ForegroundProperty = DependencyProperty.RegisterAttached(

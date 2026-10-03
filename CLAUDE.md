@@ -85,7 +85,7 @@ When changing this file, prefer adding to `YFTimeTracker.Core.Tests/Services/Gam
 ## Project-specific rules worth knowing before editing
 
 - All user-visible UI text is German, with correct umlauts. Not-yet-implemented areas must be clearly labeled **Vorschau** or **Demnächst**, never faked with placeholder data.
-- Reuse the existing dark neon design and shared resources in `YFTimeTracker.App/App.xaml` rather than introducing new styling; don't add new UI/diagramming dependencies without an explicit decision.
+- Reuse the existing design (warm graphite/paper, orange signal color, bundled Archivo and JetBrains Mono fonts — same look as the community website) and shared resources in `YFTimeTracker.App/App.xaml` rather than introducing new styling; don't add new UI/diagramming dependencies without an explicit decision.
 - New views must work at both wide and narrow window widths.
 - Background refreshes (dashboard timer, tracking scans) must not visibly flicker lists or reset scroll position/selection.
 - Manually registered games (`GameSource.Manual`) must keep working even when launcher data is missing or corrupt.

@@ -9,7 +9,7 @@ internal static class BulletList
 {
     public static IReadOnlyList<UIElement> BuildRows(IReadOnlyList<string> bullets)
     {
-        var bulletBrush = (Brush)Application.Current.Resources["YFBlueBrush"];
+        var bulletBrush = (Brush)Application.Current.Resources["YFAccentBrush"];
         var rows = new List<UIElement>(bullets.Count);
         foreach (var bullet in bullets)
         {

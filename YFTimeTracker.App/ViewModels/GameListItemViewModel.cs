@@ -7,7 +7,7 @@ namespace YFTimeTracker.App.ViewModels;
 
 public sealed class GameListItemViewModel : ObservableObject
 {
-    private const string ProgressNormalColor = "#3182FF";
+    private const string ProgressNormalColor = "#FF6A2B";
     private const string ProgressLimitReachedColor = "#FF5368";
     private Game game;
     private IReadOnlyList<GameSession> gameSessions = [];
@@ -62,7 +62,7 @@ public sealed class GameListItemViewModel : ObservableObject
 
     public string ExecutableDisplay => Exists ? ExecutableSummary : $"{ExecutableSummary} · EXE fehlt";
 
-    public string ExecutableColor => Exists ? "#9AA8BF" : "#FF6B7A";
+    public string ExecutableColor => Exists ? "#9D9A91" : "#FF7B70";
 
     public string Initials
     {
@@ -126,7 +126,7 @@ public sealed class GameListItemViewModel : ObservableObject
 
     public string ActivityText => IsRunning ? "AKTIV" : TotalDuration > TimeSpan.Zero ? TotalPlaytime : "NEU";
 
-    public string ActivityColor => IsRunning ? "#29E7A4" : TotalDuration > TimeSpan.Zero ? "#3182FF" : "#8391A8";
+    public string ActivityColor => IsRunning ? "#6FD49A" : TotalDuration > TimeSpan.Zero ? "#FF6A2B" : "#9D9A91";
 
     public Visibility DailyProgressVisibility => game.DailyPlaytimeLimitMinutes is > 0
         ? Visibility.Visible

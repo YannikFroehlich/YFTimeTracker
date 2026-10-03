@@ -68,7 +68,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Tray-Betrieb, Tracking-Pause, optionaler Autostart und Einzelinstanz-Schutz
 - Eigenes Tray-Symbol je Zustand (aktiv, pausiert, Spiel läuft) und die aktuelle Sessiondauer in der Tray-Kurzinfo
 - Optional minimierter Start direkt im Tray, sowohl beim manuellen Start als auch über den Windows-Autostart
-- Helles und dunkles Design mit dezenten Kartenverläufen, einheitlichen Konturen und auf das Design abgestimmten Akzenttexten, umschaltbar in den Einstellungen
+- Eigenes helles und dunkles Design wie auf der Website: warmes Graphit bzw. Papierweiß, Orange als einzige Signalfarbe, klare Linien statt Verläufen und mitgelieferte Schriften (Archivo, JetBrains Mono; SIL OFL), umschaltbar in den Einstellungen
 - Monitorabhängige DPI-Skalierung und an die Anzeigegröße angepasste Spiel-Icons und Cover, auch beim Wechsel zwischen unterschiedlich skalierten Bildschirmen
 - Profil im Header mit editierbarem Anzeigename und Akzentfarbe; ohne Anmeldung nur auf diesem Gerät gespeichert, mit Konto Teil der YFDatenbank
 - Benachrichtigungsverlauf (erreichte Zeitlimits, verfügbare Updates) über das Glocken-Icon im Header

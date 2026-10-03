@@ -56,7 +56,7 @@ Alle Schichten werden zentral in `App.xaml.cs` (`OnLaunched`) verdrahtet, jede �
 ## UI-Regeln
 
 - Sichtbare Texte sind deutsch und verwenden korrekte Umlaute.
-- Das bestehende dunkle Neon-Design und die zentralen Ressourcen in `YFTimeTracker.App/App.xaml` wiederverwenden.
+- Das bestehende Design (warmes Graphit bzw. Papierweiß, Orange als Signalfarbe, mitgelieferte Schriften Archivo und JetBrains Mono – wie die Community-Website) und die zentralen Ressourcen in `YFTimeTracker.App/App.xaml` wiederverwenden.
 - Neue Ansichten müssen bei breiten und schmalen Fenstern funktionieren.
 - Echte Daten verwenden; noch nicht umgesetzte Bereiche klar als **Vorschau** oder **Demnächst** kennzeichnen.
 - Regelmäßige Hintergrundaktualisierungen dürfen Listen nicht sichtbar flackern lassen und Auswahl oder Scrollposition nicht unnötig zurücksetzen.
