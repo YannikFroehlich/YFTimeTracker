@@ -2,6 +2,13 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.11.0 – 2026-10-03
+- Neu: Eigenes Design, passend zur Website: warmes Graphit im dunklen und Papierweiß im hellen Design, Orange als Signalfarbe und klare Linien statt Verläufen und Leuchteffekten. Dazu neue Schriften: Archivo für Text und Titel, JetBrains Mono für Zeiten und Beschriftungen.
+- Verbessert: Schalter, Auswahllisten und Fortschrittsbalken nutzen die Signalfarbe der App statt der Windows-Akzentfarbe.
+- Verbessert: In den Diagrammen sind normale Balken neutral; hervorgehoben sind nur der heutige Tag und Bestwerte.
+- Behoben: Im Wochendiagramm des Dashboards erschienen die Hilfslinien als breite graue Flächen, und die Stundenbeschriftung passte nicht zur Höhe der Balken.
+- Hinweis: Deine gewählte Profilfarbe bleibt erhalten. „Standard“ ist jetzt Orange statt des bisherigen Farbverlaufs.
+
 ## 1.10.1 – 2026-10-02
 - Behoben: Die Meldung „Update verfügbar“ verschwindet jetzt, sobald die App auf dem neuesten Stand ist. Erscheint eine noch neuere Version, ersetzt sie die alte Meldung, statt sich daneben zu stapeln.
 - Behoben: Startet oder endet im Hintergrund ein Spiel, gehen in der Bibliothek ungespeicherte Eingaben nicht mehr verloren. Bibliothek und Session-Liste flackern dabei nicht mehr und behalten die Auswahl.
