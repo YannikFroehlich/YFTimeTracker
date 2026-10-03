@@ -929,10 +929,10 @@ public sealed class SettingsViewModel : ObservableObject
 
     private static string GetTrackingEventColor(TrackingDiagnosticSeverity severity) => severity switch
     {
-        TrackingDiagnosticSeverity.Success => "#29E7A4",
-        TrackingDiagnosticSeverity.Warning => "#F5B942",
-        TrackingDiagnosticSeverity.Error => "#FF6B7A",
-        _ => "#3182FF"
+        TrackingDiagnosticSeverity.Success => "#6FD49A",
+        TrackingDiagnosticSeverity.Warning => "#F0C36A",
+        TrackingDiagnosticSeverity.Error => "#FF7B70",
+        _ => "#FF6A2B"
     };
 
     private static string GetTrackingEventGlyph(TrackingDiagnosticSeverity severity) => severity switch

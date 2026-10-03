@@ -14,7 +14,7 @@ namespace YFTimeTracker.App.ViewModels;
 public sealed class GameDetailsViewModel : ObservableObject
 {
     private static readonly CultureInfo GermanCulture = CultureInfo.GetCultureInfo("de-DE");
-    private const string ProgressNormalColor = "#3182FF";
+    private const string ProgressNormalColor = "#FF6A2B";
     private const string ProgressLimitReachedColor = "#FF5368";
     private readonly IGameRepository games;
     private readonly IGameCatalogService catalog;
@@ -558,7 +558,7 @@ public sealed class GameDetailsViewModel : ObservableObject
                 $"{item.Date:dd.MM.yyyy}: {TimeFormatter.Format(item.Duration)}",
                 item.Duration,
                 height,
-                item.Date == today ? "#2CE5F3" : index % 3 == 2 ? "#8A4DFF" : "#387BFF"));
+                item.Date == today ? "#FF6A2B" : "#77736A"));
         }
     }
 

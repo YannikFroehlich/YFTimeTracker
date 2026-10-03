@@ -228,7 +228,7 @@ public sealed partial class MainWindow : Window
         ProfileNameText.Text = string.IsNullOrWhiteSpace(trimmedName) ? "Lokales Profil" : trimmedName;
         ProfileInitialsText.Text = string.IsNullOrWhiteSpace(trimmedName) ? "YF" : GetInitials(trimmedName!);
         ProfileAvatarBorder.Background = string.IsNullOrWhiteSpace(accentColorHex)
-            ? (Brush)Application.Current.Resources["YFLogoGradientBrush"]
+            ? (Brush)Application.Current.Resources["YFAccentBrush"]
             : new SolidColorBrush(ParseAccentColor(accentColorHex));
     }
 
@@ -1086,13 +1086,13 @@ public sealed partial class MainWindow : Window
     {
         var isLight = RootGrid.ActualTheme == ElementTheme.Light;
         appWindow.TitleBar.ButtonForegroundColor = isLight
-            ? Color.FromArgb(255, 17, 23, 38)
-            : Color.FromArgb(255, 244, 247, 255);
+            ? Color.FromArgb(255, 23, 22, 19)
+            : Color.FromArgb(255, 236, 235, 230);
         appWindow.TitleBar.ButtonHoverBackgroundColor = isLight
-            ? Color.FromArgb(255, 228, 233, 245)
-            : Color.FromArgb(255, 19, 39, 66);
+            ? Color.FromArgb(255, 228, 223, 213)
+            : Color.FromArgb(255, 30, 30, 27);
         appWindow.TitleBar.ButtonPressedBackgroundColor = isLight
-            ? Color.FromArgb(255, 207, 224, 255)
-            : Color.FromArgb(255, 30, 57, 92);
+            ? Color.FromArgb(255, 213, 206, 192)
+            : Color.FromArgb(255, 38, 38, 34);
     }
 }

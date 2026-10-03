@@ -5,7 +5,7 @@
     Background="{ThemeResource YFSurfaceRaisedBrush}"
     BorderBrush="{ThemeResource YFStrokeBrightBrush}"
     BorderThickness="1"
-    CornerRadius="18">
+    CornerRadius="6">
     <ContentDialog.Resources>
         <x:Double x:Key="ContentDialogMaxWidth">600</x:Double>
     </ContentDialog.Resources>
@@ -24,11 +24,11 @@
             </Grid.ColumnDefinitions>
             <Image Width="38" Height="38" Source="/Assets/YFTimeTrackerLogo.png" Stretch="Uniform" />
             <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" Spacing="1">
-                <TextBlock FontFamily="Segoe UI Variable Display" FontSize="18" FontWeight="SemiBold" Text="YFTimeTracker einrichten" />
+                <TextBlock FontFamily="{StaticResource YFDisplayFontFamily}" FontSize="18" FontWeight="SemiBold" Text="YFTimeTracker einrichten" />
                 <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="In wenigen Schritten startklar" />
             </StackPanel>
             <StackPanel Grid.Column="2" VerticalAlignment="Center" Orientation="Horizontal" Spacing="6">
-                <Border x:Name="StepIndicator0" Width="28" Height="4" Background="{StaticResource YFBlueBrush}" CornerRadius="2" />
+                <Border x:Name="StepIndicator0" Width="28" Height="4" Background="{StaticResource YFAccentBrush}" CornerRadius="2" />
                 <Border x:Name="StepIndicator1" Width="18" Height="4" Background="{ThemeResource YFStrokeBrush}" CornerRadius="2" />
                 <Border x:Name="StepIndicator2" Width="18" Height="4" Background="{ThemeResource YFStrokeBrush}" CornerRadius="2" />
                 <Border x:Name="StepIndicator3" Width="18" Height="4" Background="{ThemeResource YFStrokeBrush}" CornerRadius="2" />
@@ -37,17 +37,17 @@
 
         <Grid Grid.Row="1">
             <StackPanel x:Name="WelcomeStep" Spacing="18">
-                <Border Padding="24" Background="{ThemeResource YFBlueCardGradientBrush}" BorderBrush="{ThemeResource YFBlueCardBorderBrush}" BorderThickness="1" CornerRadius="16">
+                <Border Padding="24" Background="{ThemeResource YFSurfaceBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="6">
                     <Grid ColumnSpacing="22">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="112" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Border Width="104" Height="104" Background="#080E19" CornerRadius="28">
+                        <Border Width="104" Height="104" Background="#080E19" CornerRadius="6">
                             <Image Margin="8" Source="/Assets/YFTimeTrackerLogo.png" Stretch="Uniform" />
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
-                            <TextBlock FontFamily="Segoe UI Variable Display" FontSize="27" FontWeight="SemiBold" Text="Willkommen bei YFTimeTracker" TextWrapping="Wrap" />
+                            <TextBlock FontFamily="{StaticResource YFDisplayFontFamily}" FontSize="27" FontWeight="SemiBold" Text="Willkommen bei YFTimeTracker" TextWrapping="Wrap" />
                             <TextBlock Foreground="{ThemeResource YFMutedBrush}" Text="Deine Spielzeit wird automatisch erfasst und übersichtlich ausgewertet – ohne Konto und ohne Cloud-Zwang." TextWrapping="Wrap" />
                         </StackPanel>
                     </Grid>
@@ -59,8 +59,8 @@
                             <ColumnDefinition Width="42" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Border Width="40" Height="40" Background="{ThemeResource YFCyanTintBrush}" CornerRadius="11">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Foreground="{ThemeResource YFCyanTextBrush}" Glyph="&#xE72E;" />
+                        <Border Width="40" Height="40" Background="{ThemeResource YFTintBrush}" CornerRadius="4">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Foreground="{ThemeResource YFSecondaryTextBrush}" Glyph="&#xE72E;" />
                         </Border>
                         <StackPanel Grid.Column="1" Spacing="4">
                             <TextBlock FontWeight="SemiBold" Text="Deine Daten bleiben auf diesem Computer" />
@@ -75,7 +75,7 @@
             <StackPanel x:Name="TrackingStep" Visibility="Collapsed" Spacing="16">
                 <StackPanel Spacing="6">
                     <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="AUTOMATISCHES TRACKING" />
-                    <TextBlock FontFamily="Segoe UI Variable Display" FontSize="25" FontWeight="SemiBold" Text="Spiele erkennen, während du spielst" />
+                    <TextBlock FontFamily="{StaticResource YFDisplayFontFamily}" FontSize="25" FontWeight="SemiBold" Text="Spiele erkennen, während du spielst" />
                     <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="YFTimeTracker prüft nur lokale Prozesse und Launcher-Dateien. Unbekannte Programme außerhalb erkannter Spieleordner werden nicht importiert." TextWrapping="Wrap" />
                 </StackPanel>
 
@@ -86,8 +86,8 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Border Width="44" Height="44" Background="{ThemeResource YFBlueTintBrush}" CornerRadius="12">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{ThemeResource YFBlueTextBrush}" Glyph="&#xE823;" />
+                        <Border Width="44" Height="44" Background="{ThemeResource YFTintBrush}" CornerRadius="4">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{ThemeResource YFAccentTextBrush}" Glyph="&#xE823;" />
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                             <TextBlock FontWeight="SemiBold" Text="Spielzeit automatisch erfassen" />
@@ -104,8 +104,8 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Border Width="44" Height="44" Background="{ThemeResource YFPurpleTintBrush}" CornerRadius="12">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{ThemeResource YFPurpleTextBrush}" Glyph="&#xE7FC;" />
+                        <Border Width="44" Height="44" Background="{ThemeResource YFTintBrush}" CornerRadius="4">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{ThemeResource YFSecondaryTextBrush}" Glyph="&#xE7FC;" />
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                             <TextBlock FontWeight="SemiBold" Text="Steam, Epic, GOG, Xbox, EA app und weitere erkennen" TextWrapping="Wrap" />
@@ -115,13 +115,13 @@
                     </Grid>
                 </Border>
 
-                <Border Padding="14,12" Background="{ThemeResource YFStatusBarBrush}" CornerRadius="10">
+                <Border Padding="14,12" Background="{ThemeResource YFStatusBarBrush}" CornerRadius="4">
                     <Grid ColumnSpacing="10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <FontIcon FontSize="15" Foreground="{ThemeResource YFCyanTextBrush}" Glyph="&#xE946;" />
+                        <FontIcon FontSize="15" Foreground="{ThemeResource YFSecondaryTextBrush}" Glyph="&#xE946;" />
                         <TextBlock Grid.Column="1" Style="{StaticResource YFMutedTextStyle}" Text="Launcher-Anmeldedaten werden weder gelesen noch benötigt. Es werden keine Web-APIs kontaktiert." TextWrapping="Wrap" />
                     </Grid>
                 </Border>
@@ -130,7 +130,7 @@
             <StackPanel x:Name="WindowsStep" Visibility="Collapsed" Spacing="16">
                 <StackPanel Spacing="6">
                     <TextBlock Style="{StaticResource YFSectionTitleStyle}" Text="WINDOWS &amp; TRAY" />
-                    <TextBlock FontFamily="Segoe UI Variable Display" FontSize="25" FontWeight="SemiBold" Text="Auch im Hintergrund zuverlässig" />
+                    <TextBlock FontFamily="{StaticResource YFDisplayFontFamily}" FontSize="25" FontWeight="SemiBold" Text="Auch im Hintergrund zuverlässig" />
                     <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Tracking läuft weiter, solange YFTimeTracker im Infobereich aktiv ist. Vollständig beendet wird die App über das Tray-Menü." TextWrapping="Wrap" />
                 </StackPanel>
 
@@ -141,8 +141,8 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Border Width="44" Height="44" Background="{ThemeResource YFCyanTintBrush}" CornerRadius="12">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{ThemeResource YFCyanTextBrush}" Glyph="&#xE7E8;" />
+                        <Border Width="44" Height="44" Background="{ThemeResource YFTintBrush}" CornerRadius="4">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{ThemeResource YFSecondaryTextBrush}" Glyph="&#xE7E8;" />
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                             <TextBlock FontWeight="SemiBold" Text="Beim Schließen im Tray behalten" />
@@ -159,8 +159,8 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Border Width="44" Height="44" Background="{ThemeResource YFPurpleTintBrush}" CornerRadius="12">
-                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{ThemeResource YFPurpleTextBrush}" Glyph="&#xE7F4;" />
+                        <Border Width="44" Height="44" Background="{ThemeResource YFTintBrush}" CornerRadius="4">
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Foreground="{ThemeResource YFSecondaryTextBrush}" Glyph="&#xE7F4;" />
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                             <TextBlock FontWeight="SemiBold" Text="Mit Windows starten" />
@@ -170,7 +170,7 @@
                     </Grid>
                 </Border>
 
-                <Border Padding="14,12" Background="{ThemeResource YFStatusBarBrush}" CornerRadius="10">
+                <Border Padding="14,12" Background="{ThemeResource YFStatusBarBrush}" CornerRadius="4">
                     <Grid ColumnSpacing="10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -183,12 +183,12 @@
             </StackPanel>
 
             <StackPanel x:Name="ReadyStep" Visibility="Collapsed" Spacing="18">
-                <Border Padding="24" Background="{ThemeResource YFTrackingCardGradientBrush}" BorderBrush="{ThemeResource YFCyanCardBorderBrush}" BorderThickness="1" CornerRadius="16">
+                <Border Padding="24" Background="{ThemeResource YFSurfaceBrush}" BorderBrush="{ThemeResource YFStrokeBrush}" BorderThickness="1" CornerRadius="6">
                     <StackPanel HorizontalAlignment="Center" Spacing="10">
-                        <Border Width="76" Height="76" Background="{ThemeResource YFBlueTintBrush}" CornerRadius="38">
+                        <Border Width="76" Height="76" Background="{ThemeResource YFTintBrush}" CornerRadius="38">
                             <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="34" Foreground="{ThemeResource YFGreenTextBrush}" Glyph="&#xE73E;" />
                         </Border>
-                        <TextBlock HorizontalAlignment="Center" FontFamily="Segoe UI Variable Display" FontSize="27" FontWeight="SemiBold" Text="Bereit für deine erste Session" />
+                        <TextBlock HorizontalAlignment="Center" FontFamily="{StaticResource YFDisplayFontFamily}" FontSize="27" FontWeight="SemiBold" Text="Bereit für deine erste Session" />
                         <TextBlock MaxWidth="500" HorizontalTextAlignment="Center" Style="{StaticResource YFMutedTextStyle}" Text="Prüfe deine Auswahl. Mit „Einrichtung abschließen“ werden die Einstellungen gespeichert und das Dashboard geöffnet." TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>

@@ -6,7 +6,7 @@
     BorderBrush="{ThemeResource YFStrokeBrightBrush}"
     BorderThickness="1"
     CloseButtonText="Schließen"
-    CornerRadius="18"
+    CornerRadius="6"
     DefaultButton="Close">
     <Grid Width="440" MaxHeight="520">
         <Grid.RowDefinitions>
@@ -21,7 +21,7 @@
             </Grid.ColumnDefinitions>
             <Image Width="38" Height="38" Source="/Assets/YFTimeTrackerLogo.png" Stretch="Uniform" />
             <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" Spacing="1">
-                <TextBlock FontFamily="Segoe UI Variable Display" FontSize="18" FontWeight="SemiBold" Text="Was ist neu in YFTimeTracker" />
+                <TextBlock FontFamily="{StaticResource YFDisplayFontFamily}" FontSize="18" FontWeight="SemiBold" Text="Was ist neu in YFTimeTracker" />
                 <TextBlock x:Name="VersionText" Style="{StaticResource YFMutedTextStyle}" />
             </StackPanel>
         </Grid>

@@ -12,9 +12,9 @@ namespace YFTimeTracker.App.ViewModels;
 public sealed class YearReviewViewModel : ObservableObject
 {
     private static readonly CultureInfo GermanCulture = CultureInfo.GetCultureInfo("de-DE");
-    private const string MutedColor = "#9AA8BF";
-    private const string GreenColor = "#29E7A4";
-    private const string RedColor = "#FF6B7A";
+    private const string MutedColor = "#9D9A91";
+    private const string GreenColor = "#6FD49A";
+    private const string RedColor = "#FF7B70";
     private readonly IYearReviewService reviews;
     private readonly IClock clock;
     private readonly IExplorerService explorerService;
@@ -256,7 +256,7 @@ public sealed class YearReviewViewModel : ObservableObject
                 GetMonthName(month.Month, abbreviated: true),
                 TimeFormatter.Format(month.Duration),
                 height,
-                month.Month == mostActiveMonth ? "#2CE5F3" : "#387BFF"));
+                month.Month == mostActiveMonth ? "#FF6A2B" : "#77736A"));
         }
     }
 

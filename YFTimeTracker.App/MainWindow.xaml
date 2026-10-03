@@ -65,7 +65,7 @@
                 <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="{ThemeResource YFNavItemBackgroundSelectedColor}" />
                 <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="{ThemeResource YFNavItemBackgroundSelectedHoverColor}" />
                 <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="{ThemeResource YFNavItemBackgroundHoverColor}" />
-                <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="{StaticResource YFBlueColor}" />
+                <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="{StaticResource YFAccentColor}" />
             </NavigationView.Resources>
 
             <NavigationView.PaneHeader>
@@ -80,14 +80,14 @@
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Background="{ThemeResource YFNavigationBrush}"
-                        CornerRadius="12">
+                        CornerRadius="4">
                         <Image
                             Source="Assets/YFTimeTrackerLogo.png"
                             Stretch="Uniform" />
                     </Border>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
                         <TextBlock
-                            FontFamily="Segoe UI Variable Display"
+                            FontFamily="{StaticResource YFDisplayFontFamily}"
                             FontSize="18"
                             FontWeight="SemiBold"
                             Foreground="{ThemeResource YFTextBrush}"
@@ -129,28 +129,11 @@
                     x:Name="TrackingStatusCard"
                     Margin="14,8,14,14"
                     Padding="16"
-                    Background="{ThemeResource YFTrackingCardGradientBrush}"
+                    Background="{ThemeResource YFSurfaceBrush}"
                     BorderBrush="{ThemeResource YFStrokeBrush}"
                     BorderThickness="1"
-                    CornerRadius="14">
+                    CornerRadius="6">
                     <Grid MinHeight="152">
-                        <Ellipse
-                            Width="120"
-                            Height="120"
-                            Margin="0,0,-58,-62"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Bottom"
-                            Fill="{StaticResource YFBlueBrush}"
-                            Opacity="0.06" />
-                        <Ellipse
-                            Width="72"
-                            Height="72"
-                            Margin="0,0,4,-36"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Bottom"
-                            Stroke="{ThemeResource YFPurpleTextBrush}"
-                            StrokeThickness="1"
-                            Opacity="0.22" />
                         <StackPanel Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Ellipse Width="8" Height="8" Fill="{StaticResource YFGreenBrush}" />
@@ -169,9 +152,9 @@
                                 Padding="10,6"
                                 HorizontalAlignment="Left"
                                 Background="{ThemeResource YFOutlineButtonBackgroundBrush}"
-                                CornerRadius="7">
+                                CornerRadius="4">
                                 <StackPanel Orientation="Horizontal" Spacing="7">
-                                    <FontIcon FontSize="12" Foreground="{ThemeResource YFBlueTextBrush}" Glyph="&#xE9CE;" />
+                                    <FontIcon FontSize="12" Foreground="{ThemeResource YFAccentTextBrush}" Glyph="&#xE9CE;" />
                                     <TextBlock x:Name="PrivacyChipText" FontSize="11" Foreground="{ThemeResource YFTextBrush}" Text="LOKAL &amp; PRIVAT" />
                                 </StackPanel>
                             </Border>
@@ -200,7 +183,7 @@
                             Background="{ThemeResource YFOutlineButtonBackgroundBrush}"
                             BorderBrush="{ThemeResource YFStrokeBrush}"
                             BorderThickness="1"
-                            CornerRadius="10"
+                            CornerRadius="4"
                             Foreground="{ThemeResource YFTextBrush}"
                             GotFocus="GlobalSearchBox_GotFocus"
                             HorizontalAlignment="Stretch"
@@ -226,11 +209,11 @@
                                         <controls:GameIcon
                                             Width="32"
                                             Height="32"
-                                            Background="{ThemeResource YFBlueTintBrush}"
+                                            Background="{ThemeResource YFTintBrush}"
                                             FontFamily="{Binding IconFontFamily}"
                                             FontSize="13"
-                                            Foreground="{ThemeResource YFBlueTextBrush}"
-                                            IconCornerRadius="8"
+                                            Foreground="{ThemeResource YFAccentTextBrush}"
+                                            IconCornerRadius="4"
                                             IconPadding="3"
                                             IconPath="{Binding IconPath}"
                                             Initials="{Binding IconText}" />
@@ -261,7 +244,7 @@
                             Background="{ThemeResource YFOutlineButtonBackgroundBrush}"
                             BorderBrush="{ThemeResource YFStrokeBrush}"
                             BorderThickness="1"
-                            CornerRadius="8"
+                            CornerRadius="4"
                             ToolTipService.ToolTip="Suche filtern">
                             <Button.Flyout>
                                 <Flyout x:Name="GlobalSearchFilterFlyout" Placement="BottomEdgeAlignedRight">
@@ -314,7 +297,7 @@
                                     Height="7"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Top"
-                                    Fill="{StaticResource YFBlueBrush}"
+                                    Fill="{StaticResource YFAccentBrush}"
                                     Visibility="Collapsed" />
                             </Grid>
                         </Button>
@@ -415,7 +398,7 @@
                                 Margin="0,-2,-2,0"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Top"
-                                Background="{StaticResource YFPurpleBrush}"
+                                Background="{StaticResource YFAccentBrush}"
                                 BorderBrush="{ThemeResource YFOutlineButtonBackgroundBrush}"
                                 BorderThickness="2"
                                 CornerRadius="7"
@@ -427,7 +410,7 @@
                             Background="{ThemeResource YFOutlineButtonBackgroundBrush}"
                             BorderBrush="{ThemeResource YFStrokeBrush}"
                             BorderThickness="1"
-                            CornerRadius="22"
+                            CornerRadius="6"
                             ToolTipService.ToolTip="Profil bearbeiten">
                             <Button.Flyout>
                                 <Flyout x:Name="ProfileFlyout" Opening="ProfileFlyout_Opening" Placement="Bottom">
@@ -550,7 +533,7 @@
                                                     MinHeight="0"
                                                     Padding="0"
                                                     AutomationProperties.Name="Standard"
-                                                    Background="{StaticResource YFLogoGradientBrush}"
+                                                    Background="{StaticResource YFAccentBrush}"
                                                     BorderBrush="Transparent"
                                                     BorderThickness="2"
                                                     Click="ProfileSwatch_Click"
@@ -632,7 +615,7 @@
                                 </Flyout>
                             </Button.Flyout>
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Border x:Name="ProfileAvatarBorder" Width="34" Height="34" Background="{StaticResource YFLogoGradientBrush}" CornerRadius="17">
+                                <Border x:Name="ProfileAvatarBorder" Width="34" Height="34" Background="{StaticResource YFAccentBrush}" CornerRadius="17">
                                     <TextBlock x:Name="ProfileInitialsText" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Text="YF" />
                                 </Border>
                                 <StackPanel VerticalAlignment="Center" Spacing="0">

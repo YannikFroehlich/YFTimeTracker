@@ -50,6 +50,8 @@
     <None Include="Package.appxmanifest" />
     <Content Include="Assets\*.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\*.ico" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Schriften der Oberfläche (SIL OFL, Lizenztexte daneben). -->
+    <Content Include="Assets\Fonts\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- Supabase-Verbindung. Nicht im Repository; fehlt sie, bleibt der Kontoabgleich aus. -->
     <Content Include="cloud.config.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('cloud.config.json')" />
     <Manifest Include="$(ApplicationManifest)" />

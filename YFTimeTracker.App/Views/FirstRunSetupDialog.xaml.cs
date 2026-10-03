@@ -112,7 +112,7 @@ public sealed partial class FirstRunSetupDialog : ContentDialog
         {
             stepIndicators[index].Width = index == currentStep ? 28 : 18;
             stepIndicators[index].Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources[
-                index <= currentStep ? "YFBlueBrush" : "YFStrokeBrush"];
+                index <= currentStep ? "YFAccentBrush" : "YFStrokeBrush"];
         }
 
         BackButton.Visibility = currentStep == 0 ? Visibility.Collapsed : Visibility.Visible;

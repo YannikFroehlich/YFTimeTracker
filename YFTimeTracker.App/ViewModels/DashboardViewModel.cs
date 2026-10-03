@@ -11,13 +11,13 @@ namespace YFTimeTracker.App.ViewModels;
 public sealed class DashboardViewModel : ObservableObject
 {
     private static readonly CultureInfo GermanCulture = CultureInfo.GetCultureInfo("de-DE");
-    private const string MutedColor = "#8391A8";
-    private const string RecentMutedColor = "#A7B2C7";
-    private const string GreenColor = "#29E7A4";
-    private const string RedColor = "#FF6B7A";
-    private const string CyanColor = "#2CE5F3";
-    private const string BlueColor = "#387BFF";
-    private const string ProgressNormalColor = "#3182FF";
+    private const string MutedColor = "#9D9A91";
+    private const string RecentMutedColor = "#B5B1A7";
+    private const string GreenColor = "#6FD49A";
+    private const string RedColor = "#FF7B70";
+    private const string AccentColor = "#FF6A2B";
+    private const string BarColor = "#77736A";
+    private const string ProgressNormalColor = "#FF6A2B";
     private const string ProgressLimitReachedColor = "#FF5368";
     private readonly IPlaytimeStatisticsService statistics;
     private readonly IGameTrackingService trackingService;
@@ -279,7 +279,7 @@ public sealed class DashboardViewModel : ObservableObject
                 : Math.Max(12, day.Duration.TotalHours / maximumHours * 132);
             var dayLabel = day.Date.ToDateTime(TimeOnly.MinValue).ToString("ddd", GermanCulture).TrimEnd('.');
             var durationText = TimeFormatter.Format(day.Duration);
-            var brush = day.Date == today ? CyanColor : BlueColor;
+            var brush = day.Date == today ? AccentColor : BarColor;
             if (index < WeekDays.Count)
             {
                 WeekDays[index].Update(dayLabel, durationText, height, maximumHours, brush);
@@ -462,7 +462,7 @@ public sealed class RecentGameItemViewModel(long gameId) : ObservableObject
     private string? iconPath;
     private string totalPlaytime = string.Empty;
     private string lastSession = string.Empty;
-    private string lastSessionBrush = "#A7B2C7";
+    private string lastSessionBrush = "#B5B1A7";
 
     public long GameId { get; } = gameId;
 
