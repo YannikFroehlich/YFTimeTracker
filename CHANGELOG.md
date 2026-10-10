@@ -2,6 +2,12 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.12.0 – 2026-10-11
+- Neu: Riot Client und Rockstar Games Launcher werden erkannt. Riot-Spiele wie VALORANT und über den Rockstar Games Launcher installierte Titel landen automatisch in der Bibliothek – wie bei den anderen Launchern rein lokal und ohne Anmeldung. Über Steam oder Epic gekaufte Rockstar-Spiele bleiben bei ihrem Store. Unter **Einstellungen → Tracking** steht, ob beide Launcher gefunden wurden.
+- Neu: Bei Steam-Spielen füllt „Aus Steam übernehmen“ in den Spieldetails die Basis-Spielzeit mit der Spielzeit, die Steam auf diesem PC gespeichert hat. Bereits hier erfasste Zeit wird abgezogen, damit nichts doppelt zählt; übernommen wird der Wert erst mit „Speichern“.
+- Verbessert: Aktuelle Versionen des Windows App SDK und des Update-Systems.
+- Hinweis: Wer den Kontoabgleich auf mehreren PCs nutzt, aktualisiert am besten alle zeitnah. Ältere Versionen zeigen Riot- und Rockstar-Spiele als „Manuell“ an.
+
 ## 1.11.0 – 2026-10-03
 - Neu: Eigenes Design, passend zur Website: warmes Graphit im dunklen und Papierweiß im hellen Design, Orange als Signalfarbe und klare Linien statt Verläufen und Leuchteffekten. Dazu neue Schriften: Archivo für Text und Titel, JetBrains Mono für Zeiten und Beschriftungen.
 - Verbessert: Schalter, Auswahllisten und Fortschrittsbalken nutzen die Signalfarbe der App statt der Windows-Akzentfarbe.
