@@ -248,6 +248,8 @@ public sealed class GlobalSearchViewModel(
             GameSource.BattleNet => "Battle.net",
             GameSource.Ubisoft => "Ubisoft Connect",
             GameSource.EaApp => "EA app",
+            GameSource.Riot => "Riot Client",
+            GameSource.Rockstar => "Rockstar Games Launcher",
             _ => "Manuell"
         };
     }

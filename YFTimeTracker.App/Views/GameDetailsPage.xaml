@@ -414,6 +414,13 @@
                                         SpinButtonPlacementMode="Compact"
                                         Value="{Binding BaselinePlaytimeMinutes, Mode=TwoWay}" />
                                 </Grid>
+                                <Button
+                                    HorizontalAlignment="Stretch"
+                                    Command="{Binding ImportSteamPlaytimeCommand}"
+                                    Style="{StaticResource YFOutlineButtonStyle}"
+                                    Content="Aus Steam übernehmen"
+                                    ToolTipService.ToolTip="Liest die Spielzeit, die Steam auf diesem PC gespeichert hat, und zieht die hier bereits erfasste Zeit ab."
+                                    Visibility="{Binding SteamImportVisibility}" />
                                 <TextBox
                                     Header="Tags"
                                     PlaceholderText="z. B. Shooter, Multiplayer"

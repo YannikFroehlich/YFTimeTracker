@@ -1048,6 +1048,8 @@ public sealed class GameTrackingService(
         GameSource.BattleNet => "Battle.net",
         GameSource.Ubisoft => "Ubisoft Connect",
         GameSource.EaApp => "EA app",
+        GameSource.Riot => "Riot Client",
+        GameSource.Rockstar => "Rockstar Games Launcher",
         _ => "eine manuelle Zuordnung"
     };
 

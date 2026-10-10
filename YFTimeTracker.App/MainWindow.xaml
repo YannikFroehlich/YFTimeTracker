@@ -266,6 +266,8 @@
                                                 <ComboBoxItem Content="Battle.net" Tag="BattleNet" />
                                                 <ComboBoxItem Content="Ubisoft Connect" Tag="Ubisoft" />
                                                 <ComboBoxItem Content="EA app" Tag="EaApp" />
+                                                <ComboBoxItem Content="Riot Client" Tag="Riot" />
+                                                <ComboBoxItem Content="Rockstar Games Launcher" Tag="Rockstar" />
                                             </ComboBox>
                                         </StackPanel>
                                         <StackPanel Spacing="5">

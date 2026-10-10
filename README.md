@@ -32,7 +32,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 
 - Automatische Erkennung laufender Spiele und sekundengenaue Sessions
 - Mehrere EXE-Dateien und Prozesse pro Spiel ohne doppelte Sessions
-- Lokale Launcher-Erkennung für Steam, Epic Games, GOG, Xbox-/Microsoft-Store, Battle.net, Ubisoft Connect und EA app
+- Lokale Launcher-Erkennung für Steam, Epic Games, GOG, Xbox-/Microsoft-Store, Battle.net, Ubisoft Connect, EA app, Riot Client und Rockstar Games Launcher
 - EA-app-Erkennung über lokale Windows-Installationsdaten; EA Play erfordert weder Anmeldung noch Web-API
 - Xbox-Erkennung über die lokale Windows-Paketverwaltung und `MicrosoftGame.config`, ohne Xbox-Anmeldung oder Web-API
 - Optionales Tages- und Wochenlimit pro Spiel mit Fortschrittsanzeige in Bibliothek, Spieldetails und Dashboard sowie einmaliger Windows-Benachrichtigung bei Erreichen
@@ -57,7 +57,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 - Spiele direkt aus den Spieldetails heraus starten
 - Lokale Spiel-Icons aus den registrierten EXE-Dateien mit datensparsamem Cache
 - Eigene lokale PNG- oder JPEG-Cover pro Spiel, angezeigt in Bibliothek, Suche, Dashboard, Sessions und Jahresrückblick; ohne eigenes Cover bleibt das EXE-Icon aktiv
-- Basis-Spielzeit pro Spiel für Stunden aus der Zeit vor der Aufzeichnung; sie zählt in der Gesamtspielzeit mit, aber bewusst nicht in Statistiken, Limits oder Jahresrückblick
+- Basis-Spielzeit pro Spiel für Stunden aus der Zeit vor der Aufzeichnung; sie zählt in der Gesamtspielzeit mit, aber bewusst nicht in Statistiken, Limits oder Jahresrückblick. Bei Steam-Spielen lässt sie sich per „Aus Steam übernehmen“ aus der lokal von Steam gespeicherten Spielzeit füllen, abzüglich der bereits erfassten Zeit – ohne Steam-Anmeldung oder Web-API
 - Anlegen, Bearbeiten und Löschen manueller Sessions sowie Umhängen einer Session auf ein anderes Spiel, inklusive CSV-Export der Sessions-Liste
 - Anzeige und Filter nach dem Gerät, auf dem eine Session entstanden ist – sichtbar, sobald mit dem Konto ein zweiter PC dazukommt
 - Direkter Link zum Explorer-Ordner nach einem Export

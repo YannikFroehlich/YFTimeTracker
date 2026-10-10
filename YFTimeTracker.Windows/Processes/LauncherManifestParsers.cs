@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -11,6 +12,80 @@ internal static partial class LauncherManifestParsers
     internal sealed record EpicManifest(string ExternalId, string Name, string InstallDirectory, string? LaunchExecutable);
 
     internal sealed record XboxManifest(string IdentityName, string? DisplayName, IReadOnlyList<string> LaunchExecutables);
+
+    internal sealed record UninstallEntry(string? DisplayName, string? Publisher, string? InstallLocation, string? UninstallString);
+
+    internal sealed record UninstallGame(string ExternalId, string Name, string InstallDirectory);
+
+    internal sealed record UninstallCatalog(bool IsLauncherInstalled, IReadOnlyList<UninstallGame> Games);
+
+    /// <summary>
+    /// Riot Client: je Spiel ein Windows-Uninstall-Eintrag ("Riot Game valorant.live") mit
+    /// <c>RiotClientServices.exe --uninstall-product=valorant --uninstall-patchline=live</c>.
+    /// Der Riot Client selbst und Testserver (PBE) sind keine Spiele.
+    /// </summary>
+    public static UninstallCatalog ParseRiotInstallations(IEnumerable<UninstallEntry> entries)
+    {
+        var installed = false;
+        var games = new List<UninstallGame>();
+        foreach (var entry in entries)
+        {
+            var match = RiotUninstallRegex().Match(entry.UninstallString ?? string.Empty);
+            if (!match.Success)
+            {
+                continue;
+            }
+
+            installed = true;
+            var product = match.Groups["product"].Value;
+            if (string.Equals(product, "Riot_Client", StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(match.Groups["patchline"].Value, "live", StringComparison.OrdinalIgnoreCase)
+                || string.IsNullOrWhiteSpace(entry.DisplayName)
+                || string.IsNullOrWhiteSpace(entry.InstallLocation))
+            {
+                continue;
+            }
+
+            games.Add(new UninstallGame(product, entry.DisplayName, entry.InstallLocation));
+        }
+
+        return new UninstallCatalog(installed, games);
+    }
+
+    /// <summary>
+    /// Rockstar Games Launcher: Spiele tragen sich mit <c>-uninstall=&lt;TitleId&gt;</c> ein, der
+    /// Launcher selbst mit <c>-uninstall=launcher</c>. Über Steam oder Epic gekaufte Rockstar-Spiele
+    /// haben keinen solchen Eintrag und bleiben bei ihrem Store.
+    /// </summary>
+    public static UninstallCatalog ParseRockstarInstallations(IEnumerable<UninstallEntry> entries)
+    {
+        var installed = false;
+        var games = new List<UninstallGame>();
+        foreach (var entry in entries)
+        {
+            var uninstallString = entry.UninstallString ?? string.Empty;
+            var isRockstar = entry.Publisher?.Contains("Rockstar Games", StringComparison.OrdinalIgnoreCase) == true
+                || uninstallString.Contains(@"Rockstar Games\Launcher\", StringComparison.OrdinalIgnoreCase);
+            var match = RockstarUninstallRegex().Match(uninstallString);
+            if (!isRockstar || !match.Success)
+            {
+                continue;
+            }
+
+            installed = true;
+            var titleId = match.Groups["id"].Value;
+            if (string.Equals(titleId, "launcher", StringComparison.OrdinalIgnoreCase)
+                || string.IsNullOrWhiteSpace(entry.DisplayName)
+                || string.IsNullOrWhiteSpace(entry.InstallLocation))
+            {
+                continue;
+            }
+
+            games.Add(new UninstallGame(titleId, entry.DisplayName, entry.InstallLocation));
+        }
+
+        return new UninstallCatalog(installed, games);
+    }
 
     public static IReadOnlyList<string> ParseSteamLibraryPaths(string contents)
     {
@@ -28,6 +103,57 @@ internal static partial class LauncherManifestParsers
         return string.IsNullOrWhiteSpace(appId) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(installDirectory)
             ? null
             : new SteamManifest(appId, name, installDirectory);
+    }
+
+    /// <summary>
+    /// Liest aus Steams <c>localconfig.vdf</c> die Spielzeit je AppId in Minuten
+    /// (<c>Software\Valve\Steam\apps\&lt;AppId&gt;\Playtime</c>). Ein App-Block kann
+    /// verschachtelte Blöcke wie <c>cloud</c> enthalten, deshalb wird der Pfad
+    /// mitgeführt statt per Regex gesucht.
+    /// </summary>
+    public static IReadOnlyDictionary<string, int> ParseSteamPlaytimes(string contents)
+    {
+        var playtimes = new Dictionary<string, int>(StringComparer.Ordinal);
+        var path = new List<string>();
+        string? key = null;
+        foreach (Match token in VdfTokenRegex().Matches(contents))
+        {
+            switch (token.Value)
+            {
+                case "{":
+                    path.Add(key ?? string.Empty);
+                    key = null;
+                    break;
+                case "}":
+                    if (path.Count > 0)
+                    {
+                        path.RemoveAt(path.Count - 1);
+                    }
+
+                    key = null;
+                    break;
+                default:
+                    if (key is null)
+                    {
+                        key = token.Groups[1].Value;
+                        break;
+                    }
+
+                    if (path.Count >= 3
+                        && string.Equals(key, "Playtime", StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(path[^2], "apps", StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(path[^3], "Steam", StringComparison.OrdinalIgnoreCase)
+                        && int.TryParse(token.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var minutes))
+                    {
+                        playtimes[path[^1]] = minutes;
+                    }
+
+                    key = null;
+                    break;
+            }
+        }
+
+        return playtimes;
     }
 
     public static EpicManifest? ParseEpicManifest(string contents)
@@ -128,4 +254,13 @@ internal static partial class LauncherManifestParsers
 
     [GeneratedRegex("\\\"path\\\"\\s+\\\"([^\\\"]+)\\\"", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex VdfPathRegex();
+
+    [GeneratedRegex("\"((?:[^\"\\\\]|\\\\.)*)\"|[{}]", RegexOptions.CultureInvariant)]
+    private static partial Regex VdfTokenRegex();
+
+    [GeneratedRegex("RiotClientServices\\.exe\"?\\s.*?--uninstall-product=(?<product>[^\\s\"]+)(?:.*?--uninstall-patchline=(?<patchline>[^\\s\"]*))?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex RiotUninstallRegex();
+
+    [GeneratedRegex("(?:^|\\s)-uninstall=(?<id>[^\\s\"]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex RockstarUninstallRegex();
 }
