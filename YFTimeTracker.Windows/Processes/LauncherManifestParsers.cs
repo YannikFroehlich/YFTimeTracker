@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -28,6 +29,57 @@ internal static partial class LauncherManifestParsers
         return string.IsNullOrWhiteSpace(appId) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(installDirectory)
             ? null
             : new SteamManifest(appId, name, installDirectory);
+    }
+
+    /// <summary>
+    /// Liest aus Steams <c>localconfig.vdf</c> die Spielzeit je AppId in Minuten
+    /// (<c>Software\Valve\Steam\apps\&lt;AppId&gt;\Playtime</c>). Ein App-Block kann
+    /// verschachtelte Blöcke wie <c>cloud</c> enthalten, deshalb wird der Pfad
+    /// mitgeführt statt per Regex gesucht.
+    /// </summary>
+    public static IReadOnlyDictionary<string, int> ParseSteamPlaytimes(string contents)
+    {
+        var playtimes = new Dictionary<string, int>(StringComparer.Ordinal);
+        var path = new List<string>();
+        string? key = null;
+        foreach (Match token in VdfTokenRegex().Matches(contents))
+        {
+            switch (token.Value)
+            {
+                case "{":
+                    path.Add(key ?? string.Empty);
+                    key = null;
+                    break;
+                case "}":
+                    if (path.Count > 0)
+                    {
+                        path.RemoveAt(path.Count - 1);
+                    }
+
+                    key = null;
+                    break;
+                default:
+                    if (key is null)
+                    {
+                        key = token.Groups[1].Value;
+                        break;
+                    }
+
+                    if (path.Count >= 3
+                        && string.Equals(key, "Playtime", StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(path[^2], "apps", StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(path[^3], "Steam", StringComparison.OrdinalIgnoreCase)
+                        && int.TryParse(token.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var minutes))
+                    {
+                        playtimes[path[^1]] = minutes;
+                    }
+
+                    key = null;
+                    break;
+            }
+        }
+
+        return playtimes;
     }
 
     public static EpicManifest? ParseEpicManifest(string contents)
@@ -128,4 +180,7 @@ internal static partial class LauncherManifestParsers
 
     [GeneratedRegex("\\\"path\\\"\\s+\\\"([^\\\"]+)\\\"", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex VdfPathRegex();
+
+    [GeneratedRegex("\"((?:[^\"\\\\]|\\\\.)*)\"|[{}]", RegexOptions.CultureInvariant)]
+    private static partial Regex VdfTokenRegex();
 }

@@ -37,6 +37,44 @@ public sealed class LauncherManifestParsersTests
     }
 
     [TestMethod]
+    public void Steam_playtimes_are_read_per_app_even_after_nested_blocks()
+    {
+        const string localConfig = """
+            "UserLocalConfigStore"
+            {
+                "friends" { "Playtime" "999" }
+                "Software"
+                {
+                    "Valve"
+                    {
+                        "Steam"
+                        {
+                            "apps"
+                            {
+                                "440"
+                                {
+                                    "cloud" { "last_sync_state" "synchronized" }
+                                    "LastPlayed" "1649896107"
+                                    "Playtime" "701"
+                                }
+                                "480" { "Playtime2wks" "5" "Playtime" "51" }
+                                "730" { "LastPlayed" "1723996411" }
+                                "999" { "Playtime" "kaputt" }
+                            }
+                        }
+                    }
+                }
+            }
+            """;
+
+        var playtimes = LauncherManifestParsers.ParseSteamPlaytimes(localConfig);
+
+        Assert.HasCount(2, playtimes);
+        Assert.AreEqual(701, playtimes["440"]);
+        Assert.AreEqual(51, playtimes["480"], "Playtime2wks ist nur die Zeit der letzten zwei Wochen.");
+    }
+
+    [TestMethod]
     public void Epic_manifest_requires_identity_name_and_install_location()
     {
         const string valid = """

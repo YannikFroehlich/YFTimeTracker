@@ -139,7 +139,7 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
         }
     }
 
-    private static string? LocateSteamRoot() =>
+    internal static string? LocateSteamRoot() =>
         ReadRegistryString(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Valve\Steam", "SteamPath")
         ?? ReadRegistryString(RegistryHive.LocalMachine, RegistryView.Registry32, @"Software\Valve\Steam", "InstallPath");
 
