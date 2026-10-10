@@ -83,14 +83,17 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
         DiscoverSafely(GameSource.BattleNet, () => DiscoverBattleNet(games, cancellationToken), sources);
         DiscoverSafely(GameSource.Ubisoft, () => DiscoverUbisoft(games, cancellationToken), sources);
         DiscoverSafely(GameSource.EaApp, () => DiscoverEaApp(games, cancellationToken), sources);
+        DiscoverSafely(GameSource.Riot, () => DiscoverUninstallCatalog(games, GameSource.Riot, LauncherManifestParsers.ParseRiotInstallations, cancellationToken), sources);
+        DiscoverSafely(GameSource.Rockstar, () => DiscoverUninstallCatalog(games, GameSource.Rockstar, LauncherManifestParsers.ParseRockstarInstallations, cancellationToken), sources);
 
-        // Einige bei Steam oder Epic gekaufte EA-Spiele registrieren sich zusätzlich bei der EA app.
-        // In diesem Fall bleibt der eigentliche Store die Quelle und es entsteht kein zweiter Katalogeintrag.
+        // Einige bei Steam oder Epic gekaufte EA- und Rockstar-Spiele registrieren sich zusätzlich bei
+        // EA app bzw. Rockstar Games Launcher. In diesem Fall bleibt der eigentliche Store die Quelle
+        // und es entsteht kein zweiter Katalogeintrag.
         var thirdPartyDirectoryKeys = games
-            .Where(game => game.Source != GameSource.EaApp)
+            .Where(game => !IsPublisherLauncher(game.Source))
             .Select(game => game.InstallDirectoryKey)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        games.RemoveAll(game => game.Source == GameSource.EaApp && thirdPartyDirectoryKeys.Contains(game.InstallDirectoryKey));
+        games.RemoveAll(game => IsPublisherLauncher(game.Source) && thirdPartyDirectoryKeys.Contains(game.InstallDirectoryKey));
 
         // Ein Spiel kann in mehreren Ordnern liegen (etwa zusätzlich als einzeln geladenes
         // Steam-Depot); die Einträge teilen sich dieselbe ExternalGameId und landen daher später
@@ -121,6 +124,55 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
         }
 
         return result.IsLauncherInstalled;
+    }
+
+    private static bool IsPublisherLauncher(GameSource source) => source is GameSource.EaApp or GameSource.Rockstar;
+
+    private static bool DiscoverUninstallCatalog(
+        ICollection<GameInstallationInfo> games,
+        GameSource source,
+        Func<IEnumerable<LauncherManifestParsers.UninstallEntry>, LauncherManifestParsers.UninstallCatalog> parse,
+        CancellationToken cancellationToken)
+    {
+        var catalog = parse(ReadUninstallEntries(cancellationToken));
+        foreach (var game in catalog.Games)
+        {
+            AddInstallation(games, source, game.ExternalId, game.Name, game.InstallDirectory, []);
+        }
+
+        return catalog.IsLauncherInstalled;
+    }
+
+    private static IEnumerable<LauncherManifestParsers.UninstallEntry> ReadUninstallEntries(CancellationToken cancellationToken)
+    {
+        foreach (var hive in new[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser })
+        {
+            foreach (var subKey in UninstallRegistrySubKeys)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                using var baseKey = RegistryKey.OpenBaseKey(hive, RegistryView.Default);
+                using var uninstallKey = baseKey.OpenSubKey(subKey);
+                if (uninstallKey is null)
+                {
+                    continue;
+                }
+
+                foreach (var entryName in uninstallKey.GetSubKeyNames())
+                {
+                    using var entryKey = uninstallKey.OpenSubKey(entryName);
+                    if (entryKey is null)
+                    {
+                        continue;
+                    }
+
+                    yield return new LauncherManifestParsers.UninstallEntry(
+                        entryKey.GetValue("DisplayName") as string,
+                        entryKey.GetValue("Publisher") as string,
+                        entryKey.GetValue("InstallLocation") as string,
+                        entryKey.GetValue("UninstallString") as string);
+                }
+            }
+        }
     }
 
     private void DiscoverSafely(
@@ -271,53 +323,37 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
     {
         var found = false;
 
-        foreach (var hive in new[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser })
+        foreach (var entry in ReadUninstallEntries(cancellationToken))
         {
-            foreach (var subKey in UninstallRegistrySubKeys)
+            if (string.IsNullOrWhiteSpace(entry.UninstallString))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                using var baseKey = RegistryKey.OpenBaseKey(hive, RegistryView.Default);
-                using var uninstallKey = baseKey.OpenSubKey(subKey);
-                if (uninstallKey is null)
-                {
-                    continue;
-                }
-
-                foreach (var entryName in uninstallKey.GetSubKeyNames())
-                {
-                    using var entryKey = uninstallKey.OpenSubKey(entryName);
-                    var uninstallString = entryKey?.GetValue("UninstallString") as string;
-                    if (string.IsNullOrWhiteSpace(uninstallString))
-                    {
-                        continue;
-                    }
-
-                    var match = BattleNetUidRegex.Match(uninstallString);
-                    if (!match.Success)
-                    {
-                        continue;
-                    }
-
-                    found = true;
-                    var uid = match.Groups["uid"].Value.Trim();
-                    if (string.Equals(uid, "battle.net", StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    var displayName = entryKey?.GetValue("DisplayName") as string;
-                    var installLocation = entryKey?.GetValue("InstallLocation") as string;
-                    if (string.IsNullOrWhiteSpace(displayName)
-                        || string.IsNullOrWhiteSpace(installLocation)
-                        || displayName.EndsWith("Test", StringComparison.OrdinalIgnoreCase)
-                        || displayName.EndsWith("Beta", StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    AddInstallation(games, GameSource.BattleNet, uid, displayName, installLocation, []);
-                }
+                continue;
             }
+
+            var match = BattleNetUidRegex.Match(entry.UninstallString);
+            if (!match.Success)
+            {
+                continue;
+            }
+
+            found = true;
+            var uid = match.Groups["uid"].Value.Trim();
+            if (string.Equals(uid, "battle.net", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var displayName = entry.DisplayName;
+            var installLocation = entry.InstallLocation;
+            if (string.IsNullOrWhiteSpace(displayName)
+                || string.IsNullOrWhiteSpace(installLocation)
+                || displayName.EndsWith("Test", StringComparison.OrdinalIgnoreCase)
+                || displayName.EndsWith("Beta", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            AddInstallation(games, GameSource.BattleNet, uid, displayName, installLocation, []);
         }
 
         return found;

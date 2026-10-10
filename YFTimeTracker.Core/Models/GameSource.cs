@@ -9,5 +9,7 @@ public enum GameSource
     Xbox = 4,
     BattleNet = 5,
     Ubisoft = 6,
-    EaApp = 7
+    EaApp = 7,
+    Riot = 8,
+    Rockstar = 9
 }

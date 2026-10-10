@@ -29,7 +29,7 @@ Diese Prüfung deckt Windows-Abläufe ab, die nicht vollständig durch Unit-Test
 
 ## Pro Launcher
 
-Die Schritte einmal mit einem installierten Steam-, Epic-, GOG-, Xbox-/Microsoft-Store-, Battle.net-, Ubisoft-Connect- beziehungsweise EA-app-Spiel durchführen:
+Die Schritte einmal mit einem installierten Steam-, Epic-, GOG-, Xbox-/Microsoft-Store-, Battle.net-, Ubisoft-Connect-, EA-app-, Riot- beziehungsweise Rockstar-Spiel durchführen:
 
 1. Unter **Einstellungen → Launcher-Erkennung** prüfen, ob der Launcher als erkannt erscheint.
 2. Ein noch nicht importiertes Spiel starten. Falls keine eindeutige Start-EXE bekannt ist, muss es nach spätestens zwei Tracking-Scans auf dem Dashboard erscheinen.
@@ -56,6 +56,13 @@ Für EA-app-Spiele zusätzlich prüfen:
 2. Ein nicht mehr installierter Titel, von dem nur noch Daten unter `C:\ProgramData\EA Desktop\InstallData` vorhanden sind, darf nicht erkannt werden.
 3. Ein direkt über die EA app installiertes Spiel starten und prüfen, dass genau ein Bibliothekseintrag mit der Quelle **EA APP** entsteht.
 4. Einen über Steam oder Epic installierten EA-Titel starten. Er muss dem eigentlichen Store zugeordnet werden und darf keinen zweiten EA-app-Eintrag erzeugen.
+
+Für Riot- und Rockstar-Spiele zusätzlich prüfen:
+
+1. Unter **Einstellungen → Tracking** werden „Riot Client“ und „Rockstar Games Launcher“ als erkannt angezeigt, sobald der jeweilige Launcher installiert ist.
+2. Ein Riot-Spiel (etwa VALORANT) starten. Es entsteht genau ein Bibliothekseintrag mit der Quelle **RIOT**; der Riot Client selbst und Riot Vanguard erscheinen nicht als Spiel.
+3. Ein über den Rockstar Games Launcher installiertes Spiel starten und prüfen, dass genau ein Eintrag mit der Quelle **ROCKSTAR** entsteht.
+4. Einen über Steam oder Epic gekauften Rockstar-Titel (etwa GTA V) starten. Er muss dem eigentlichen Store zugeordnet werden und darf keinen zweiten Rockstar-Eintrag erzeugen.
 
 ## Pause und Unterbrechungen
 

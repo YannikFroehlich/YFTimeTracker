@@ -34,6 +34,8 @@ public sealed record LauncherDiscoveryResult(
             [GameSource.Xbox] = LauncherAvailability.NotInstalled,
             [GameSource.BattleNet] = LauncherAvailability.NotInstalled,
             [GameSource.Ubisoft] = LauncherAvailability.NotInstalled,
-            [GameSource.EaApp] = LauncherAvailability.NotInstalled
+            [GameSource.EaApp] = LauncherAvailability.NotInstalled,
+            [GameSource.Riot] = LauncherAvailability.NotInstalled,
+            [GameSource.Rockstar] = LauncherAvailability.NotInstalled
         });
 }

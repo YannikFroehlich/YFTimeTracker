@@ -66,6 +66,8 @@ public sealed class GamesViewModel : ObservableObject
             new LibrarySourceFilterOption(GameSource.BattleNet, "Battle.net"),
             new LibrarySourceFilterOption(GameSource.Ubisoft, "Ubisoft Connect"),
             new LibrarySourceFilterOption(GameSource.EaApp, "EA app"),
+            new LibrarySourceFilterOption(GameSource.Riot, "Riot Client"),
+            new LibrarySourceFilterOption(GameSource.Rockstar, "Rockstar"),
             new LibrarySourceFilterOption(GameSource.Manual, "Manuell")
         ];
         selectedSourceFilter = SourceFilters[0];
