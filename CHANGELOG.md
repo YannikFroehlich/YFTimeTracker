@@ -2,6 +2,10 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.13.0 – 2026-10-11
+- Neu: Neues App-Icon im Design der App und der Website – eine Stoppuhr mit YF-Monogramm und orangenem Zeitbogen statt des bisherigen blauen Logos. Es erscheint in Taskleiste, Startmenü, Infobereich und auf der Website.
+- Verbessert: Der Statuspunkt am Symbol im Infobereich (Tracking läuft oder pausiert) ist kleiner und verdeckt das Logo nicht mehr.
+
 ## 1.12.0 – 2026-10-11
 - Neu: Riot Client und Rockstar Games Launcher werden erkannt. Riot-Spiele wie VALORANT und über den Rockstar Games Launcher installierte Titel landen automatisch in der Bibliothek – wie bei den anderen Launchern rein lokal und ohne Anmeldung. Über Steam oder Epic gekaufte Rockstar-Spiele bleiben bei ihrem Store. Unter **Einstellungen → Tracking** steht, ob beide Launcher gefunden wurden.
 - Neu: Bei Steam-Spielen füllt „Aus Steam übernehmen“ in den Spieldetails die Basis-Spielzeit mit der Spielzeit, die Steam auf diesem PC gespeichert hat. Bereits hier erfasste Zeit wird abgezogen, damit nichts doppelt zählt; übernommen wird der Wert erst mit „Speichern“.
