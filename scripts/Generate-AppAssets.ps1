@@ -191,14 +191,14 @@ function New-BadgedLogoImage {
         $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
         $graphics.DrawImage($Source, 0, 0, $size, $size)
 
-        $ringDiameter = [int]($size * 0.46)
+        $ringDiameter = [int]($size * 0.36)
         $ringX = $size - $ringDiameter - [int]($size * 0.01)
         $ringY = $size - $ringDiameter - [int]($size * 0.01)
-        $ringBrush = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::FromArgb(255, 5, 11, 22))
+        $ringBrush = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::FromArgb(255, 0x0E, 0x0E, 0x0D))
         $graphics.FillEllipse($ringBrush, $ringX, $ringY, $ringDiameter, $ringDiameter)
         $ringBrush.Dispose()
 
-        $badgeDiameter = [int]($size * 0.38)
+        $badgeDiameter = [int]($size * 0.28)
         $badgeX = $size - $badgeDiameter - [int]($size * 0.05)
         $badgeY = $size - $badgeDiameter - [int]($size * 0.05)
         $badgeBrush = [System.Drawing.SolidBrush]::new($BadgeColor)
@@ -217,11 +217,11 @@ try {
     Save-PngAsset -Source $sourceImage -Name 'Square44x44Logo.png' -Width 44 -Height 44
     Save-PngAsset -Source $sourceImage -Name 'Square150x150Logo.png' -Width 150 -Height 150
     Save-PngAsset -Source $sourceImage -Name 'StoreLogo.png' -Width 50 -Height 50
-    Save-PngAsset -Source $sourceImage -Name 'Wide310x150Logo.png' -Width 310 -Height 150 -Letterbox -BackgroundColor ([System.Drawing.Color]::FromArgb(255, 4, 9, 18))
-    Save-PngAsset -Source $sourceImage -Name 'SplashScreen.png' -Width 620 -Height 300 -Letterbox -BackgroundColor ([System.Drawing.Color]::FromArgb(255, 4, 9, 18))
+    Save-PngAsset -Source $sourceImage -Name 'Wide310x150Logo.png' -Width 310 -Height 150 -Letterbox -BackgroundColor ([System.Drawing.Color]::FromArgb(255, 0x0E, 0x0E, 0x0D))
+    Save-PngAsset -Source $sourceImage -Name 'SplashScreen.png' -Width 620 -Height 300 -Letterbox -BackgroundColor ([System.Drawing.Color]::FromArgb(255, 0x0E, 0x0E, 0x0D))
     Save-MultiSizeIcon -Source $sourceImage -TargetPath (Join-Path $assetDirectory 'YFTimeTracker.ico')
 
-    $pausedImage = New-BadgedLogoImage -Source $sourceImage -BadgeColor ([System.Drawing.Color]::FromArgb(255, 0x9A, 0xA8, 0xBF))
+    $pausedImage = New-BadgedLogoImage -Source $sourceImage -BadgeColor ([System.Drawing.Color]::FromArgb(255, 0x9D, 0x9A, 0x91))
     try {
         Save-MultiSizeIcon -Source $pausedImage -TargetPath (Join-Path $assetDirectory 'YFTimeTracker-Paused.ico')
     }
@@ -229,7 +229,7 @@ try {
         $pausedImage.Dispose()
     }
 
-    $runningImage = New-BadgedLogoImage -Source $sourceImage -BadgeColor ([System.Drawing.Color]::FromArgb(255, 0x29, 0xE7, 0xA4))
+    $runningImage = New-BadgedLogoImage -Source $sourceImage -BadgeColor ([System.Drawing.Color]::FromArgb(255, 0x86, 0xD8, 0xA6))
     try {
         Save-MultiSizeIcon -Source $runningImage -TargetPath (Join-Path $assetDirectory 'YFTimeTracker-Running.ico')
     }
