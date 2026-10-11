@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Stoppuhr mit YF-Monogramm (Archivo Condensed ExtraBold als Pfad), Farben aus App und Website. -->
+  <g stroke="#161614" stroke-width="20" stroke-linejoin="round">
+    <rect x="436" y="72" width="152" height="52" rx="18"/>
+    <rect x="488" y="116" width="48" height="28"/>
+    <rect x="798" y="216" width="64" height="44" rx="14" transform="rotate(45 830 238)"/>
+  </g>
+  <g fill="#ECEBE6">
+    <rect x="436" y="72" width="152" height="52" rx="18"/>
+    <rect x="488" y="116" width="48" height="40"/>
+    <rect x="798" y="216" width="64" height="44" rx="14" transform="rotate(45 830 238)"/>
+  </g>
+  <circle cx="512" cy="556" r="430" fill="#161614"/>
+  <circle cx="512" cy="556" r="404" fill="#1E1E1B" stroke="#ECEBE6" stroke-width="32"/>
+  <circle cx="512" cy="556" r="330" fill="none" stroke="#2A2926" stroke-width="44"/>
+  <path d="M512 226 A330 330 0 0 1 764.8 768.1" fill="none" stroke="#FF6A2B" stroke-width="44" stroke-linecap="round"/>
+  <circle cx="764.8" cy="768.1" r="42" fill="#FF6A2B"/>
+  <circle cx="764.8" cy="768.1" r="16" fill="#1E1E1B"/>
+  <path fill="#ECEBE6" d="M381.6 689V586.4L299.9 427.9H368.6L413.1 524.8H415L460.2 427.9H525.2L444.6 586.4V689ZM541.1 689V427.9H704.5V479.2H604.2V538.5H690.1V589.8H604.2V689Z"/>
+</svg>
