@@ -1,4 +1,5 @@
 using YFTimeTracker.Core.Abstractions;
+using YFTimeTracker.Core.Models;
 
 namespace YFTimeTracker.Windows.Processes;
 
@@ -6,7 +7,7 @@ namespace YFTimeTracker.Windows.Processes;
 /// Liest die Spielzeit aus <c>userdata\&lt;Konto&gt;\config\localconfig.vdf</c> des
 /// Steam-Clients. Rein lokal, ohne Steam-Anmeldung oder Web-API.
 /// </summary>
-public sealed class SteamPlaytimeReader : ISteamPlaytimeReader
+public sealed class SteamPlaytimeReader : ILauncherPlaytimeReader
 {
     private readonly Func<string?> steamRootLocator;
 
@@ -19,6 +20,8 @@ public sealed class SteamPlaytimeReader : ISteamPlaytimeReader
     {
         this.steamRootLocator = steamRootLocator;
     }
+
+    public GameSource Source => GameSource.Steam;
 
     public async Task<int?> GetPlaytimeMinutesAsync(string appId, CancellationToken cancellationToken)
     {

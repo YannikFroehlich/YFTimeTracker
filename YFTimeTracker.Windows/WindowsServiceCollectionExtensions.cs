@@ -14,7 +14,8 @@ public static class WindowsServiceCollectionExtensions
         services.AddSingleton<IAppPathProvider, WindowsAppPathProvider>();
         services.AddSingleton<IProcessSnapshotProvider, WindowsProcessSnapshotProvider>();
         services.AddSingleton<IGameInstallationProvider, WindowsGameInstallationProvider>();
-        services.AddSingleton<ISteamPlaytimeReader, SteamPlaytimeReader>();
+        services.AddSingleton<ILauncherPlaytimeReader, SteamPlaytimeReader>();
+        services.AddSingleton<ILauncherPlaytimeReader, GogPlaytimeReader>();
         services.AddSingleton<IGameIconService, WindowsGameIconService>();
         services.AddSingleton<IBootSessionProvider, WindowsBootSessionProvider>();
         services.AddSingleton<ISystemSuspendNotifier, WindowsSystemSuspendNotifier>();

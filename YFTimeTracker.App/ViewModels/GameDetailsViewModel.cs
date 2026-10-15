@@ -24,12 +24,12 @@ public sealed class GameDetailsViewModel : ObservableObject
     private readonly IGameIconService? gameIcons;
     private readonly IGameLaunchService? gameLaunchService;
     private readonly IFilePickerService? filePicker;
-    private readonly ISteamPlaytimeReader? steamPlaytime;
+    private readonly IReadOnlyList<ILauncherPlaytimeReader> playtimeReaders;
     private readonly AsyncRelayCommand saveGameCommand;
     private readonly AsyncRelayCommand saveSessionCommand;
     private readonly RelayCommand launchGameCommand;
     private readonly AsyncRelayCommand removeCoverCommand;
-    private readonly AsyncRelayCommand importSteamPlaytimeCommand;
+    private readonly AsyncRelayCommand importLauncherPlaytimeCommand;
     private Game? loadedGame;
     private long gameId;
     private SessionListItemViewModel? selectedSession;
@@ -86,7 +86,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         IGameIconService? gameIcons = null,
         IGameLaunchService? gameLaunchService = null,
         IFilePickerService? filePicker = null,
-        ISteamPlaytimeReader? steamPlaytime = null)
+        IEnumerable<ILauncherPlaytimeReader>? playtimeReaders = null)
     {
         this.games = games;
         this.catalog = catalog;
@@ -96,7 +96,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         this.gameIcons = gameIcons;
         this.gameLaunchService = gameLaunchService;
         this.filePicker = filePicker;
-        this.steamPlaytime = steamPlaytime;
+        this.playtimeReaders = playtimeReaders?.ToArray() ?? [];
 
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         saveGameCommand = new AsyncRelayCommand(SaveGameAsync, () => loadedGame is not null);
@@ -109,8 +109,8 @@ public sealed class GameDetailsViewModel : ObservableObject
         ChooseCoverCommand = new AsyncRelayCommand(ChooseCoverAsync);
         removeCoverCommand = new AsyncRelayCommand(RemoveCoverAsync, () => HasCustomCover);
         RemoveCoverCommand = removeCoverCommand;
-        importSteamPlaytimeCommand = new AsyncRelayCommand(ImportSteamPlaytimeAsync, () => SteamAppId is not null);
-        ImportSteamPlaytimeCommand = importSteamPlaytimeCommand;
+        importLauncherPlaytimeCommand = new AsyncRelayCommand(ImportLauncherPlaytimeAsync, () => PlaytimeReader is not null);
+        ImportLauncherPlaytimeCommand = importLauncherPlaytimeCommand;
         ResetEditorTimes();
     }
 
@@ -187,12 +187,15 @@ public sealed class GameDetailsViewModel : ObservableObject
         set => SetProperty(ref baselinePlaytimeMinutes, value);
     }
 
-    public Visibility SteamImportVisibility => SteamAppId is null ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility LauncherPlaytimeImportVisibility => PlaytimeReader is null ? Visibility.Collapsed : Visibility.Visible;
 
-    private string? SteamAppId => steamPlaytime is not null
-        && loadedGame is { Source: GameSource.Steam, ExternalGameId: { Length: > 0 } appId }
-            ? appId
-            : null;
+    public string LauncherPlaytimeImportText => $"Aus {LauncherName} übernehmen";
+
+    private ILauncherPlaytimeReader? PlaytimeReader => loadedGame is { ExternalGameId.Length: > 0 } game
+        ? playtimeReaders.FirstOrDefault(reader => reader.Source == game.Source)
+        : null;
+
+    private string LauncherName => loadedGame?.Source == GameSource.Gog ? "GOG Galaxy" : "Steam";
 
     public string BaselineSummaryText
     {
@@ -324,7 +327,7 @@ public sealed class GameDetailsViewModel : ObservableObject
 
     public IAsyncRelayCommand RemoveCoverCommand { get; }
 
-    public IAsyncRelayCommand ImportSteamPlaytimeCommand { get; }
+    public IAsyncRelayCommand ImportLauncherPlaytimeCommand { get; }
 
     public async Task LoadAsync(long requestedGameId)
     {
@@ -368,8 +371,9 @@ public sealed class GameDetailsViewModel : ObservableObject
             saveGameCommand.NotifyCanExecuteChanged();
             saveSessionCommand.NotifyCanExecuteChanged();
             launchGameCommand.NotifyCanExecuteChanged();
-            importSteamPlaytimeCommand.NotifyCanExecuteChanged();
-            OnPropertyChanged(nameof(SteamImportVisibility));
+            importLauncherPlaytimeCommand.NotifyCanExecuteChanged();
+            OnPropertyChanged(nameof(LauncherPlaytimeImportVisibility));
+            OnPropertyChanged(nameof(LauncherPlaytimeImportText));
             StatusMessage = $"Zuletzt aktualisiert um {TimeZoneInfo.ConvertTime(clock.UtcNow, TimeZoneInfo.Local):HH:mm}.";
         }
         catch (Exception exception)
@@ -639,39 +643,40 @@ public sealed class GameDetailsViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Füllt die Basis-Spielzeit aus der lokal gespeicherten Steam-Spielzeit.
+    /// Füllt die Basis-Spielzeit aus der Spielzeit, die der Launcher lokal gespeichert hat.
     /// Gespeichert wird erst mit "Speichern", damit der Wert vorher prüfbar bleibt.
     /// </summary>
-    private async Task ImportSteamPlaytimeAsync()
+    private async Task ImportLauncherPlaytimeAsync()
     {
-        if (SteamAppId is not { } appId)
+        if (PlaytimeReader is not { } reader || loadedGame?.ExternalGameId is not { } externalGameId)
         {
             return;
         }
 
-        int? steamMinutes;
+        var launcher = LauncherName;
+        int? launcherMinutes;
         try
         {
-            steamMinutes = await steamPlaytime!.GetPlaytimeMinutesAsync(appId, CancellationToken.None);
+            launcherMinutes = await reader.GetPlaytimeMinutesAsync(externalGameId, CancellationToken.None);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            StatusMessage = $"Steam-Spielzeit konnte nicht gelesen werden: {exception.Message}";
+            StatusMessage = $"{launcher}-Spielzeit konnte nicht gelesen werden: {exception.Message}";
             return;
         }
 
-        if (steamMinutes is not > 0)
+        if (launcherMinutes is not > 0)
         {
-            StatusMessage = "Steam hat zu diesem Spiel keine Spielzeit gespeichert.";
+            StatusMessage = $"{launcher} hat zu diesem Spiel keine Spielzeit gespeichert.";
             return;
         }
 
-        // Steam zählt auch die Zeit mit, die hier schon als Session erfasst ist.
+        // Der Launcher zählt auch die Zeit mit, die hier schon als Session erfasst ist.
         var tracked = TimeSpan.FromTicks(Sessions.Sum(session => session.Model.GetEffectiveDuration(clock.UtcNow).Ticks));
-        var baseline = Math.Max(0, steamMinutes.Value - (int)tracked.TotalMinutes);
+        var baseline = Math.Max(0, launcherMinutes.Value - (int)tracked.TotalMinutes);
         BaselinePlaytimeHours = baseline / 60;
         BaselinePlaytimeMinutes = baseline % 60;
-        StatusMessage = $"Steam meldet {TimeFormatter.Format(TimeSpan.FromMinutes(steamMinutes.Value))}, davon "
+        StatusMessage = $"{launcher} meldet {TimeFormatter.Format(TimeSpan.FromMinutes(launcherMinutes.Value))}, davon "
             + $"{TimeFormatter.Format(tracked)} hier bereits erfasst. Basis-Spielzeit: "
             + $"{TimeFormatter.Format(TimeSpan.FromMinutes(baseline))} – zum Übernehmen speichern.";
     }
@@ -807,7 +812,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         saveGameCommand.NotifyCanExecuteChanged();
         saveSessionCommand.NotifyCanExecuteChanged();
         launchGameCommand.NotifyCanExecuteChanged();
-        importSteamPlaytimeCommand.NotifyCanExecuteChanged();
+        importLauncherPlaytimeCommand.NotifyCanExecuteChanged();
     }
 
     private void LaunchGame()
