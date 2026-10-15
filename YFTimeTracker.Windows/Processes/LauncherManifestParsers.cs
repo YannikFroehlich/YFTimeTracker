@@ -114,46 +114,41 @@ internal static partial class LauncherManifestParsers
     public static IReadOnlyDictionary<string, int> ParseSteamPlaytimes(string contents)
     {
         var playtimes = new Dictionary<string, int>(StringComparer.Ordinal);
-        var path = new List<string>();
-        string? key = null;
-        foreach (Match token in VdfTokenRegex().Matches(contents))
+        foreach (var (path, key, value) in EnumerateVdfValues(contents))
         {
-            switch (token.Value)
+            if (path.Count >= 3
+                && string.Equals(key, "Playtime", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(path[^2], "apps", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(path[^3], "Steam", StringComparison.OrdinalIgnoreCase)
+                && int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var minutes))
             {
-                case "{":
-                    path.Add(key ?? string.Empty);
-                    key = null;
-                    break;
-                case "}":
-                    if (path.Count > 0)
-                    {
-                        path.RemoveAt(path.Count - 1);
-                    }
-
-                    key = null;
-                    break;
-                default:
-                    if (key is null)
-                    {
-                        key = token.Groups[1].Value;
-                        break;
-                    }
-
-                    if (path.Count >= 3
-                        && string.Equals(key, "Playtime", StringComparison.OrdinalIgnoreCase)
-                        && string.Equals(path[^2], "apps", StringComparison.OrdinalIgnoreCase)
-                        && string.Equals(path[^3], "Steam", StringComparison.OrdinalIgnoreCase)
-                        && int.TryParse(token.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var minutes))
-                    {
-                        playtimes[path[^1]] = minutes;
-                    }
-
-                    key = null;
-                    break;
+                playtimes[path[^1]] = minutes;
             }
         }
 
         return playtimes;
+    }
+
+    /// <summary>
+    /// Liest aus Steams <c>config\loginusers.vdf</c> das Konto mit <c>MostRecent</c> und gibt
+    /// dessen Ordnernamen unter <c>userdata</c> zurück. Die Datei führt SteamID64-Werte,
+    /// der Ordner heißt nach der 32-Bit-Konto-Id in deren unteren Bits.
+    /// </summary>
+    public static string? ParseSteamMostRecentAccountId(string contents)
+    {
+        foreach (var (path, key, value) in EnumerateVdfValues(contents))
+        {
+            if (path.Count == 2
+                && string.Equals(path[0], "users", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(key, "MostRecent", StringComparison.OrdinalIgnoreCase)
+                && value == "1"
+                && ulong.TryParse(path[1], NumberStyles.None, CultureInfo.InvariantCulture, out var steamId64))
+            {
+                return (steamId64 & 0xFFFFFFFF).ToString(CultureInfo.InvariantCulture);
+            }
+        }
+
+        return null;
     }
 
     public static EpicManifest? ParseEpicManifest(string contents)
@@ -237,6 +232,44 @@ internal static partial class LauncherManifestParsers
         return string.IsNullOrWhiteSpace(identityName) || executables.Length == 0
             ? null
             : new XboxManifest(identityName.Trim(), displayName?.Trim(), executables);
+    }
+
+    /// <summary>
+    /// Liefert jedes Schlüssel-Wert-Paar einer VDF-Datei mit dem Pfad der umschließenden
+    /// Blöcke. Der Pfad ist nur bis zum nächsten Element gültig.
+    /// </summary>
+    private static IEnumerable<(IReadOnlyList<string> Path, string Key, string Value)> EnumerateVdfValues(string contents)
+    {
+        var path = new List<string>();
+        string? key = null;
+        foreach (Match token in VdfTokenRegex().Matches(contents))
+        {
+            switch (token.Value)
+            {
+                case "{":
+                    path.Add(key ?? string.Empty);
+                    key = null;
+                    break;
+                case "}":
+                    if (path.Count > 0)
+                    {
+                        path.RemoveAt(path.Count - 1);
+                    }
+
+                    key = null;
+                    break;
+                default:
+                    if (key is null)
+                    {
+                        key = token.Groups[1].Value;
+                        break;
+                    }
+
+                    yield return (path, key, token.Groups[1].Value);
+                    key = null;
+                    break;
+            }
+        }
     }
 
     private static string? ReadVdfValue(string contents, string key)
