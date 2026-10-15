@@ -1050,6 +1050,9 @@ public sealed class GameTrackingService(
         GameSource.EaApp => "EA app",
         GameSource.Riot => "Riot Client",
         GameSource.Rockstar => "Rockstar Games Launcher",
+        GameSource.Amazon => "Amazon Games",
+        GameSource.Itch => "itch.io",
+        GameSource.Humble => "Humble App",
         _ => "eine manuelle Zuordnung"
     };
 

@@ -46,6 +46,9 @@ public sealed class SettingsViewModel : ObservableObject
     private string eaAppStatusText = "Nicht geprüft";
     private string riotStatusText = "Nicht geprüft";
     private string rockstarStatusText = "Nicht geprüft";
+    private string amazonStatusText = "Nicht geprüft";
+    private string itchStatusText = "Nicht geprüft";
+    private string humbleStatusText = "Nicht geprüft";
     private string currentAppVersionText = "Installiert: unbekannt";
     private string updateStatusText = "Update-Status wird geladen …";
     private string availableUpdateText = string.Empty;
@@ -240,6 +243,24 @@ public sealed class SettingsViewModel : ObservableObject
     {
         get => rockstarStatusText;
         private set => SetProperty(ref rockstarStatusText, value);
+    }
+
+    public string AmazonStatusText
+    {
+        get => amazonStatusText;
+        private set => SetProperty(ref amazonStatusText, value);
+    }
+
+    public string ItchStatusText
+    {
+        get => itchStatusText;
+        private set => SetProperty(ref itchStatusText, value);
+    }
+
+    public string HumbleStatusText
+    {
+        get => humbleStatusText;
+        private set => SetProperty(ref humbleStatusText, value);
     }
 
     public string CurrentAppVersionText
@@ -472,12 +493,16 @@ public sealed class SettingsViewModel : ObservableObject
             EaAppStatusText = FormatLauncherState(GameSource.EaApp, launchers);
             RiotStatusText = FormatLauncherState(GameSource.Riot, launchers);
             RockstarStatusText = FormatLauncherState(GameSource.Rockstar, launchers);
+            AmazonStatusText = FormatLauncherState(GameSource.Amazon, launchers);
+            ItchStatusText = FormatLauncherState(GameSource.Itch, launchers);
+            HumbleStatusText = FormatLauncherState(GameSource.Humble, launchers);
         }
         catch
         {
             SteamStatusText = EpicStatusText = GogStatusText = XboxStatusText =
                 BattleNetStatusText = UbisoftStatusText = EaAppStatusText =
-                RiotStatusText = RockstarStatusText = "Prüfung fehlgeschlagen";
+                RiotStatusText = RockstarStatusText =
+                AmazonStatusText = ItchStatusText = HumbleStatusText = "Prüfung fehlgeschlagen";
         }
     }
 

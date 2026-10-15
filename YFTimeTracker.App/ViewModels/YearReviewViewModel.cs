@@ -337,6 +337,9 @@ public sealed class YearReviewViewModel : ObservableObject
             GameSource.EaApp => "EA APP",
             GameSource.Riot => "RIOT",
             GameSource.Rockstar => "ROCKSTAR",
+            GameSource.Amazon => "AMAZON",
+            GameSource.Itch => "ITCH.IO",
+            GameSource.Humble => "HUMBLE",
             _ => "MANUELL"
         };
     }

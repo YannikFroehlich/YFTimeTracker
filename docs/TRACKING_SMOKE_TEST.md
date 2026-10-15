@@ -29,7 +29,7 @@ Diese Prüfung deckt Windows-Abläufe ab, die nicht vollständig durch Unit-Test
 
 ## Pro Launcher
 
-Die Schritte einmal mit einem installierten Steam-, Epic-, GOG-, Xbox-/Microsoft-Store-, Battle.net-, Ubisoft-Connect-, EA-app-, Riot- beziehungsweise Rockstar-Spiel durchführen:
+Die Schritte einmal mit einem installierten Steam-, Epic-, GOG-, Xbox-/Microsoft-Store-, Battle.net-, Ubisoft-Connect-, EA-app-, Riot-, Rockstar-, Amazon-Games-, itch.io- beziehungsweise Humble-App-Spiel durchführen:
 
 1. Unter **Einstellungen → Launcher-Erkennung** prüfen, ob der Launcher als erkannt erscheint.
 2. Ein noch nicht importiertes Spiel starten. Falls keine eindeutige Start-EXE bekannt ist, muss es nach spätestens zwei Tracking-Scans auf dem Dashboard erscheinen.
@@ -63,6 +63,13 @@ Für Riot- und Rockstar-Spiele zusätzlich prüfen:
 2. Ein Riot-Spiel (etwa VALORANT) starten. Es entsteht genau ein Bibliothekseintrag mit der Quelle **RIOT**; der Riot Client selbst und Riot Vanguard erscheinen nicht als Spiel.
 3. Ein über den Rockstar Games Launcher installiertes Spiel starten und prüfen, dass genau ein Eintrag mit der Quelle **ROCKSTAR** entsteht.
 4. Einen über Steam oder Epic gekauften Rockstar-Titel (etwa GTA V) starten. Er muss dem eigentlichen Store zugeordnet werden und darf keinen zweiten Rockstar-Eintrag erzeugen.
+
+Für Amazon-Games-, itch.io- und Humble-App-Spiele zusätzlich prüfen:
+
+1. Unter **Einstellungen → Tracking** werden „Amazon Games“, „itch.io“ und „Humble App“ als erkannt angezeigt, sobald der jeweilige Launcher installiert ist.
+2. Je ein über den Launcher installiertes Spiel starten. Es entsteht genau ein Bibliothekseintrag mit der Quelle **AMAZON**, **ITCH.IO** beziehungsweise **HUMBLE**, und der Name stimmt mit dem Titel im Launcher überein.
+3. Ein im Launcher deinstalliertes oder nur gekauftes, nie heruntergeladenes Spiel darf nicht erkannt werden.
+4. Läuft der Launcher während des Scans, darf die Erkennung trotzdem gelingen; seine Daten werden nur gelesen.
 
 ## Pause und Unterbrechungen
 

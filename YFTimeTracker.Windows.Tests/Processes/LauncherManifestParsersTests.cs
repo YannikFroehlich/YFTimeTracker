@@ -194,4 +194,67 @@ public sealed class LauncherManifestParsersTests
         Assert.IsNull(LauncherManifestParsers.ParseXboxGameConfig(missingExecutable));
         Assert.Throws<XmlException>(() => LauncherManifestParsers.ParseXboxGameConfig("not xml"));
     }
+
+    [TestMethod]
+    public void Amazon_launch_command_comes_from_fuel_json()
+    {
+        const string fuel = """
+            { "SchemaVersion": "2", "Main": { "Command": "Binaries\\Game.exe", "Args": ["-windowed"] } }
+            """;
+
+        Assert.AreEqual(@"Binaries\Game.exe", LauncherManifestParsers.ParseAmazonLaunchCommand(fuel));
+        Assert.IsNull(LauncherManifestParsers.ParseAmazonLaunchCommand("""{ "SchemaVersion": "2" }"""));
+        Assert.IsNull(LauncherManifestParsers.ParseAmazonLaunchCommand("kaputt"), "Eine kaputte fuel.json kostet nur die Start-EXE.");
+    }
+
+    [TestMethod]
+    public void Itch_launch_paths_come_from_verdict_candidates()
+    {
+        const string verdict = """
+            {
+              "basePath": "C:\\itch\\apps\\neon",
+              "totalSize": 1234,
+              "candidates": [
+                { "path": "Neon.exe", "flavor": "windows", "arch": "amd64" },
+                { "path": "tools\\Editor.exe", "flavor": "windows" }
+              ]
+            }
+            """;
+
+        CollectionAssert.AreEqual(
+            new[] { @"C:\itch\apps\neon\Neon.exe", @"C:\itch\apps\neon\tools\Editor.exe" },
+            LauncherManifestParsers.ParseItchLaunchPaths(verdict, @"D:\fallback").ToArray());
+        CollectionAssert.AreEqual(
+            new[] { @"D:\fallback\Neon.exe" },
+            LauncherManifestParsers.ParseItchLaunchPaths("""{ "candidates": [{ "path": "Neon.exe" }] }""", @"D:\fallback").ToArray(),
+            "Ohne basePath gilt der Installationsordner.");
+        Assert.IsEmpty(LauncherManifestParsers.ParseItchLaunchPaths(null, @"D:\fallback"));
+        Assert.IsEmpty(LauncherManifestParsers.ParseItchLaunchPaths("kaputt", @"D:\fallback"));
+    }
+
+    [TestMethod]
+    public void Humble_installations_are_the_downloaded_entries_of_the_collection()
+    {
+        const string config = """
+            {
+              "settings": { "downloadLocation": "D:\\Humble" },
+              "game-collection-4": [
+                { "machineName": "neon_windows", "gameName": "Neon", "status": "downloaded",
+                  "filePath": "D:\\Humble\\Neon", "executablePath": "bin\\Neon.exe" },
+                { "machineName": "old_windows", "gameName": "Old Game", "status": "installed",
+                  "downloadFilePath": "D:\\Humble", "executablePath": "Old.exe" },
+                { "machineName": "owned_windows", "gameName": "Nur gekauft", "status": "available" },
+                { "machineName": "noexe_windows", "gameName": "Ohne EXE", "status": "downloaded", "filePath": "D:\\Humble\\NoExe" }
+              ]
+            }
+            """;
+
+        var games = LauncherManifestParsers.ParseHumbleInstallations(config);
+
+        Assert.HasCount(3, games);
+        Assert.AreEqual(new LauncherManifestParsers.HumbleInstallation("neon_windows", "Neon", @"D:\Humble\Neon", @"D:\Humble\Neon\bin\Neon.exe"), games[0]);
+        Assert.AreEqual(new LauncherManifestParsers.HumbleInstallation("old_windows", "Old Game", @"D:\Humble\old_windows", @"D:\Humble\old_windows\Old.exe"), games[1]);
+        Assert.IsNull(games[2].ExecutablePath);
+        Assert.IsEmpty(LauncherManifestParsers.ParseHumbleInstallations("""{ "settings": {} }"""));
+    }
 }

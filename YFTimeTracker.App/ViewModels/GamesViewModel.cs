@@ -68,6 +68,9 @@ public sealed class GamesViewModel : ObservableObject
             new LibrarySourceFilterOption(GameSource.EaApp, "EA app"),
             new LibrarySourceFilterOption(GameSource.Riot, "Riot Client"),
             new LibrarySourceFilterOption(GameSource.Rockstar, "Rockstar"),
+            new LibrarySourceFilterOption(GameSource.Amazon, "Amazon Games"),
+            new LibrarySourceFilterOption(GameSource.Itch, "itch.io"),
+            new LibrarySourceFilterOption(GameSource.Humble, "Humble App"),
             new LibrarySourceFilterOption(GameSource.Manual, "Manuell")
         ];
         selectedSourceFilter = SourceFilters[0];

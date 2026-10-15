@@ -35,18 +35,9 @@ public sealed class GogPlaytimeReader : ILauncherPlaytimeReader
             return null;
         }
 
-        // Ohne Pooling bliebe die Datenbank von Galaxy nach dem Lesen weiter geöffnet.
-        var connectionString = new SqliteConnectionStringBuilder
-        {
-            DataSource = databasePath,
-            Mode = SqliteOpenMode.ReadOnly,
-            Pooling = false
-        }.ToString();
-
         try
         {
-            await using var connection = new SqliteConnection(connectionString);
-            await connection.OpenAsync(cancellationToken);
+            await using var connection = LauncherDatabases.OpenReadOnly(databasePath);
             await using var command = connection.CreateCommand();
             // ponytail: kein Filter auf userId. Nutzen mehrere GOG-Konten denselben PC,
             // gilt der höchste Wert; genauer wäre das Konto aus der Tabelle Users.

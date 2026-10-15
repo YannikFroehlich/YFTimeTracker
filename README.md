@@ -32,7 +32,7 @@ Das Repository ist öffentlich. Die App arbeitet trotzdem vollständig lokal: Ko
 
 - Automatische Erkennung laufender Spiele und sekundengenaue Sessions
 - Mehrere EXE-Dateien und Prozesse pro Spiel ohne doppelte Sessions
-- Lokale Launcher-Erkennung für Steam, Epic Games, GOG, Xbox-/Microsoft-Store, Battle.net, Ubisoft Connect, EA app, Riot Client und Rockstar Games Launcher
+- Lokale Launcher-Erkennung für Steam, Epic Games, GOG, Xbox-/Microsoft-Store, Battle.net, Ubisoft Connect, EA app, Riot Client, Rockstar Games Launcher, Amazon Games, itch.io und Humble App
 - EA-app-Erkennung über lokale Windows-Installationsdaten; EA Play erfordert weder Anmeldung noch Web-API
 - Xbox-Erkennung über die lokale Windows-Paketverwaltung und `MicrosoftGame.config`, ohne Xbox-Anmeldung oder Web-API
 - Optionales Tages- und Wochenlimit pro Spiel mit Fortschrittsanzeige in Bibliothek, Spieldetails und Dashboard sowie einmaliger Windows-Benachrichtigung bei Erreichen

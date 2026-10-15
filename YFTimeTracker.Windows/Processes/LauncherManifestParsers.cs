@@ -19,6 +19,8 @@ internal static partial class LauncherManifestParsers
 
     internal sealed record UninstallCatalog(bool IsLauncherInstalled, IReadOnlyList<UninstallGame> Games);
 
+    internal sealed record HumbleInstallation(string MachineName, string Name, string InstallDirectory, string? ExecutablePath);
+
     /// <summary>
     /// Riot Client: je Spiel ein Windows-Uninstall-Eintrag ("Riot Game valorant.live") mit
     /// <c>RiotClientServices.exe --uninstall-product=valorant --uninstall-patchline=live</c>.
@@ -232,6 +234,112 @@ internal static partial class LauncherManifestParsers
         return string.IsNullOrWhiteSpace(identityName) || executables.Length == 0
             ? null
             : new XboxManifest(identityName.Trim(), displayName?.Trim(), executables);
+    }
+
+    /// <summary>
+    /// Amazon Games: <c>fuel.json</c> im Spielordner nennt unter <c>Main.Command</c> die
+    /// Start-EXE relativ zum Spielordner. Eine kaputte Datei kostet nur die Start-EXE,
+    /// nicht das Spiel, deshalb liefert sie hier <c>null</c> statt einer Ausnahme.
+    /// </summary>
+    public static string? ParseAmazonLaunchCommand(string contents)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(contents);
+            return document.RootElement.ValueKind == JsonValueKind.Object
+                && document.RootElement.TryGetProperty("Main", out var main)
+                && main.ValueKind == JsonValueKind.Object
+                    ? GetString(main, "Command")
+                    : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// itch.io: Das Urteil (<c>verdict</c>), das butler beim Installieren speichert, nennt die
+    /// startbaren Dateien relativ zu <c>basePath</c>.
+    /// </summary>
+    public static IReadOnlyList<string> ParseItchLaunchPaths(string? verdict, string installDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(verdict))
+        {
+            return [];
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(verdict);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("candidates", out var candidates)
+                || candidates.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            var basePath = GetString(root, "basePath") is { Length: > 0 } path ? path : installDirectory;
+            return candidates.EnumerateArray()
+                .Where(candidate => candidate.ValueKind == JsonValueKind.Object)
+                .Select(candidate => GetString(candidate, "path"))
+                .Where(candidate => !string.IsNullOrWhiteSpace(candidate))
+                .Select(candidate => Path.Combine(basePath, candidate!))
+                .ToArray();
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Humble App: <c>config.json</c> führt unter <c>game-collection-4</c> die ganze Sammlung;
+    /// installiert sind Einträge mit Status <c>downloaded</c> oder <c>installed</c>. Ältere
+    /// App-Versionen legten Spiele ohne <c>filePath</c> unter <c>downloadFilePath\machineName</c> ab.
+    /// </summary>
+    public static IReadOnlyList<HumbleInstallation> ParseHumbleInstallations(string contents)
+    {
+        using var document = JsonDocument.Parse(contents);
+        if (document.RootElement.ValueKind != JsonValueKind.Object
+            || !document.RootElement.TryGetProperty("game-collection-4", out var collection)
+            || collection.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var games = new List<HumbleInstallation>();
+        foreach (var entry in collection.EnumerateArray().Where(entry => entry.ValueKind == JsonValueKind.Object))
+        {
+            var machineName = GetString(entry, "machineName");
+            var name = GetString(entry, "gameName");
+            if (GetString(entry, "status") is not ("downloaded" or "installed")
+                || string.IsNullOrWhiteSpace(machineName)
+                || string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            var installDirectory = GetString(entry, "filePath") is { Length: > 0 } filePath
+                ? filePath
+                : GetString(entry, "downloadFilePath") is { Length: > 0 } downloadPath
+                    ? Path.Combine(downloadPath, machineName)
+                    : null;
+            if (installDirectory is null)
+            {
+                continue;
+            }
+
+            var executable = GetString(entry, "executablePath");
+            games.Add(new HumbleInstallation(
+                machineName,
+                name,
+                installDirectory,
+                string.IsNullOrWhiteSpace(executable) ? null : Path.Combine(installDirectory, executable)));
+        }
+
+        return games;
     }
 
     /// <summary>
