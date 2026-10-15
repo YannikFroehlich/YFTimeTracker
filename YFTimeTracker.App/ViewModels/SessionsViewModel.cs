@@ -11,7 +11,7 @@ using YFTimeTracker.Core.Validation;
 
 namespace YFTimeTracker.App.ViewModels;
 
-public sealed class SessionsViewModel : ObservableObject
+public sealed partial class SessionsViewModel : ObservableObject
 {
     private readonly IGameCatalogService catalog;
     private readonly IGameSessionRepository sessionRepository;
@@ -25,30 +25,17 @@ public sealed class SessionsViewModel : ObservableObject
     private readonly List<GameSession> loadedSessions = [];
     private readonly Dictionary<long, string?> iconPathsByGame = [];
     private readonly Dictionary<string, string> deviceNamesByKey = new(StringComparer.Ordinal);
-    private readonly AsyncRelayCommand saveSessionCommand;
     private int refreshVersion;
     private SessionListItemViewModel? selectedSession;
     private SessionGameFilterOption? selectedGameFilter;
     private SessionDeviceFilterOption? selectedDeviceFilter;
-    private Visibility deviceFilterVisibility = Visibility.Collapsed;
     private SessionPeriodOption selectedPeriod;
     private GameListItemViewModel? editorGame;
     private string searchText = string.Empty;
-    private string statusMessage = "Bereit";
-    private string sessionCountText = "0";
-    private string totalDurationText = "0 min";
-    private string averageDurationText = "0 min";
-    private string emptyStateText = "Für diesen Filter wurden keine Sessions gefunden.";
-    private DateTimeOffset editorStartDate;
-    private DateTimeOffset editorEndDate;
-    private TimeSpan? editorStartTime;
-    private TimeSpan? editorEndTime;
     private long? editingSessionId;
     private long? editingGameId;
     private bool editorFieldsEnabled = true;
     private string? lastExportedFilePath;
-    private bool isExportEnabled;
-    private bool isExportFolderAvailable;
 
     public SessionsViewModel(
         IGameCatalogService catalog,
@@ -80,13 +67,6 @@ public sealed class SessionsViewModel : ObservableObject
         ];
         selectedPeriod = PeriodOptions[2];
 
-        RefreshCommand = new AsyncRelayCommand(RefreshAsync);
-        NewSessionCommand = new RelayCommand(BeginNewSession);
-        ClearFiltersCommand = new RelayCommand(ClearFilters);
-        saveSessionCommand = new AsyncRelayCommand(SaveSessionAsync, () => EditorCanSave);
-        SaveSessionCommand = saveSessionCommand;
-        ExportCsvCommand = new AsyncRelayCommand(ExportCsvAsync);
-        OpenExportFolderCommand = new RelayCommand(OpenExportFolder);
 
         ResetEditorTimes();
     }
@@ -141,11 +121,8 @@ public sealed class SessionsViewModel : ObservableObject
     /// Nur sichtbar, sobald Sessions von mehr als einem PC vorliegen. Auf einem
     /// einzelnen Rechner waere die Auswahl ohne Aussage.
     /// </summary>
-    public Visibility DeviceFilterVisibility
-    {
-        get => deviceFilterVisibility;
-        private set => SetProperty(ref deviceFilterVisibility, value);
-    }
+    [ObservableProperty]
+    public partial Visibility DeviceFilterVisibility { get; private set; } = Visibility.Collapsed;
 
     public SessionPeriodOption SelectedPeriod
     {
@@ -190,29 +167,17 @@ public sealed class SessionsViewModel : ObservableObject
         }
     }
 
-    public DateTimeOffset EditorStartDate
-    {
-        get => editorStartDate;
-        set => SetProperty(ref editorStartDate, value);
-    }
+    [ObservableProperty]
+    public partial DateTimeOffset EditorStartDate { get; set; }
 
-    public DateTimeOffset EditorEndDate
-    {
-        get => editorEndDate;
-        set => SetProperty(ref editorEndDate, value);
-    }
+    [ObservableProperty]
+    public partial DateTimeOffset EditorEndDate { get; set; }
 
-    public TimeSpan? EditorStartTime
-    {
-        get => editorStartTime;
-        set => SetProperty(ref editorStartTime, value);
-    }
+    [ObservableProperty]
+    public partial TimeSpan? EditorStartTime { get; set; }
 
-    public TimeSpan? EditorEndTime
-    {
-        get => editorEndTime;
-        set => SetProperty(ref editorEndTime, value);
-    }
+    [ObservableProperty]
+    public partial TimeSpan? EditorEndTime { get; set; }
 
     public bool EditorFieldsEnabled
     {
@@ -242,52 +207,28 @@ public sealed class SessionsViewModel : ObservableObject
 
     public string SaveButtonText => editingSessionId is null ? "Session hinzufügen" : "Änderungen speichern";
 
-    public string StatusMessage
-    {
-        get => statusMessage;
-        private set => SetProperty(ref statusMessage, value);
-    }
+    [ObservableProperty]
+    public partial string StatusMessage { get; private set; } = "Bereit";
 
-    public string SessionCountText
-    {
-        get => sessionCountText;
-        private set => SetProperty(ref sessionCountText, value);
-    }
+    [ObservableProperty]
+    public partial string SessionCountText { get; private set; } = "0";
 
-    public string TotalDurationText
-    {
-        get => totalDurationText;
-        private set => SetProperty(ref totalDurationText, value);
-    }
+    [ObservableProperty]
+    public partial string TotalDurationText { get; private set; } = "0 min";
 
-    public string AverageDurationText
-    {
-        get => averageDurationText;
-        private set => SetProperty(ref averageDurationText, value);
-    }
+    [ObservableProperty]
+    public partial string AverageDurationText { get; private set; } = "0 min";
 
-    public string EmptyStateText
-    {
-        get => emptyStateText;
-        private set => SetProperty(ref emptyStateText, value);
-    }
+    [ObservableProperty]
+    public partial string EmptyStateText { get; private set; } = "Für diesen Filter wurden keine Sessions gefunden.";
 
-    public IAsyncRelayCommand RefreshCommand { get; }
+    [ObservableProperty]
+    public partial bool IsExportEnabled { get; private set; }
 
-    public IRelayCommand NewSessionCommand { get; }
+    [ObservableProperty]
+    public partial bool IsExportFolderAvailable { get; private set; }
 
-    public IRelayCommand ClearFiltersCommand { get; }
-
-    public IAsyncRelayCommand SaveSessionCommand { get; }
-
-    public IAsyncRelayCommand ExportCsvCommand { get; }
-
-    public IRelayCommand OpenExportFolderCommand { get; }
-
-    public bool IsExportEnabled { get => isExportEnabled; private set => SetProperty(ref isExportEnabled, value); }
-
-    public bool IsExportFolderAvailable { get => isExportFolderAvailable; private set => SetProperty(ref isExportFolderAvailable, value); }
-
+    [RelayCommand]
     public async Task RefreshAsync()
     {
         var currentRefresh = Interlocked.Increment(ref refreshVersion);
@@ -404,6 +345,7 @@ public sealed class SessionsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand(CanExecute = nameof(EditorCanSave))]
     private async Task SaveSessionAsync()
     {
         if (!EditorCanSave || EditorGame is null)
@@ -477,7 +419,8 @@ public sealed class SessionsViewModel : ObservableObject
         }
     }
 
-    private void BeginNewSession()
+    [RelayCommand]
+    private void NewSession()
     {
         BeginNewSession(updateStatus: true);
     }
@@ -515,6 +458,7 @@ public sealed class SessionsViewModel : ObservableObject
             : $"Session von {session.GameName} ausgewählt";
     }
 
+    [RelayCommand]
     private void ClearFilters()
     {
         searchText = string.Empty;
@@ -617,6 +561,7 @@ public sealed class SessionsViewModel : ObservableObject
     private string? GetDeviceName(GameSession session) =>
         deviceNamesByKey.GetValueOrDefault(GetMachineKey(session));
 
+    [RelayCommand]
     private async Task ExportCsvAsync()
     {
         if (Sessions.Count == 0)
@@ -643,6 +588,7 @@ public sealed class SessionsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
     private void OpenExportFolder()
     {
         if (lastExportedFilePath is not null)
@@ -751,7 +697,7 @@ public sealed class SessionsViewModel : ObservableObject
         OnPropertyChanged(nameof(EditorTitle));
         OnPropertyChanged(nameof(EditorDescription));
         OnPropertyChanged(nameof(SaveButtonText));
-        saveSessionCommand.NotifyCanExecuteChanged();
+        SaveSessionCommand.NotifyCanExecuteChanged();
     }
 
     private static DateTimeOffset ConvertLocalDateToUtc(DateTime localDate)

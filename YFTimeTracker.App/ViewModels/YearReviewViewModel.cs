@@ -9,7 +9,7 @@ using YFTimeTracker.Core.Models;
 
 namespace YFTimeTracker.App.ViewModels;
 
-public sealed class YearReviewViewModel : ObservableObject
+public sealed partial class YearReviewViewModel : ObservableObject
 {
     private static readonly CultureInfo GermanCulture = CultureInfo.GetCultureInfo("de-DE");
     private const string MutedColor = "#9D9A91";
@@ -23,25 +23,7 @@ public sealed class YearReviewViewModel : ObservableObject
     private string? lastExportedFilePath;
     private bool initialized;
     private int refreshVersion;
-    private string yearTitle = "DEIN JAHR";
-    private string yearSubtitle = "Januar bis Dezember";
-    private string totalPlaytimeText = "0 min";
-    private string comparisonText = "Noch kein Vorjahresvergleich";
-    private string comparisonColor = MutedColor;
-    private string activeDaysText = "0 Tage";
-    private string gamesPlayedText = "0 Spiele";
-    private string sessionCountText = "0 Sessions";
-    private string mostActiveMonthText = "Noch kein aktiver Monat";
-    private string mostActiveMonthDetailText = "Spielzeit erscheint hier.";
-    private string longestSessionText = "Noch keine Session";
-    private string longestSessionDetailText = "Dein längster Spieleabend erscheint hier.";
-    private string chartMaximumText = "1 h";
-    private string shareFooterText = "YFTimeTracker · Jahresrückblick";
     private string statusMessage = "Jahresrückblick wird vorbereitet …";
-    private Visibility dataVisibility = Visibility.Collapsed;
-    private Visibility emptyVisibility = Visibility.Visible;
-    private bool isShareEnabled;
-    private bool isExportFolderAvailable;
 
     public YearReviewViewModel(
         IYearReviewService reviews,
@@ -53,8 +35,6 @@ public sealed class YearReviewViewModel : ObservableObject
         this.clock = clock;
         this.explorerService = explorerService;
         this.gameIcons = gameIcons;
-        RefreshCommand = new AsyncRelayCommand(RefreshAsync);
-        OpenExportFolderCommand = new RelayCommand(OpenExportFolder);
     }
 
     public ObservableCollection<YearReviewYearOption> Years { get; } = [];
@@ -75,47 +55,61 @@ public sealed class YearReviewViewModel : ObservableObject
         }
     }
 
-    public string YearTitle { get => yearTitle; private set => SetProperty(ref yearTitle, value); }
+    [ObservableProperty]
+    public partial string YearTitle { get; private set; } = "DEIN JAHR";
 
-    public string YearSubtitle { get => yearSubtitle; private set => SetProperty(ref yearSubtitle, value); }
+    [ObservableProperty]
+    public partial string YearSubtitle { get; private set; } = "Januar bis Dezember";
 
-    public string TotalPlaytimeText { get => totalPlaytimeText; private set => SetProperty(ref totalPlaytimeText, value); }
+    [ObservableProperty]
+    public partial string TotalPlaytimeText { get; private set; } = "0 min";
 
-    public string ComparisonText { get => comparisonText; private set => SetProperty(ref comparisonText, value); }
+    [ObservableProperty]
+    public partial string ComparisonText { get; private set; } = "Noch kein Vorjahresvergleich";
 
-    public string ComparisonColor { get => comparisonColor; private set => SetProperty(ref comparisonColor, value); }
+    [ObservableProperty]
+    public partial string ComparisonColor { get; private set; } = MutedColor;
 
-    public string ActiveDaysText { get => activeDaysText; private set => SetProperty(ref activeDaysText, value); }
+    [ObservableProperty]
+    public partial string ActiveDaysText { get; private set; } = "0 Tage";
 
-    public string GamesPlayedText { get => gamesPlayedText; private set => SetProperty(ref gamesPlayedText, value); }
+    [ObservableProperty]
+    public partial string GamesPlayedText { get; private set; } = "0 Spiele";
 
-    public string SessionCountText { get => sessionCountText; private set => SetProperty(ref sessionCountText, value); }
+    [ObservableProperty]
+    public partial string SessionCountText { get; private set; } = "0 Sessions";
 
-    public string MostActiveMonthText { get => mostActiveMonthText; private set => SetProperty(ref mostActiveMonthText, value); }
+    [ObservableProperty]
+    public partial string MostActiveMonthText { get; private set; } = "Noch kein aktiver Monat";
 
-    public string MostActiveMonthDetailText { get => mostActiveMonthDetailText; private set => SetProperty(ref mostActiveMonthDetailText, value); }
+    [ObservableProperty]
+    public partial string MostActiveMonthDetailText { get; private set; } = "Spielzeit erscheint hier.";
 
-    public string LongestSessionText { get => longestSessionText; private set => SetProperty(ref longestSessionText, value); }
+    [ObservableProperty]
+    public partial string LongestSessionText { get; private set; } = "Noch keine Session";
 
-    public string LongestSessionDetailText { get => longestSessionDetailText; private set => SetProperty(ref longestSessionDetailText, value); }
+    [ObservableProperty]
+    public partial string LongestSessionDetailText { get; private set; } = "Dein längster Spieleabend erscheint hier.";
 
-    public string ChartMaximumText { get => chartMaximumText; private set => SetProperty(ref chartMaximumText, value); }
+    [ObservableProperty]
+    public partial string ChartMaximumText { get; private set; } = "1 h";
 
-    public string ShareFooterText { get => shareFooterText; private set => SetProperty(ref shareFooterText, value); }
+    [ObservableProperty]
+    public partial string ShareFooterText { get; private set; } = "YFTimeTracker · Jahresrückblick";
 
     public string StatusMessage { get => statusMessage; internal set => SetProperty(ref statusMessage, value); }
 
-    public Visibility DataVisibility { get => dataVisibility; private set => SetProperty(ref dataVisibility, value); }
+    [ObservableProperty]
+    public partial Visibility DataVisibility { get; private set; } = Visibility.Collapsed;
 
-    public Visibility EmptyVisibility { get => emptyVisibility; private set => SetProperty(ref emptyVisibility, value); }
+    [ObservableProperty]
+    public partial Visibility EmptyVisibility { get; private set; } = Visibility.Visible;
 
-    public bool IsShareEnabled { get => isShareEnabled; private set => SetProperty(ref isShareEnabled, value); }
+    [ObservableProperty]
+    public partial bool IsShareEnabled { get; private set; }
 
-    public bool IsExportFolderAvailable { get => isExportFolderAvailable; private set => SetProperty(ref isExportFolderAvailable, value); }
-
-    public IAsyncRelayCommand RefreshCommand { get; }
-
-    public IRelayCommand OpenExportFolderCommand { get; }
+    [ObservableProperty]
+    public partial bool IsExportFolderAvailable { get; private set; }
 
     internal void SetExportedFile(string path)
     {
@@ -123,6 +117,7 @@ public sealed class YearReviewViewModel : ObservableObject
         IsExportFolderAvailable = true;
     }
 
+    [RelayCommand]
     private void OpenExportFolder()
     {
         if (lastExportedFilePath is not null)
@@ -154,6 +149,7 @@ public sealed class YearReviewViewModel : ObservableObject
         await RefreshAsync();
     }
 
+    [RelayCommand]
     public async Task RefreshAsync()
     {
         if (SelectedYear is not { } yearOption)

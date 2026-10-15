@@ -10,7 +10,7 @@ using YFTimeTracker.Core.Validation;
 
 namespace YFTimeTracker.App.ViewModels;
 
-public sealed class SettingsViewModel : ObservableObject
+public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly ISettingsStore settings;
     private readonly IStartupService startupService;
@@ -27,33 +27,8 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly ITrackingExclusionService? trackingExclusions;
     private readonly ICloudAuthService? cloudAuth;
     private readonly DispatcherQueue dispatcherQueue;
-    private bool trackingEnabled = true;
-    private bool launcherDiscoveryEnabled = true;
-    private bool minimizeOnClose = true;
-    private bool startWithWindows;
-    private bool startMinimized;
-    private double trackingIntervalSeconds = 3;
-    private double heartbeatIntervalSeconds = 30;
-    private double backupRetentionDays = 14;
-    private string startupStateText = "Unbekannt";
-    private string statusMessage = "Bereit";
-    private string currentAppVersionText = "Installiert: unbekannt";
-    private string updateStatusText = "Update-Status wird geladen …";
-    private string availableUpdateText = string.Empty;
-    private bool canCheckForUpdates;
-    private double updateProgress;
-    private Visibility updateProgressVisibility = Visibility.Collapsed;
-    private Visibility installUpdateVisibility = Visibility.Collapsed;
-    private string diagnosticsVersionText = "Version wird geladen …";
-    private string diagnosticsRuntimeText = "Runtime wird geladen …";
-    private string diagnosticsInstallDirectory = "Installationsordner wird geladen …";
-    private string diagnosticsDataDirectory = "Datenordner wird geladen …";
-    private string diagnosticsLogDirectory = "Logordner wird geladen …";
-    private string trackingDiagnosticsSummaryText = "Noch keine Tracking-Ereignisse seit dem App-Start";
-    private bool isExportFolderAvailable;
     private ThemeOption selectedTheme;
     private BackupDestinationOption selectedBackupDestination;
-    private string externalBackupFolderPath = string.Empty;
     private BackupListItemViewModel? selectedBackup;
 
     public SettingsViewModel(
@@ -103,164 +78,84 @@ public sealed class SettingsViewModel : ObservableObject
         ];
         selectedBackupDestination = BackupDestinationOptions[0];
 
-        LoadCommand = new AsyncRelayCommand(LoadAsync);
-        SaveCommand = new AsyncRelayCommand(SaveAsync);
-        ExportCommand = new AsyncRelayCommand(ExportAsync);
-        OpenLogDirectoryCommand = new RelayCommand(OpenLogDirectory);
-        ExportDiagnosticsCommand = new AsyncRelayCommand(ExportDiagnosticsAsync);
-        ClearTrackingDiagnosticsCommand = new RelayCommand(ClearTrackingDiagnostics);
-        OpenExportFolderCommand = new RelayCommand(OpenExportFolder);
-        ChooseBackupFolderCommand = new AsyncRelayCommand(ChooseBackupFolderAsync);
-        DownloadCloudBackupsCommand = new AsyncRelayCommand(DownloadCloudBackupsAsync);
-        AddExecutableExclusionCommand = new AsyncRelayCommand(AddExecutableExclusionAsync);
-        AddDirectoryExclusionCommand = new AsyncRelayCommand(AddDirectoryExclusionAsync);
 
         ApplyUpdateState(appUpdateService.State);
         appUpdateService.StateChanged += AppUpdateService_StateChanged;
     }
 
-    public bool TrackingEnabled
-    {
-        get => trackingEnabled;
-        set => SetProperty(ref trackingEnabled, value);
-    }
+    [ObservableProperty]
+    public partial bool TrackingEnabled { get; set; } = true;
 
-    public bool LauncherDiscoveryEnabled
-    {
-        get => launcherDiscoveryEnabled;
-        set => SetProperty(ref launcherDiscoveryEnabled, value);
-    }
+    [ObservableProperty]
+    public partial bool LauncherDiscoveryEnabled { get; set; } = true;
 
-    public bool MinimizeOnClose
-    {
-        get => minimizeOnClose;
-        set => SetProperty(ref minimizeOnClose, value);
-    }
+    [ObservableProperty]
+    public partial bool MinimizeOnClose { get; set; } = true;
 
-    public bool StartWithWindows
-    {
-        get => startWithWindows;
-        set => SetProperty(ref startWithWindows, value);
-    }
+    [ObservableProperty]
+    public partial bool StartWithWindows { get; set; }
 
-    public bool StartMinimized
-    {
-        get => startMinimized;
-        set => SetProperty(ref startMinimized, value);
-    }
+    [ObservableProperty]
+    public partial bool StartMinimized { get; set; }
 
-    public double TrackingIntervalSeconds
-    {
-        get => trackingIntervalSeconds;
-        set => SetProperty(ref trackingIntervalSeconds, value);
-    }
+    [ObservableProperty]
+    public partial double TrackingIntervalSeconds { get; set; } = 3;
 
-    public double HeartbeatIntervalSeconds
-    {
-        get => heartbeatIntervalSeconds;
-        set => SetProperty(ref heartbeatIntervalSeconds, value);
-    }
+    [ObservableProperty]
+    public partial double HeartbeatIntervalSeconds { get; set; } = 30;
 
-    public double BackupRetentionDays
-    {
-        get => backupRetentionDays;
-        set => SetProperty(ref backupRetentionDays, value);
-    }
+    [ObservableProperty]
+    public partial double BackupRetentionDays { get; set; } = 14;
 
-    public string StartupStateText
-    {
-        get => startupStateText;
-        private set => SetProperty(ref startupStateText, value);
-    }
+    [ObservableProperty]
+    public partial string StartupStateText { get; private set; } = "Unbekannt";
 
-    public string StatusMessage
-    {
-        get => statusMessage;
-        private set => SetProperty(ref statusMessage, value);
-    }
+    [ObservableProperty]
+    public partial string StatusMessage { get; private set; } = "Bereit";
 
     public IReadOnlyList<LauncherStatusItem> LauncherStatuses { get; } = Enum.GetValues<GameSource>()
         .Where(source => source != GameSource.Manual)
         .Select(source => new LauncherStatusItem(source))
         .ToArray();
 
-    public string CurrentAppVersionText
-    {
-        get => currentAppVersionText;
-        private set => SetProperty(ref currentAppVersionText, value);
-    }
+    [ObservableProperty]
+    public partial string CurrentAppVersionText { get; private set; } = "Installiert: unbekannt";
 
-    public string UpdateStatusText
-    {
-        get => updateStatusText;
-        private set => SetProperty(ref updateStatusText, value);
-    }
+    [ObservableProperty]
+    public partial string UpdateStatusText { get; private set; } = "Update-Status wird geladen …";
 
-    public string AvailableUpdateText
-    {
-        get => availableUpdateText;
-        private set => SetProperty(ref availableUpdateText, value);
-    }
+    [ObservableProperty]
+    public partial string AvailableUpdateText { get; private set; } = string.Empty;
 
-    public bool CanCheckForUpdates
-    {
-        get => canCheckForUpdates;
-        private set => SetProperty(ref canCheckForUpdates, value);
-    }
+    [ObservableProperty]
+    public partial bool CanCheckForUpdates { get; private set; }
 
-    public double UpdateProgress
-    {
-        get => updateProgress;
-        private set => SetProperty(ref updateProgress, value);
-    }
+    [ObservableProperty]
+    public partial double UpdateProgress { get; private set; }
 
-    public Visibility UpdateProgressVisibility
-    {
-        get => updateProgressVisibility;
-        private set => SetProperty(ref updateProgressVisibility, value);
-    }
+    [ObservableProperty]
+    public partial Visibility UpdateProgressVisibility { get; private set; } = Visibility.Collapsed;
 
-    public Visibility InstallUpdateVisibility
-    {
-        get => installUpdateVisibility;
-        private set => SetProperty(ref installUpdateVisibility, value);
-    }
+    [ObservableProperty]
+    public partial Visibility InstallUpdateVisibility { get; private set; } = Visibility.Collapsed;
 
-    public string DiagnosticsVersionText
-    {
-        get => diagnosticsVersionText;
-        private set => SetProperty(ref diagnosticsVersionText, value);
-    }
+    [ObservableProperty]
+    public partial string DiagnosticsVersionText { get; private set; } = "Version wird geladen …";
 
-    public string DiagnosticsRuntimeText
-    {
-        get => diagnosticsRuntimeText;
-        private set => SetProperty(ref diagnosticsRuntimeText, value);
-    }
+    [ObservableProperty]
+    public partial string DiagnosticsRuntimeText { get; private set; } = "Runtime wird geladen …";
 
-    public string DiagnosticsInstallDirectory
-    {
-        get => diagnosticsInstallDirectory;
-        private set => SetProperty(ref diagnosticsInstallDirectory, value);
-    }
+    [ObservableProperty]
+    public partial string DiagnosticsInstallDirectory { get; private set; } = "Installationsordner wird geladen …";
 
-    public string DiagnosticsDataDirectory
-    {
-        get => diagnosticsDataDirectory;
-        private set => SetProperty(ref diagnosticsDataDirectory, value);
-    }
+    [ObservableProperty]
+    public partial string DiagnosticsDataDirectory { get; private set; } = "Datenordner wird geladen …";
 
-    public string DiagnosticsLogDirectory
-    {
-        get => diagnosticsLogDirectory;
-        private set => SetProperty(ref diagnosticsLogDirectory, value);
-    }
+    [ObservableProperty]
+    public partial string DiagnosticsLogDirectory { get; private set; } = "Logordner wird geladen …";
 
-    public string TrackingDiagnosticsSummaryText
-    {
-        get => trackingDiagnosticsSummaryText;
-        private set => SetProperty(ref trackingDiagnosticsSummaryText, value);
-    }
+    [ObservableProperty]
+    public partial string TrackingDiagnosticsSummaryText { get; private set; } = "Noch keine Tracking-Ereignisse seit dem App-Start";
 
     public Visibility TrackingDiagnosticsVisibility => TrackingDiagnosticEvents.Count == 0
         ? Visibility.Collapsed
@@ -270,7 +165,8 @@ public sealed class SettingsViewModel : ObservableObject
         ? Visibility.Visible
         : Visibility.Collapsed;
 
-    public bool IsExportFolderAvailable { get => isExportFolderAvailable; private set => SetProperty(ref isExportFolderAvailable, value); }
+    [ObservableProperty]
+    public partial bool IsExportFolderAvailable { get; private set; }
 
     public IReadOnlyList<ThemeOption> ThemeOptions { get; }
 
@@ -292,17 +188,9 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
-    public string ExternalBackupFolderPath
-    {
-        get => externalBackupFolderPath;
-        private set
-        {
-            if (SetProperty(ref externalBackupFolderPath, value))
-            {
-                OnPropertyChanged(nameof(ExternalBackupFolderPathDisplay));
-            }
-        }
-    }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ExternalBackupFolderPathDisplay))]
+    public partial string ExternalBackupFolderPath { get; private set; } = string.Empty;
 
     public string ExternalBackupFolderPathDisplay =>
         string.IsNullOrWhiteSpace(ExternalBackupFolderPath) ? "Kein Ordner ausgewählt" : ExternalBackupFolderPath;
@@ -320,16 +208,6 @@ public sealed class SettingsViewModel : ObservableObject
         ? $"Die tägliche Sicherungsdatei wird nach dem Start zusätzlich im Konto {session.Email} abgelegt."
         : "Für dieses Sicherungsziel oben rechts im Profil anmelden.";
 
-    public IAsyncRelayCommand ChooseBackupFolderCommand { get; }
-
-    public IAsyncRelayCommand DownloadCloudBackupsCommand { get; }
-
-    public IAsyncRelayCommand LoadCommand { get; }
-
-    public IAsyncRelayCommand SaveCommand { get; }
-
-    public IAsyncRelayCommand ExportCommand { get; }
-
     public ObservableCollection<BackupListItemViewModel> Backups { get; } = [];
 
     public ObservableCollection<TrackingDiagnosticEventViewModel> TrackingDiagnosticEvents { get; } = [];
@@ -343,10 +221,6 @@ public sealed class SettingsViewModel : ObservableObject
     public Visibility TrackingExclusionsEmptyVisibility => TrackingExclusionRules.Count == 0
         ? Visibility.Visible
         : Visibility.Collapsed;
-
-    public IAsyncRelayCommand AddExecutableExclusionCommand { get; }
-
-    public IAsyncRelayCommand AddDirectoryExclusionCommand { get; }
 
     public BackupListItemViewModel? SelectedBackup
     {
@@ -366,14 +240,7 @@ public sealed class SettingsViewModel : ObservableObject
 
     public Visibility BackupsEmptyVisibility => Backups.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    public IRelayCommand OpenLogDirectoryCommand { get; }
-
-    public IAsyncRelayCommand ExportDiagnosticsCommand { get; }
-
-    public IRelayCommand ClearTrackingDiagnosticsCommand { get; }
-
-    public IRelayCommand OpenExportFolderCommand { get; }
-
+    [RelayCommand]
     public async Task LoadAsync()
     {
         ApplyUpdateState(appUpdateService.State);
@@ -419,6 +286,7 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
     private async Task SaveAsync()
     {
         await settings.SetAsync(AppSettingKeys.TrackingEnabled, TrackingEnabled.ToString(), CancellationToken.None);
@@ -460,6 +328,7 @@ public sealed class SettingsViewModel : ObservableObject
         App.MainWindow?.SetMinimizeOnClose(MinimizeOnClose);
     }
 
+    [RelayCommand]
     private async Task DownloadCloudBackupsAsync()
     {
         if (cloudAuth?.IsSignedIn != true)
@@ -488,6 +357,7 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
     private async Task ExportAsync()
     {
         var path = await filePicker.PickExportArchiveAsync(CancellationToken.None);
@@ -506,6 +376,7 @@ public sealed class SettingsViewModel : ObservableObject
         return filePicker.PickImportArchiveAsync(CancellationToken.None);
     }
 
+    [RelayCommand]
     private async Task ChooseBackupFolderAsync()
     {
         var path = await filePicker.PickBackupFolderAsync(CancellationToken.None);
@@ -515,6 +386,7 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
     private async Task AddExecutableExclusionAsync()
     {
         if (trackingExclusions is null)
@@ -532,6 +404,7 @@ public sealed class SettingsViewModel : ObservableObject
         await AddTrackingExclusionAsync(TrackingExclusionKind.Executable, path);
     }
 
+    [RelayCommand]
     private async Task AddDirectoryExclusionAsync()
     {
         if (trackingExclusions is null)
@@ -711,6 +584,7 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
     private void OpenLogDirectory()
     {
         try
@@ -724,6 +598,7 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
     private async Task ExportDiagnosticsAsync()
     {
         var path = await filePicker.PickDiagnosticsArchiveAsync(CancellationToken.None);
@@ -779,6 +654,7 @@ public sealed class SettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(TrackingDiagnosticsEmptyVisibility));
     }
 
+    [RelayCommand]
     private void ClearTrackingDiagnostics()
     {
         trackingDiagnostics.Clear();
@@ -792,6 +668,7 @@ public sealed class SettingsViewModel : ObservableObject
         IsExportFolderAvailable = true;
     }
 
+    [RelayCommand]
     private void OpenExportFolder()
     {
         if (lastExportedFilePath is not null)
@@ -904,17 +781,13 @@ public sealed record TrackingDiagnosticEventViewModel(
 
 public sealed record TrackingExclusionRuleViewModel(long Id, string KindText, string Path);
 
-public sealed class LauncherStatusItem(GameSource source) : ObservableObject
+public sealed partial class LauncherStatusItem(GameSource source) : ObservableObject
 {
-    private string status = "Nicht geprüft";
 
     public GameSource Source { get; } = source;
 
     public string Name { get; } = GameSourceNames.Name(source);
 
-    public string Status
-    {
-        get => status;
-        set => SetProperty(ref status, value);
-    }
+    [ObservableProperty]
+    public partial string Status { get; set; } = "Nicht geprüft";
 }
