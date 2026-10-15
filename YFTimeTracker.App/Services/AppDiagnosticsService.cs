@@ -12,7 +12,7 @@ public sealed class AppDiagnosticsService(
     IAppPathProvider paths,
     IAppUpdateService appUpdateService,
     ITrackingDiagnosticLog trackingDiagnostics,
-    ILogger<AppDiagnosticsService> logger) : IAppDiagnosticsService
+    ILogger<AppDiagnosticsService> logger)
 {
     private const int MaximumIncludedLogs = 3;
 

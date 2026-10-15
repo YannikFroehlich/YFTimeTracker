@@ -110,11 +110,6 @@ public sealed class DashboardViewModelTests
             [new RecentGameInfo(1, "Test Game", now, baseDuration, true)]);
     }
 
-    private sealed class FixedClock(DateTimeOffset now) : IClock
-    {
-        public DateTimeOffset UtcNow { get; } = now;
-    }
-
     private sealed class FakeStatisticsService(DashboardStats current) : IPlaytimeStatisticsService
     {
         public DashboardStats Current { get; set; } = current;

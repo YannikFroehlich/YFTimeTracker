@@ -17,7 +17,7 @@ public static class DataServiceCollectionExtensions
             options.UseSqlite($"Data Source={paths.DatabasePath}");
         });
 
-        services.AddSingleton<IDatabaseInitializer, SqliteDatabaseInitializer>();
+        services.AddSingleton<SqliteDatabaseInitializer>();
         services.AddSingleton<IGameRepository, GameRepository>();
         services.AddSingleton<IGameArtworkRepository, GameArtworkRepository>();
         services.AddSingleton<IGameSessionRepository, GameSessionRepository>();

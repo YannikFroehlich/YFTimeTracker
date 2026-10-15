@@ -189,11 +189,6 @@ public sealed class GlobalSearchViewModelTests
         }
     }
 
-    private sealed class FixedClock(DateTimeOffset now) : IClock
-    {
-        public DateTimeOffset UtcNow { get; } = now;
-    }
-
     private sealed class FakeGameIconService(string iconPath) : IGameIconService
     {
         public int CallCount { get; private set; }

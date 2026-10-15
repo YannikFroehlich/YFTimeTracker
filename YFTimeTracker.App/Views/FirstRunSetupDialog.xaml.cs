@@ -7,12 +7,12 @@ namespace YFTimeTracker.App.Views;
 
 public sealed partial class FirstRunSetupDialog : ContentDialog
 {
-    private readonly IFirstRunSetupService setupService;
+    private readonly FirstRunSetupService setupService;
     private readonly Border[] stepIndicators;
     private int currentStep;
 
     public FirstRunSetupDialog(
-        IFirstRunSetupService setupService,
+        FirstRunSetupService setupService,
         FirstRunSetupOptions options)
     {
         this.setupService = setupService;

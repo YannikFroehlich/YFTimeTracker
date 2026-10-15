@@ -416,11 +416,6 @@ public sealed class GameDetailsViewModelTests
         return TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(local, DateTimeKind.Unspecified), TimeZoneInfo.Local);
     }
 
-    private sealed class FixedClock(DateTimeOffset now) : IClock
-    {
-        public DateTimeOffset UtcNow { get; } = now;
-    }
-
     private sealed class FakeCatalog(Game game) : IGameCatalogService
     {
         public int UpdateCallCount { get; private set; }

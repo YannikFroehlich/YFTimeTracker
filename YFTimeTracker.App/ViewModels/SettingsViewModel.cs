@@ -17,12 +17,12 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly IBackupService backupService;
     private readonly IFilePickerService filePicker;
     private readonly IExplorerService explorerService;
-    private readonly IThemeService themeService;
+    private readonly ThemeService themeService;
     private string? lastExportedFilePath;
     private readonly IGameTrackingService trackingService;
     private readonly IGameInstallationProvider installationProvider;
     private readonly IAppUpdateService appUpdateService;
-    private readonly IAppDiagnosticsService diagnosticsService;
+    private readonly AppDiagnosticsService diagnosticsService;
     private readonly ITrackingDiagnosticLog trackingDiagnostics;
     private readonly ITrackingExclusionService? trackingExclusions;
     private readonly ICloudAuthService? cloudAuth;
@@ -62,11 +62,11 @@ public sealed class SettingsViewModel : ObservableObject
         IBackupService backupService,
         IFilePickerService filePicker,
         IExplorerService explorerService,
-        IThemeService themeService,
+        ThemeService themeService,
         IGameTrackingService trackingService,
         IGameInstallationProvider installationProvider,
         IAppUpdateService appUpdateService,
-        IAppDiagnosticsService diagnosticsService,
+        AppDiagnosticsService diagnosticsService,
         ITrackingDiagnosticLog trackingDiagnostics,
         ITrackingExclusionService? trackingExclusions = null,
         ICloudAuthService? cloudAuth = null)
@@ -839,7 +839,9 @@ public sealed class SettingsViewModel : ObservableObject
         UpdateStatusText = state.Message;
         AvailableUpdateText = state.AvailableVersion is null
             ? "Stabiler Release-Kanal · GitHub"
-            : $"Verfügbar: v{state.AvailableVersion}{FormatDownloadSize(state.DownloadSize)}";
+            : state.DownloadSizeText is { Length: > 0 } size
+                ? $"Verfügbar: v{state.AvailableVersion} · {size}"
+                : $"Verfügbar: v{state.AvailableVersion}";
         CanCheckForUpdates = state.CanCheckForUpdates;
         UpdateProgress = state.DownloadProgress;
         UpdateProgressVisibility = state.Stage == AppUpdateStage.Downloading
@@ -857,18 +859,6 @@ public sealed class SettingsViewModel : ObservableObject
         DiagnosticsInstallDirectory = snapshot.InstallDirectory;
         DiagnosticsDataDirectory = snapshot.DataDirectory;
         DiagnosticsLogDirectory = snapshot.LogDirectory;
-    }
-
-    private static string FormatDownloadSize(long bytes)
-    {
-        if (bytes <= 0)
-        {
-            return string.Empty;
-        }
-
-        return bytes >= 1024L * 1024L
-            ? $" · {bytes / (1024d * 1024d):0.#} MB"
-            : $" · {bytes / 1024d:0.#} KB";
     }
 
     private static string FormatTrackingEventKind(TrackingDiagnosticEventKind kind) => kind switch

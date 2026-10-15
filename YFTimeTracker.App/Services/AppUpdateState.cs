@@ -27,4 +27,13 @@ public sealed record AppUpdateState(
     public bool CanCheckForUpdates => Stage != AppUpdateStage.Unavailable && !IsBusy;
 
     public bool HasAvailableUpdate => Stage is AppUpdateStage.Available or AppUpdateStage.ReadyToInstall;
+
+    /// <summary>
+    /// Downloadgröße wie "12,3 MB"; leer, solange sie unbekannt ist.
+    /// </summary>
+    public string DownloadSizeText => DownloadSize <= 0
+        ? string.Empty
+        : DownloadSize >= 1024L * 1024L
+            ? $"{DownloadSize / (1024d * 1024d):0.#} MB"
+            : $"{DownloadSize / 1024d:0.#} KB";
 }

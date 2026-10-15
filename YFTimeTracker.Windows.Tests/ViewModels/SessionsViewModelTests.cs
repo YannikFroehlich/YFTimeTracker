@@ -295,11 +295,6 @@ public sealed class SessionsViewModelTests
         };
     }
 
-    private sealed class FixedClock(DateTimeOffset now) : IClock
-    {
-        public DateTimeOffset UtcNow { get; } = now;
-    }
-
     private sealed class FakeSettingsStore(string? value = null) : ISettingsStore
     {
         public Task<string?> GetAsync(string key, CancellationToken cancellationToken) => Task.FromResult(value);

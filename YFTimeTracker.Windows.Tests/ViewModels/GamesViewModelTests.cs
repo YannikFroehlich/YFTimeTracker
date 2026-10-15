@@ -254,11 +254,6 @@ public sealed class GamesViewModelTests
         };
     }
 
-    private sealed class FixedClock(DateTimeOffset now) : IClock
-    {
-        public DateTimeOffset UtcNow { get; } = now;
-    }
-
     private sealed class FakeCatalog(IReadOnlyList<Game> games) : IGameCatalogService
     {
         public Task<IReadOnlyList<Game>> GetGamesAsync(CancellationToken cancellationToken) => Task.FromResult(games);

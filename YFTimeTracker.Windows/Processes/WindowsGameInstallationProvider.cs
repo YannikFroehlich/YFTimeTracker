@@ -27,48 +27,22 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
     private readonly IEaInstallationCatalog eaInstallations;
 
     public WindowsGameInstallationProvider(ILogger<WindowsGameInstallationProvider> logger)
-        : this(
-            logger,
-            new WindowsXboxPackageCatalog(),
-            new WindowsDirectoryLinkResolver(),
-            LocateSteamRoot,
-            new WindowsEaInstallationCatalog())
-    {
-    }
-
-    internal WindowsGameInstallationProvider(
-        ILogger<WindowsGameInstallationProvider> logger,
-        IXboxPackageCatalog xboxPackages)
-        : this(
-            logger,
-            xboxPackages,
-            new WindowsDirectoryLinkResolver(),
-            LocateSteamRoot,
-            new WindowsEaInstallationCatalog())
+        : this(logger, new WindowsXboxPackageCatalog())
     {
     }
 
     internal WindowsGameInstallationProvider(
         ILogger<WindowsGameInstallationProvider> logger,
         IXboxPackageCatalog xboxPackages,
-        IDirectoryLinkResolver directoryLinks,
-        Func<string?> steamRootLocator)
-        : this(logger, xboxPackages, directoryLinks, steamRootLocator, new WindowsEaInstallationCatalog())
-    {
-    }
-
-    internal WindowsGameInstallationProvider(
-        ILogger<WindowsGameInstallationProvider> logger,
-        IXboxPackageCatalog xboxPackages,
-        IDirectoryLinkResolver directoryLinks,
-        Func<string?> steamRootLocator,
-        IEaInstallationCatalog eaInstallations)
+        IDirectoryLinkResolver? directoryLinks = null,
+        Func<string?>? steamRootLocator = null,
+        IEaInstallationCatalog? eaInstallations = null)
     {
         this.logger = logger;
         this.xboxPackages = xboxPackages;
-        this.directoryLinks = directoryLinks;
-        this.steamRootLocator = steamRootLocator;
-        this.eaInstallations = eaInstallations;
+        this.directoryLinks = directoryLinks ?? new WindowsDirectoryLinkResolver();
+        this.steamRootLocator = steamRootLocator ?? LocateSteamRoot;
+        this.eaInstallations = eaInstallations ?? new WindowsEaInstallationCatalog();
     }
 
     public Task<LauncherDiscoveryResult> DiscoverAsync(CancellationToken cancellationToken)

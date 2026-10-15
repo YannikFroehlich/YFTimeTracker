@@ -13,20 +13,9 @@ public sealed record FirstRunSetupOptions(
     public bool CanConfigureStartup => CurrentStartupState is StartupState.Disabled or StartupState.Enabled;
 }
 
-public interface IFirstRunSetupService
-{
-    Task<bool> IsCompletedAsync(CancellationToken cancellationToken);
-
-    Task<FirstRunSetupOptions> LoadOptionsAsync(CancellationToken cancellationToken);
-
-    Task<StartupState> CompleteAsync(FirstRunSetupOptions options, CancellationToken cancellationToken);
-
-    Task DismissAsync(CancellationToken cancellationToken);
-}
-
 public sealed class FirstRunSetupService(
     ISettingsStore settings,
-    IStartupService startupService) : IFirstRunSetupService
+    IStartupService startupService)
 {
     public Task<bool> IsCompletedAsync(CancellationToken cancellationToken)
     {
