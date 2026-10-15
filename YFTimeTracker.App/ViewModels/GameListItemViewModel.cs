@@ -42,22 +42,7 @@ public sealed class GameListItemViewModel : ObservableObject
 
     public string ExecutableName => game.PrimaryExecutable?.ExecutableName ?? "Keine EXE";
 
-    public string SourceLabel => game.Source switch
-    {
-        GameSource.Steam => "STEAM",
-        GameSource.Epic => "EPIC",
-        GameSource.Gog => "GOG",
-        GameSource.Xbox => "XBOX",
-        GameSource.BattleNet => "BATTLE.NET",
-        GameSource.Ubisoft => "UBISOFT",
-        GameSource.EaApp => "EA APP",
-        GameSource.Riot => "RIOT",
-        GameSource.Rockstar => "ROCKSTAR",
-        GameSource.Amazon => "AMAZON",
-        GameSource.Itch => "ITCH.IO",
-        GameSource.Humble => "HUMBLE",
-        _ => "MANUELL"
-    };
+    public string SourceLabel => GameSourceNames.Label(game.Source);
 
     public GameSource Source => game.Source;
 

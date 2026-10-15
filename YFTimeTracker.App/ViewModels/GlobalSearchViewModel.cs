@@ -63,7 +63,7 @@ public sealed class GlobalSearchViewModel(
         items.AddRange(searchResults.Games.Select((game, index) => new GlobalSearchResultViewModel(
             GlobalSearchResultKind.Game,
             game.Name,
-            $"{FormatSource(game.Source)} · {game.PrimaryExecutable?.ExecutableName ?? "Keine EXE"}",
+            $"{GameSourceNames.Name(game.Source)} · {game.PrimaryExecutable?.ExecutableName ?? "Keine EXE"}",
             "\uE7FC",
             game.Id,
             null,
@@ -235,26 +235,6 @@ public sealed class GlobalSearchViewModel(
         {
             Results.Add(item);
         }
-    }
-
-    private static string FormatSource(GameSource source)
-    {
-        return source switch
-        {
-            GameSource.Steam => "Steam",
-            GameSource.Epic => "Epic Games",
-            GameSource.Gog => "GOG",
-            GameSource.Xbox => "Xbox / Microsoft Store",
-            GameSource.BattleNet => "Battle.net",
-            GameSource.Ubisoft => "Ubisoft Connect",
-            GameSource.EaApp => "EA app",
-            GameSource.Riot => "Riot Client",
-            GameSource.Rockstar => "Rockstar Games Launcher",
-            GameSource.Amazon => "Amazon Games",
-            GameSource.Itch => "itch.io",
-            GameSource.Humble => "Humble App",
-            _ => "Manuell"
-        };
     }
 }
 

@@ -353,7 +353,7 @@ public sealed class StatisticsViewModel : ObservableObject
             builder.AppendLine(string.Join(';',
                 (index + 1).ToString(GermanCulture),
                 CsvField(game.Name),
-                CsvField(FormatSource(game.Source)),
+                CsvField(GameSourceNames.Label(game.Source)),
                 CsvField(TimeFormatter.Format(game.Duration)),
                 game.Duration.TotalHours.ToString("0.00", GermanCulture),
                 share.ToString("0.0", GermanCulture),
@@ -471,7 +471,7 @@ public sealed class StatisticsViewModel : ObservableObject
                 $"{index + 1}",
                 game.Name,
                 GetInitials(game.Name),
-                FormatSource(game.Source),
+                GameSourceNames.Label(game.Source),
                 TimeFormatter.Format(game.Duration),
                 $"{share:0.#} %",
                 FormatCount(game.SessionCount, "Session", "Sessions", "Keine Sessions"),
@@ -919,23 +919,6 @@ public sealed class StatisticsViewModel : ObservableObject
     {
         return count == 0 ? empty : $"{count} {(count == 1 ? singular : plural)}";
     }
-
-    private static string FormatSource(GameSource source) => source switch
-    {
-        GameSource.Steam => "STEAM",
-        GameSource.Epic => "EPIC",
-        GameSource.Gog => "GOG",
-        GameSource.Xbox => "XBOX",
-        GameSource.BattleNet => "BATTLE.NET",
-        GameSource.Ubisoft => "UBISOFT",
-        GameSource.EaApp => "EA APP",
-        GameSource.Riot => "RIOT",
-        GameSource.Rockstar => "ROCKSTAR",
-        GameSource.Amazon => "AMAZON",
-        GameSource.Itch => "ITCH.IO",
-        GameSource.Humble => "HUMBLE",
-        _ => "MANUELL"
-    };
 
     private static string GetInitials(string name)
     {

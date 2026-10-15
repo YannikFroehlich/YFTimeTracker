@@ -279,7 +279,7 @@ public sealed class YearReviewViewModel : ObservableObject
                 game.Name,
                 GetInitials(game.Name),
                 iconPaths[index],
-                FormatSource(game.Source),
+                GameSourceNames.Label(game.Source),
                 TimeFormatter.Format(game.Duration),
                 $"{share:0.#} %",
                 FormatCount(game.SessionCount, "Session", "Sessions"),
@@ -322,26 +322,6 @@ public sealed class YearReviewViewModel : ObservableObject
         return words.Length == 0
             ? "?"
             : string.Concat(words.Take(2).Select(word => char.ToUpperInvariant(word[0])));
-    }
-
-    private static string FormatSource(GameSource source)
-    {
-        return source switch
-        {
-            GameSource.Steam => "STEAM",
-            GameSource.Epic => "EPIC",
-            GameSource.Gog => "GOG",
-            GameSource.Xbox => "XBOX",
-            GameSource.BattleNet => "BATTLE.NET",
-            GameSource.Ubisoft => "UBISOFT",
-            GameSource.EaApp => "EA APP",
-            GameSource.Riot => "RIOT",
-            GameSource.Rockstar => "ROCKSTAR",
-            GameSource.Amazon => "AMAZON",
-            GameSource.Itch => "ITCH.IO",
-            GameSource.Humble => "HUMBLE",
-            _ => "MANUELL"
-        };
     }
 }
 

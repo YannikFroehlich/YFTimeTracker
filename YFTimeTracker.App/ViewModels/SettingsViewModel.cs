@@ -37,18 +37,6 @@ public sealed class SettingsViewModel : ObservableObject
     private double backupRetentionDays = 14;
     private string startupStateText = "Unbekannt";
     private string statusMessage = "Bereit";
-    private string steamStatusText = "Nicht geprüft";
-    private string epicStatusText = "Nicht geprüft";
-    private string gogStatusText = "Nicht geprüft";
-    private string xboxStatusText = "Nicht geprüft";
-    private string battleNetStatusText = "Nicht geprüft";
-    private string ubisoftStatusText = "Nicht geprüft";
-    private string eaAppStatusText = "Nicht geprüft";
-    private string riotStatusText = "Nicht geprüft";
-    private string rockstarStatusText = "Nicht geprüft";
-    private string amazonStatusText = "Nicht geprüft";
-    private string itchStatusText = "Nicht geprüft";
-    private string humbleStatusText = "Nicht geprüft";
     private string currentAppVersionText = "Installiert: unbekannt";
     private string updateStatusText = "Update-Status wird geladen …";
     private string availableUpdateText = string.Empty;
@@ -191,77 +179,10 @@ public sealed class SettingsViewModel : ObservableObject
         private set => SetProperty(ref statusMessage, value);
     }
 
-    public string SteamStatusText
-    {
-        get => steamStatusText;
-        private set => SetProperty(ref steamStatusText, value);
-    }
-
-    public string EpicStatusText
-    {
-        get => epicStatusText;
-        private set => SetProperty(ref epicStatusText, value);
-    }
-
-    public string GogStatusText
-    {
-        get => gogStatusText;
-        private set => SetProperty(ref gogStatusText, value);
-    }
-
-    public string XboxStatusText
-    {
-        get => xboxStatusText;
-        private set => SetProperty(ref xboxStatusText, value);
-    }
-
-    public string BattleNetStatusText
-    {
-        get => battleNetStatusText;
-        private set => SetProperty(ref battleNetStatusText, value);
-    }
-
-    public string UbisoftStatusText
-    {
-        get => ubisoftStatusText;
-        private set => SetProperty(ref ubisoftStatusText, value);
-    }
-
-    public string EaAppStatusText
-    {
-        get => eaAppStatusText;
-        private set => SetProperty(ref eaAppStatusText, value);
-    }
-
-    public string RiotStatusText
-    {
-        get => riotStatusText;
-        private set => SetProperty(ref riotStatusText, value);
-    }
-
-    public string RockstarStatusText
-    {
-        get => rockstarStatusText;
-        private set => SetProperty(ref rockstarStatusText, value);
-    }
-
-    public string AmazonStatusText
-    {
-        get => amazonStatusText;
-        private set => SetProperty(ref amazonStatusText, value);
-    }
-
-    public string ItchStatusText
-    {
-        get => itchStatusText;
-        private set => SetProperty(ref itchStatusText, value);
-    }
-
-    public string HumbleStatusText
-    {
-        get => humbleStatusText;
-        private set => SetProperty(ref humbleStatusText, value);
-    }
+    public IReadOnlyList<LauncherStatusItem> LauncherStatuses { get; } = Enum.GetValues<GameSource>()
+        .Where(source => source != GameSource.Manual)
+        .Select(source => new LauncherStatusItem(source))
+        .ToArray();
 
     public string CurrentAppVersionText
     {
@@ -484,25 +405,17 @@ public sealed class SettingsViewModel : ObservableObject
         try
         {
             var launchers = await installationProvider.DiscoverAsync(CancellationToken.None);
-            SteamStatusText = FormatLauncherState(GameSource.Steam, launchers);
-            EpicStatusText = FormatLauncherState(GameSource.Epic, launchers);
-            GogStatusText = FormatLauncherState(GameSource.Gog, launchers);
-            XboxStatusText = FormatLauncherState(GameSource.Xbox, launchers);
-            BattleNetStatusText = FormatLauncherState(GameSource.BattleNet, launchers);
-            UbisoftStatusText = FormatLauncherState(GameSource.Ubisoft, launchers);
-            EaAppStatusText = FormatLauncherState(GameSource.EaApp, launchers);
-            RiotStatusText = FormatLauncherState(GameSource.Riot, launchers);
-            RockstarStatusText = FormatLauncherState(GameSource.Rockstar, launchers);
-            AmazonStatusText = FormatLauncherState(GameSource.Amazon, launchers);
-            ItchStatusText = FormatLauncherState(GameSource.Itch, launchers);
-            HumbleStatusText = FormatLauncherState(GameSource.Humble, launchers);
+            foreach (var launcher in LauncherStatuses)
+            {
+                launcher.Status = FormatLauncherState(launcher.Source, launchers);
+            }
         }
         catch
         {
-            SteamStatusText = EpicStatusText = GogStatusText = XboxStatusText =
-                BattleNetStatusText = UbisoftStatusText = EaAppStatusText =
-                RiotStatusText = RockstarStatusText =
-                AmazonStatusText = ItchStatusText = HumbleStatusText = "Prüfung fehlgeschlagen";
+            foreach (var launcher in LauncherStatuses)
+            {
+                launcher.Status = "Prüfung fehlgeschlagen";
+            }
         }
     }
 
@@ -1000,3 +913,18 @@ public sealed record TrackingDiagnosticEventViewModel(
     string Glyph);
 
 public sealed record TrackingExclusionRuleViewModel(long Id, string KindText, string Path);
+
+public sealed class LauncherStatusItem(GameSource source) : ObservableObject
+{
+    private string status = "Nicht geprüft";
+
+    public GameSource Source { get; } = source;
+
+    public string Name { get; } = GameSourceNames.Name(source);
+
+    public string Status
+    {
+        get => status;
+        set => SetProperty(ref status, value);
+    }
+}

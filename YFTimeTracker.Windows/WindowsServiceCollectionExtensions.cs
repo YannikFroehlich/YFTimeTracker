@@ -19,7 +19,6 @@ public static class WindowsServiceCollectionExtensions
         services.AddSingleton<IGameIconService, WindowsGameIconService>();
         services.AddSingleton<IBootSessionProvider, WindowsBootSessionProvider>();
         services.AddSingleton<ISystemSuspendNotifier, WindowsSystemSuspendNotifier>();
-        services.AddSingleton<IStartupService, UnavailableStartupService>();
         services.AddSingleton<ISecretStore, CredentialManagerSecretStore>();
         services.AddSingleton<IDeviceIdentityProvider, WindowsDeviceIdentityProvider>();
         return services;

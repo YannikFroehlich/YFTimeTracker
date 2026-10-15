@@ -473,7 +473,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         GameName = game.Name;
         Initials = GetInitials(game.Name);
         IconPath = resolvedIconPath;
-        SourceLabel = FormatSource(game.Source);
+        SourceLabel = GameSourceNames.Label(game.Source);
         SourceDetail = game.ExternalGameId is { Length: > 0 }
             ? $"Launcher-ID {game.ExternalGameId}"
             : game.Source == GameSource.Manual ? "Lokal hinzugefügt" : "Automatisch erkannt";
@@ -832,23 +832,6 @@ public sealed class GameDetailsViewModel : ObservableObject
             StatusMessage = $"Spiel konnte nicht gestartet werden: {exception.Message}";
         }
     }
-
-    private static string FormatSource(GameSource source) => source switch
-    {
-        GameSource.Steam => "STEAM",
-        GameSource.Epic => "EPIC",
-        GameSource.Gog => "GOG",
-        GameSource.Xbox => "XBOX",
-        GameSource.BattleNet => "BATTLE.NET",
-        GameSource.Ubisoft => "UBISOFT",
-        GameSource.EaApp => "EA APP",
-        GameSource.Riot => "RIOT",
-        GameSource.Rockstar => "ROCKSTAR",
-        GameSource.Amazon => "AMAZON",
-        GameSource.Itch => "ITCH.IO",
-        GameSource.Humble => "HUMBLE",
-        _ => "MANUELL"
-    };
 
     private static string GetInitials(string name)
     {
