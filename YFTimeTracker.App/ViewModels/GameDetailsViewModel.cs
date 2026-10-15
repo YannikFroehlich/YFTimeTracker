@@ -11,7 +11,7 @@ using YFTimeTracker.Core.Validation;
 
 namespace YFTimeTracker.App.ViewModels;
 
-public sealed class GameDetailsViewModel : ObservableObject
+public sealed partial class GameDetailsViewModel : ObservableObject
 {
     private static readonly CultureInfo GermanCulture = CultureInfo.GetCultureInfo("de-DE");
     private const string ProgressNormalColor = "#FF6A2B";
@@ -24,58 +24,14 @@ public sealed class GameDetailsViewModel : ObservableObject
     private readonly IGameIconService? gameIcons;
     private readonly IGameLaunchService? gameLaunchService;
     private readonly IFilePickerService? filePicker;
-    private readonly ISteamPlaytimeReader? steamPlaytime;
-    private readonly AsyncRelayCommand saveGameCommand;
-    private readonly AsyncRelayCommand saveSessionCommand;
-    private readonly RelayCommand launchGameCommand;
-    private readonly AsyncRelayCommand removeCoverCommand;
-    private readonly AsyncRelayCommand importSteamPlaytimeCommand;
+    private readonly IReadOnlyList<ILauncherPlaytimeReader> playtimeReaders;
     private Game? loadedGame;
     private long gameId;
     private SessionListItemViewModel? selectedSession;
     private long? editingSessionId;
     private string gameName = "Spiel";
-    private string initials = "YF";
-    private string? iconPath;
     private bool hasCustomCover;
-    private string sourceLabel = "MANUELL";
-    private string sourceDetail = "Lokal hinzugefügt";
-    private string installDirectory = "Kein Installationsordner hinterlegt";
-    private string primaryExecutablePath = string.Empty;
     private string tagsText = string.Empty;
-    private string totalPlaytimeText = "0 min";
-    private string sessionCountText = "Keine Sessions";
-    private string averageSessionText = "0 min";
-    private string lastPlayedText = "Noch nicht gespielt";
-    private string chartMaximumText = "2 h";
-    private string chartMiddleText = "1 h";
-    private string statusMessage = "Spieldetails werden geladen …";
-    private string sessionEditorTitle = "NEUE SESSION";
-    private string sessionEditorDescription = "Ergänze fehlende Spielzeit mit lokalen Start- und Endzeiten.";
-    private double dailyPlaytimeLimitMinutes;
-    private double weeklyPlaytimeLimitMinutes;
-    private double baselinePlaytimeHours;
-    private double baselinePlaytimeMinutes;
-    private string baselineSummaryText = string.Empty;
-    private Visibility baselineSummaryVisibility = Visibility.Collapsed;
-    private string dailyProgressText = string.Empty;
-    private double dailyProgressPercent;
-    private string dailyProgressColor = ProgressNormalColor;
-    private Visibility dailyProgressVisibility = Visibility.Collapsed;
-    private string weeklyProgressText = string.Empty;
-    private double weeklyProgressPercent;
-    private string weeklyProgressColor = ProgressNormalColor;
-    private Visibility weeklyProgressVisibility = Visibility.Collapsed;
-    private string sessionSaveButtonText = "Session hinzufügen";
-    private DateTimeOffset editorStartDate;
-    private DateTimeOffset editorEndDate;
-    private TimeSpan? editorStartTime;
-    private TimeSpan? editorEndTime;
-    private bool sessionEditorEnabled = true;
-    private Visibility contentVisibility = Visibility.Collapsed;
-    private Visibility errorVisibility = Visibility.Collapsed;
-    private Visibility sessionsVisibility = Visibility.Collapsed;
-    private Visibility emptySessionsVisibility = Visibility.Visible;
 
     public GameDetailsViewModel(
         IGameRepository games,
@@ -86,7 +42,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         IGameIconService? gameIcons = null,
         IGameLaunchService? gameLaunchService = null,
         IFilePickerService? filePicker = null,
-        ISteamPlaytimeReader? steamPlaytime = null)
+        IEnumerable<ILauncherPlaytimeReader>? playtimeReaders = null)
     {
         this.games = games;
         this.catalog = catalog;
@@ -96,21 +52,8 @@ public sealed class GameDetailsViewModel : ObservableObject
         this.gameIcons = gameIcons;
         this.gameLaunchService = gameLaunchService;
         this.filePicker = filePicker;
-        this.steamPlaytime = steamPlaytime;
+        this.playtimeReaders = playtimeReaders?.ToArray() ?? [];
 
-        RefreshCommand = new AsyncRelayCommand(RefreshAsync);
-        saveGameCommand = new AsyncRelayCommand(SaveGameAsync, () => loadedGame is not null);
-        SaveGameCommand = saveGameCommand;
-        NewSessionCommand = new RelayCommand(BeginNewSession);
-        saveSessionCommand = new AsyncRelayCommand(SaveSessionAsync, () => SessionCanSave);
-        SaveSessionCommand = saveSessionCommand;
-        launchGameCommand = new RelayCommand(LaunchGame, () => loadedGame?.PrimaryExecutable is not null);
-        LaunchGameCommand = launchGameCommand;
-        ChooseCoverCommand = new AsyncRelayCommand(ChooseCoverAsync);
-        removeCoverCommand = new AsyncRelayCommand(RemoveCoverAsync, () => HasCustomCover);
-        RemoveCoverCommand = removeCoverCommand;
-        importSteamPlaytimeCommand = new AsyncRelayCommand(ImportSteamPlaytimeAsync, () => SteamAppId is not null);
-        ImportSteamPlaytimeCommand = importSteamPlaytimeCommand;
         ResetEditorTimes();
     }
 
@@ -126,9 +69,11 @@ public sealed class GameDetailsViewModel : ObservableObject
         set => SetProperty(ref gameName, value ?? string.Empty);
     }
 
-    public string Initials { get => initials; private set => SetProperty(ref initials, value); }
+    [ObservableProperty]
+    public partial string Initials { get; private set; } = "YF";
 
-    public string? IconPath { get => iconPath; private set => SetProperty(ref iconPath, value); }
+    [ObservableProperty]
+    public partial string? IconPath { get; private set; }
 
     public bool HasCustomCover
     {
@@ -138,20 +83,24 @@ public sealed class GameDetailsViewModel : ObservableObject
             if (SetProperty(ref hasCustomCover, value))
             {
                 OnPropertyChanged(nameof(RemoveCoverVisibility));
-                removeCoverCommand.NotifyCanExecuteChanged();
+                RemoveCoverCommand.NotifyCanExecuteChanged();
             }
         }
     }
 
     public Visibility RemoveCoverVisibility => HasCustomCover ? Visibility.Visible : Visibility.Collapsed;
 
-    public string SourceLabel { get => sourceLabel; private set => SetProperty(ref sourceLabel, value); }
+    [ObservableProperty]
+    public partial string SourceLabel { get; private set; } = "MANUELL";
 
-    public string SourceDetail { get => sourceDetail; private set => SetProperty(ref sourceDetail, value); }
+    [ObservableProperty]
+    public partial string SourceDetail { get; private set; } = "Lokal hinzugefügt";
 
-    public string InstallDirectory { get => installDirectory; private set => SetProperty(ref installDirectory, value); }
+    [ObservableProperty]
+    public partial string InstallDirectory { get; private set; } = "Kein Installationsordner hinterlegt";
 
-    public string PrimaryExecutablePath { get => primaryExecutablePath; private set => SetProperty(ref primaryExecutablePath, value); }
+    [ObservableProperty]
+    public partial string PrimaryExecutablePath { get; private set; } = string.Empty;
 
     public string TagsText
     {
@@ -159,125 +108,114 @@ public sealed class GameDetailsViewModel : ObservableObject
         set => SetProperty(ref tagsText, value ?? string.Empty);
     }
 
-    public double DailyPlaytimeLimitMinutes
-    {
-        get => dailyPlaytimeLimitMinutes;
-        set => SetProperty(ref dailyPlaytimeLimitMinutes, value);
-    }
+    [ObservableProperty]
+    public partial double DailyPlaytimeLimitMinutes { get; set; }
 
-    public double WeeklyPlaytimeLimitMinutes
-    {
-        get => weeklyPlaytimeLimitMinutes;
-        set => SetProperty(ref weeklyPlaytimeLimitMinutes, value);
-    }
+    [ObservableProperty]
+    public partial double WeeklyPlaytimeLimitMinutes { get; set; }
 
     /// <summary>
     /// Vor der Aufzeichnung gespielte Zeit, getrennt nach Stunden und Minuten
     /// eingegeben: 300 Stunden als Minutenzahl waeren nicht zumutbar.
     /// </summary>
-    public double BaselinePlaytimeHours
-    {
-        get => baselinePlaytimeHours;
-        set => SetProperty(ref baselinePlaytimeHours, value);
-    }
+    [ObservableProperty]
+    public partial double BaselinePlaytimeHours { get; set; }
 
-    public double BaselinePlaytimeMinutes
-    {
-        get => baselinePlaytimeMinutes;
-        set => SetProperty(ref baselinePlaytimeMinutes, value);
-    }
+    [ObservableProperty]
+    public partial double BaselinePlaytimeMinutes { get; set; }
 
-    public Visibility SteamImportVisibility => SteamAppId is null ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility LauncherPlaytimeImportVisibility => CanImportLauncherPlaytime ? Visibility.Visible : Visibility.Collapsed;
 
-    private string? SteamAppId => steamPlaytime is not null
-        && loadedGame is { Source: GameSource.Steam, ExternalGameId: { Length: > 0 } appId }
-            ? appId
-            : null;
+    private bool CanImportLauncherPlaytime => PlaytimeReader is not null;
 
-    public string BaselineSummaryText
-    {
-        get => baselineSummaryText;
-        private set => SetProperty(ref baselineSummaryText, value);
-    }
+    private bool HasLoadedGame => loadedGame is not null;
 
-    public Visibility BaselineSummaryVisibility
-    {
-        get => baselineSummaryVisibility;
-        private set => SetProperty(ref baselineSummaryVisibility, value);
-    }
+    private bool CanLaunchGame => loadedGame?.PrimaryExecutable is not null;
 
-    public string DailyProgressText { get => dailyProgressText; private set => SetProperty(ref dailyProgressText, value); }
+    public string LauncherPlaytimeImportText => $"Aus {LauncherName} übernehmen";
 
-    public double DailyProgressPercent { get => dailyProgressPercent; private set => SetProperty(ref dailyProgressPercent, value); }
+    private ILauncherPlaytimeReader? PlaytimeReader => loadedGame is { ExternalGameId.Length: > 0 } game
+        ? playtimeReaders.FirstOrDefault(reader => reader.Source == game.Source)
+        : null;
 
-    public string DailyProgressColor { get => dailyProgressColor; private set => SetProperty(ref dailyProgressColor, value); }
+    private string LauncherName => loadedGame?.Source == GameSource.Gog ? "GOG Galaxy" : "Steam";
 
-    public Visibility DailyProgressVisibility { get => dailyProgressVisibility; private set => SetProperty(ref dailyProgressVisibility, value); }
+    [ObservableProperty]
+    public partial string BaselineSummaryText { get; private set; } = string.Empty;
 
-    public string WeeklyProgressText { get => weeklyProgressText; private set => SetProperty(ref weeklyProgressText, value); }
+    [ObservableProperty]
+    public partial Visibility BaselineSummaryVisibility { get; private set; } = Visibility.Collapsed;
 
-    public double WeeklyProgressPercent { get => weeklyProgressPercent; private set => SetProperty(ref weeklyProgressPercent, value); }
+    [ObservableProperty]
+    public partial string DailyProgressText { get; private set; } = string.Empty;
 
-    public string WeeklyProgressColor { get => weeklyProgressColor; private set => SetProperty(ref weeklyProgressColor, value); }
+    [ObservableProperty]
+    public partial double DailyProgressPercent { get; private set; }
 
-    public Visibility WeeklyProgressVisibility { get => weeklyProgressVisibility; private set => SetProperty(ref weeklyProgressVisibility, value); }
+    [ObservableProperty]
+    public partial string DailyProgressColor { get; private set; } = ProgressNormalColor;
 
-    public string TotalPlaytimeText { get => totalPlaytimeText; private set => SetProperty(ref totalPlaytimeText, value); }
+    [ObservableProperty]
+    public partial Visibility DailyProgressVisibility { get; private set; } = Visibility.Collapsed;
 
-    public string SessionCountText { get => sessionCountText; private set => SetProperty(ref sessionCountText, value); }
+    [ObservableProperty]
+    public partial string WeeklyProgressText { get; private set; } = string.Empty;
 
-    public string AverageSessionText { get => averageSessionText; private set => SetProperty(ref averageSessionText, value); }
+    [ObservableProperty]
+    public partial double WeeklyProgressPercent { get; private set; }
 
-    public string LastPlayedText { get => lastPlayedText; private set => SetProperty(ref lastPlayedText, value); }
+    [ObservableProperty]
+    public partial string WeeklyProgressColor { get; private set; } = ProgressNormalColor;
 
-    public string ChartMaximumText { get => chartMaximumText; private set => SetProperty(ref chartMaximumText, value); }
+    [ObservableProperty]
+    public partial Visibility WeeklyProgressVisibility { get; private set; } = Visibility.Collapsed;
 
-    public string ChartMiddleText { get => chartMiddleText; private set => SetProperty(ref chartMiddleText, value); }
+    [ObservableProperty]
+    public partial string TotalPlaytimeText { get; private set; } = "0 min";
 
-    public string StatusMessage { get => statusMessage; private set => SetProperty(ref statusMessage, value); }
+    [ObservableProperty]
+    public partial string SessionCountText { get; private set; } = "Keine Sessions";
 
-    public string SessionEditorTitle { get => sessionEditorTitle; private set => SetProperty(ref sessionEditorTitle, value); }
+    [ObservableProperty]
+    public partial string AverageSessionText { get; private set; } = "0 min";
 
-    public string SessionEditorDescription { get => sessionEditorDescription; private set => SetProperty(ref sessionEditorDescription, value); }
+    [ObservableProperty]
+    public partial string LastPlayedText { get; private set; } = "Noch nicht gespielt";
 
-    public string SessionSaveButtonText { get => sessionSaveButtonText; private set => SetProperty(ref sessionSaveButtonText, value); }
+    [ObservableProperty]
+    public partial string ChartMaximumText { get; private set; } = "2 h";
 
-    public DateTimeOffset EditorStartDate
-    {
-        get => editorStartDate;
-        set => SetProperty(ref editorStartDate, value);
-    }
+    [ObservableProperty]
+    public partial string ChartMiddleText { get; private set; } = "1 h";
 
-    public DateTimeOffset EditorEndDate
-    {
-        get => editorEndDate;
-        set => SetProperty(ref editorEndDate, value);
-    }
+    [ObservableProperty]
+    public partial string StatusMessage { get; private set; } = "Spieldetails werden geladen …";
 
-    public TimeSpan? EditorStartTime
-    {
-        get => editorStartTime;
-        set => SetProperty(ref editorStartTime, value);
-    }
+    [ObservableProperty]
+    public partial string SessionEditorTitle { get; private set; } = "NEUE SESSION";
 
-    public TimeSpan? EditorEndTime
-    {
-        get => editorEndTime;
-        set => SetProperty(ref editorEndTime, value);
-    }
+    [ObservableProperty]
+    public partial string SessionEditorDescription { get; private set; } = "Ergänze fehlende Spielzeit mit lokalen Start- und Endzeiten.";
 
-    public bool SessionEditorEnabled
-    {
-        get => sessionEditorEnabled;
-        private set
-        {
-            if (SetProperty(ref sessionEditorEnabled, value))
-            {
-                OnPropertyChanged(nameof(SessionCanSave));
-                saveSessionCommand.NotifyCanExecuteChanged();
-            }
-        }
-    }
+    [ObservableProperty]
+    public partial string SessionSaveButtonText { get; private set; } = "Session hinzufügen";
+
+    [ObservableProperty]
+    public partial DateTimeOffset EditorStartDate { get; set; }
+
+    [ObservableProperty]
+    public partial DateTimeOffset EditorEndDate { get; set; }
+
+    [ObservableProperty]
+    public partial TimeSpan? EditorStartTime { get; set; }
+
+    [ObservableProperty]
+    public partial TimeSpan? EditorEndTime { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SessionCanSave))]
+    [NotifyCanExecuteChangedFor(nameof(SaveSessionCommand))]
+    public partial bool SessionEditorEnabled { get; private set; } = true;
 
     public bool SessionCanSave => SessionEditorEnabled && loadedGame is not null;
 
@@ -302,29 +240,17 @@ public sealed class GameDetailsViewModel : ObservableObject
         }
     }
 
-    public Visibility ContentVisibility { get => contentVisibility; private set => SetProperty(ref contentVisibility, value); }
+    [ObservableProperty]
+    public partial Visibility ContentVisibility { get; private set; } = Visibility.Collapsed;
 
-    public Visibility ErrorVisibility { get => errorVisibility; private set => SetProperty(ref errorVisibility, value); }
+    [ObservableProperty]
+    public partial Visibility ErrorVisibility { get; private set; } = Visibility.Collapsed;
 
-    public Visibility SessionsVisibility { get => sessionsVisibility; private set => SetProperty(ref sessionsVisibility, value); }
+    [ObservableProperty]
+    public partial Visibility SessionsVisibility { get; private set; } = Visibility.Collapsed;
 
-    public Visibility EmptySessionsVisibility { get => emptySessionsVisibility; private set => SetProperty(ref emptySessionsVisibility, value); }
-
-    public IAsyncRelayCommand RefreshCommand { get; }
-
-    public IAsyncRelayCommand SaveGameCommand { get; }
-
-    public IRelayCommand NewSessionCommand { get; }
-
-    public IAsyncRelayCommand SaveSessionCommand { get; }
-
-    public IRelayCommand LaunchGameCommand { get; }
-
-    public IAsyncRelayCommand ChooseCoverCommand { get; }
-
-    public IAsyncRelayCommand RemoveCoverCommand { get; }
-
-    public IAsyncRelayCommand ImportSteamPlaytimeCommand { get; }
+    [ObservableProperty]
+    public partial Visibility EmptySessionsVisibility { get; private set; } = Visibility.Visible;
 
     public async Task LoadAsync(long requestedGameId)
     {
@@ -332,6 +258,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         await RefreshAsync();
     }
 
+    [RelayCommand]
     public async Task RefreshAsync()
     {
         if (gameId <= 0)
@@ -365,11 +292,12 @@ public sealed class GameDetailsViewModel : ObservableObject
             UpdateLimitProgress(game, storedSessions);
             ContentVisibility = Visibility.Visible;
             ErrorVisibility = Visibility.Collapsed;
-            saveGameCommand.NotifyCanExecuteChanged();
-            saveSessionCommand.NotifyCanExecuteChanged();
-            launchGameCommand.NotifyCanExecuteChanged();
-            importSteamPlaytimeCommand.NotifyCanExecuteChanged();
-            OnPropertyChanged(nameof(SteamImportVisibility));
+            SaveGameCommand.NotifyCanExecuteChanged();
+            SaveSessionCommand.NotifyCanExecuteChanged();
+            LaunchGameCommand.NotifyCanExecuteChanged();
+            ImportLauncherPlaytimeCommand.NotifyCanExecuteChanged();
+            OnPropertyChanged(nameof(LauncherPlaytimeImportVisibility));
+            OnPropertyChanged(nameof(LauncherPlaytimeImportText));
             StatusMessage = $"Zuletzt aktualisiert um {TimeZoneInfo.ConvertTime(clock.UtcNow, TimeZoneInfo.Local):HH:mm}.";
         }
         catch (Exception exception)
@@ -378,6 +306,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
     private async Task ChooseCoverAsync()
     {
         if (loadedGame is null || gameIcons is null || filePicker is null)
@@ -405,6 +334,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand(CanExecute = nameof(HasCustomCover))]
     private async Task RemoveCoverAsync()
     {
         if (loadedGame is null || gameIcons is null)
@@ -450,7 +380,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         try
         {
             await sessionEditor.DeleteSessionAsync(SelectedSession.Id, CancellationToken.None);
-            BeginNewSession();
+            NewSession();
             await RefreshAsync();
             StatusMessage = "Session gelöscht";
         }
@@ -469,7 +399,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         GameName = game.Name;
         Initials = GetInitials(game.Name);
         IconPath = resolvedIconPath;
-        SourceLabel = FormatSource(game.Source);
+        SourceLabel = GameSourceNames.Label(game.Source);
         SourceDetail = game.ExternalGameId is { Length: > 0 }
             ? $"Launcher-ID {game.ExternalGameId}"
             : game.Source == GameSource.Manual ? "Lokal hinzugefügt" : "Automatisch erkannt";
@@ -639,43 +569,46 @@ public sealed class GameDetailsViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Füllt die Basis-Spielzeit aus der lokal gespeicherten Steam-Spielzeit.
+    /// Füllt die Basis-Spielzeit aus der Spielzeit, die der Launcher lokal gespeichert hat.
     /// Gespeichert wird erst mit "Speichern", damit der Wert vorher prüfbar bleibt.
     /// </summary>
-    private async Task ImportSteamPlaytimeAsync()
+    [RelayCommand(CanExecute = nameof(CanImportLauncherPlaytime))]
+    private async Task ImportLauncherPlaytimeAsync()
     {
-        if (SteamAppId is not { } appId)
+        if (PlaytimeReader is not { } reader || loadedGame?.ExternalGameId is not { } externalGameId)
         {
             return;
         }
 
-        int? steamMinutes;
+        var launcher = LauncherName;
+        int? launcherMinutes;
         try
         {
-            steamMinutes = await steamPlaytime!.GetPlaytimeMinutesAsync(appId, CancellationToken.None);
+            launcherMinutes = await reader.GetPlaytimeMinutesAsync(externalGameId, CancellationToken.None);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            StatusMessage = $"Steam-Spielzeit konnte nicht gelesen werden: {exception.Message}";
+            StatusMessage = $"{launcher}-Spielzeit konnte nicht gelesen werden: {exception.Message}";
             return;
         }
 
-        if (steamMinutes is not > 0)
+        if (launcherMinutes is not > 0)
         {
-            StatusMessage = "Steam hat zu diesem Spiel keine Spielzeit gespeichert.";
+            StatusMessage = $"{launcher} hat zu diesem Spiel keine Spielzeit gespeichert.";
             return;
         }
 
-        // Steam zählt auch die Zeit mit, die hier schon als Session erfasst ist.
+        // Der Launcher zählt auch die Zeit mit, die hier schon als Session erfasst ist.
         var tracked = TimeSpan.FromTicks(Sessions.Sum(session => session.Model.GetEffectiveDuration(clock.UtcNow).Ticks));
-        var baseline = Math.Max(0, steamMinutes.Value - (int)tracked.TotalMinutes);
+        var baseline = Math.Max(0, launcherMinutes.Value - (int)tracked.TotalMinutes);
         BaselinePlaytimeHours = baseline / 60;
         BaselinePlaytimeMinutes = baseline % 60;
-        StatusMessage = $"Steam meldet {TimeFormatter.Format(TimeSpan.FromMinutes(steamMinutes.Value))}, davon "
+        StatusMessage = $"{launcher} meldet {TimeFormatter.Format(TimeSpan.FromMinutes(launcherMinutes.Value))}, davon "
             + $"{TimeFormatter.Format(tracked)} hier bereits erfasst. Basis-Spielzeit: "
             + $"{TimeFormatter.Format(TimeSpan.FromMinutes(baseline))} – zum Übernehmen speichern.";
     }
 
+    [RelayCommand(CanExecute = nameof(HasLoadedGame))]
     private async Task SaveGameAsync()
     {
         if (loadedGame is null)
@@ -707,6 +640,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand(CanExecute = nameof(SessionCanSave))]
     private async Task SaveSessionAsync()
     {
         if (!SessionCanSave || loadedGame is null)
@@ -740,7 +674,7 @@ public sealed class GameDetailsViewModel : ObservableObject
                 await sessionEditor.AddManualSessionAsync(loadedGame.Id, startedAtUtc, endedAtUtc, CancellationToken.None);
             }
 
-            BeginNewSession();
+            NewSession();
             await RefreshAsync();
             StatusMessage = isNew ? "Session hinzugefügt" : "Session gespeichert";
         }
@@ -754,7 +688,8 @@ public sealed class GameDetailsViewModel : ObservableObject
         }
     }
 
-    private void BeginNewSession()
+    [RelayCommand]
+    private void NewSession()
     {
         editingSessionId = null;
         selectedSession = null;
@@ -804,12 +739,13 @@ public sealed class GameDetailsViewModel : ObservableObject
         StatusMessage = message;
         ContentVisibility = Visibility.Collapsed;
         ErrorVisibility = Visibility.Visible;
-        saveGameCommand.NotifyCanExecuteChanged();
-        saveSessionCommand.NotifyCanExecuteChanged();
-        launchGameCommand.NotifyCanExecuteChanged();
-        importSteamPlaytimeCommand.NotifyCanExecuteChanged();
+        SaveGameCommand.NotifyCanExecuteChanged();
+        SaveSessionCommand.NotifyCanExecuteChanged();
+        LaunchGameCommand.NotifyCanExecuteChanged();
+        ImportLauncherPlaytimeCommand.NotifyCanExecuteChanged();
     }
 
+    [RelayCommand(CanExecute = nameof(CanLaunchGame))]
     private void LaunchGame()
     {
         if (gameLaunchService is null || loadedGame?.PrimaryExecutable is not { } executable)
@@ -827,20 +763,6 @@ public sealed class GameDetailsViewModel : ObservableObject
             StatusMessage = $"Spiel konnte nicht gestartet werden: {exception.Message}";
         }
     }
-
-    private static string FormatSource(GameSource source) => source switch
-    {
-        GameSource.Steam => "STEAM",
-        GameSource.Epic => "EPIC",
-        GameSource.Gog => "GOG",
-        GameSource.Xbox => "XBOX",
-        GameSource.BattleNet => "BATTLE.NET",
-        GameSource.Ubisoft => "UBISOFT",
-        GameSource.EaApp => "EA APP",
-        GameSource.Riot => "RIOT",
-        GameSource.Rockstar => "ROCKSTAR",
-        _ => "MANUELL"
-    };
 
     private static string GetInitials(string name)
     {

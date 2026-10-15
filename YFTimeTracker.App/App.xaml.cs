@@ -78,14 +78,14 @@ public partial class App : Application
                 services.AddSingleton<IFilePickerService, WinUiFilePickerService>();
                 services.AddSingleton<IExplorerService, WindowsExplorerService>();
                 services.AddSingleton<IGameLaunchService, WindowsGameLaunchService>();
-                services.AddSingleton<IThemeService, ThemeService>();
+                services.AddSingleton<ThemeService>();
                 services.AddSingleton<IStartupService, WinUiStartupService>();
                 services.AddSingleton<ITrayService, TrayService>();
-                services.AddSingleton<IPlaytimeLimitNotifier, PlaytimeLimitNotifier>();
+                services.AddSingleton<PlaytimeLimitNotifier>();
                 services.AddSingleton<IAppUpdateService, VelopackAppUpdateService>();
-                services.AddSingleton<IUpdateNotificationLogger, UpdateNotificationLogger>();
-                services.AddSingleton<IAppDiagnosticsService, AppDiagnosticsService>();
-                services.AddSingleton<IFirstRunSetupService, FirstRunSetupService>();
+                services.AddSingleton<UpdateNotificationLogger>();
+                services.AddSingleton<AppDiagnosticsService>();
+                services.AddSingleton<FirstRunSetupService>();
                 services.AddSingleton<MainWindow>();
                 services.AddTransient<DashboardPage>();
                 services.AddTransient<GamesPage>();
@@ -106,13 +106,13 @@ public partial class App : Application
             .Build();
 
         await host.StartAsync();
-        await Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync(CancellationToken.None);
-        await Services.GetRequiredService<IThemeService>().InitializeAsync(CancellationToken.None);
+        await Services.GetRequiredService<SqliteDatabaseInitializer>().InitializeAsync(CancellationToken.None);
+        await Services.GetRequiredService<ThemeService>().InitializeAsync(CancellationToken.None);
 
         MainWindow = Services.GetRequiredService<MainWindow>();
         Services.GetRequiredService<ITrayService>().Initialize(MainWindow);
-        Services.GetRequiredService<IPlaytimeLimitNotifier>().Initialize();
-        Services.GetRequiredService<IUpdateNotificationLogger>().Initialize();
+        Services.GetRequiredService<PlaytimeLimitNotifier>().Initialize();
+        Services.GetRequiredService<UpdateNotificationLogger>().Initialize();
         Services.GetRequiredService<SessionSyncTrigger>().Initialize();
         MainWindow.Activate();
 
@@ -190,8 +190,8 @@ public partial class App : Application
                 // um die Datenbank konkurriert. Der naechste Start gleicht ab.
                 app.host.Services.GetRequiredService<SessionSyncTrigger>().Dispose();
                 await app.host.Services.GetRequiredService<IGameTrackingService>().StopAsync(CancellationToken.None);
-                app.host.Services.GetRequiredService<IPlaytimeLimitNotifier>().Dispose();
-                app.host.Services.GetRequiredService<IUpdateNotificationLogger>().Dispose();
+                app.host.Services.GetRequiredService<PlaytimeLimitNotifier>().Dispose();
+                app.host.Services.GetRequiredService<UpdateNotificationLogger>().Dispose();
                 app.host.Services.GetRequiredService<ITrayService>().Dispose();
                 await app.host.StopAsync(CancellationToken.None);
                 app.host.Dispose();

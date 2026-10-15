@@ -29,9 +29,9 @@ public sealed partial class MainWindow : Window
     private readonly ISettingsStore settingsStore;
     private readonly IAppUpdateService appUpdateService;
     private readonly INotificationLogRepository notificationLog;
-    private readonly IFirstRunSetupService firstRunSetupService;
+    private readonly FirstRunSetupService firstRunSetupService;
     private readonly IGameTrackingService trackingService;
-    private readonly IThemeService themeService;
+    private readonly ThemeService themeService;
     private readonly AppWindow appWindow;
     private readonly SemaphoreSlim dialogLock = new(1, 1);
     private static readonly TimeSpan UpdateReminderDelay = TimeSpan.FromHours(24);
@@ -56,9 +56,9 @@ public sealed partial class MainWindow : Window
         appUpdateService = App.Services.GetRequiredService<IAppUpdateService>();
         notificationLog = App.Services.GetRequiredService<INotificationLogRepository>();
         notificationLog.Changed += NotificationLog_Changed;
-        firstRunSetupService = App.Services.GetRequiredService<IFirstRunSetupService>();
+        firstRunSetupService = App.Services.GetRequiredService<FirstRunSetupService>();
         trackingService = App.Services.GetRequiredService<IGameTrackingService>();
-        themeService = App.Services.GetRequiredService<IThemeService>();
+        themeService = App.Services.GetRequiredService<ThemeService>();
         RootGrid.DataContext = dashboardViewModel;
         RootGrid.RequestedTheme = themeService.CurrentTheme;
         themeService.ThemeChanged += ThemeService_ThemeChanged;
@@ -481,7 +481,7 @@ public sealed partial class MainWindow : Window
 
             var isReady = state.Stage == AppUpdateStage.ReadyToInstall;
             var version = state.AvailableVersion ?? "neu";
-            var sizeText = FormatDownloadSize(state.DownloadSize);
+            var sizeText = state.DownloadSizeText is { Length: > 0 } size ? $" mit {size}" : string.Empty;
             var content = new StackPanel { Spacing = 12 };
             content.Children.Add(new TextBlock
             {
@@ -970,18 +970,6 @@ public sealed partial class MainWindow : Window
         await dialog.ShowAsync();
     }
 
-    private static string FormatDownloadSize(long bytes)
-    {
-        if (bytes <= 0)
-        {
-            return string.Empty;
-        }
-
-        return bytes >= 1024L * 1024L
-            ? $" mit {bytes / (1024d * 1024d):0.#} MB"
-            : $" mit {bytes / 1024d:0.#} KB";
-    }
-
     private Task WaitForRootGridAsync()
     {
         if (RootGrid.XamlRoot is not null)
@@ -1058,8 +1046,8 @@ public sealed partial class MainWindow : Window
         var windowId = Win32Interop.GetWindowIdFromWindow(windowHandle);
         var appWindow = AppWindow.GetFromWindowId(windowId);
         var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
-        var width = Math.Min(1500, Math.Max(1080, displayArea.WorkArea.Width - 80));
-        var height = Math.Min(940, Math.Max(720, displayArea.WorkArea.Height - 80));
+        var width = Math.Clamp(displayArea.WorkArea.Width - 80, 1080, 1500);
+        var height = Math.Clamp(displayArea.WorkArea.Height - 80, 720, 940);
         var x = displayArea.WorkArea.X + (displayArea.WorkArea.Width - width) / 2;
         var y = displayArea.WorkArea.Y + (displayArea.WorkArea.Height - height) / 2;
 

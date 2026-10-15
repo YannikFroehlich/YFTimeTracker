@@ -156,11 +156,6 @@ public sealed class YearReviewViewModelTests
         }
     }
 
-    private sealed class FixedClock(DateTimeOffset now) : IClock
-    {
-        public DateTimeOffset UtcNow { get; } = now;
-    }
-
     private sealed class FakeExplorerService : IExplorerService
     {
         public string? RevealedPath { get; private set; }

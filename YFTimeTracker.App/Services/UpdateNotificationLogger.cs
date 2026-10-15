@@ -9,7 +9,7 @@ public sealed class UpdateNotificationLogger(
     INotificationLogRepository notificationLog,
     ISettingsStore settings,
     IClock clock,
-    ILogger<UpdateNotificationLogger> logger) : IUpdateNotificationLogger
+    ILogger<UpdateNotificationLogger> logger) : IDisposable
 {
     private bool initialized;
 

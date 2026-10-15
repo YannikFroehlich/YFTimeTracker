@@ -1039,19 +1039,8 @@ public sealed class GameTrackingService(
         ? $"{(int)duration.TotalHours} h {duration.Minutes:00} min"
         : $"{Math.Max(0, (int)duration.TotalMinutes)} min";
 
-    private static string FormatGameSource(GameSource source) => source switch
-    {
-        GameSource.Steam => "Steam",
-        GameSource.Epic => "Epic Games",
-        GameSource.Gog => "GOG",
-        GameSource.Xbox => "Xbox/Microsoft Store",
-        GameSource.BattleNet => "Battle.net",
-        GameSource.Ubisoft => "Ubisoft Connect",
-        GameSource.EaApp => "EA app",
-        GameSource.Riot => "Riot Client",
-        GameSource.Rockstar => "Rockstar Games Launcher",
-        _ => "eine manuelle Zuordnung"
-    };
+    private static string FormatGameSource(GameSource source) =>
+        source == GameSource.Manual ? "eine manuelle Zuordnung" : GameSourceNames.Name(source);
 
     private sealed record DiscoveryCandidate(DateTimeOffset FirstSeenAtUtc, long LastSeenScan, bool IsConfirmed);
 }

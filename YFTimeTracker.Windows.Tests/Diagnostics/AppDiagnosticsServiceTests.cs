@@ -81,11 +81,6 @@ public sealed class AppDiagnosticsServiceTests
         }
     }
 
-    private sealed class FixedClock(DateTimeOffset utcNow) : IClock
-    {
-        public DateTimeOffset UtcNow { get; } = utcNow;
-    }
-
     private sealed class TestAppPathProvider(string root) : IAppPathProvider
     {
         public string DataDirectory { get; } = Path.Combine(root, "Data");

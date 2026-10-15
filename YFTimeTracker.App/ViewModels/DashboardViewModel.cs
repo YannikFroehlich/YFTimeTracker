@@ -8,7 +8,7 @@ using YFTimeTracker.Core.Models;
 
 namespace YFTimeTracker.App.ViewModels;
 
-public sealed class DashboardViewModel : ObservableObject
+public sealed partial class DashboardViewModel : ObservableObject
 {
     private static readonly CultureInfo GermanCulture = CultureInfo.GetCultureInfo("de-DE");
     private const string MutedColor = "#9D9A91";
@@ -26,35 +26,6 @@ public sealed class DashboardViewModel : ObservableObject
     private readonly IGameIconService? gameIcons;
     private DateTimeOffset? activeStartedAtUtc;
     private bool isRefreshing;
-    private string todayText = "0 min";
-    private string todaySessionText = "Keine Sessions";
-    private string todayComparisonText = "Keine Änderung";
-    private string todayComparisonBrush = MutedColor;
-    private string weekText = "0 min";
-    private string weekSessionText = "Keine Sessions";
-    private string weekComparisonText = "Keine Änderung";
-    private string weekComparisonBrush = MutedColor;
-    private string totalText = "0 min";
-    private string gamesPlayedText = "Noch keine Spiele";
-    private string pauseButtonText = "Tracking pausieren";
-    private string statusText = "Tracking wird vorbereitet";
-    private string statusDetailText = "Spielzeit wird automatisch erfasst";
-    private string activeGameName = "Kein aktives Spiel";
-    private string activeGameInitials = "YF";
-    private string? activeGameIconPath;
-    private string activeElapsedText = "00:00:00";
-    private string activeGameHint = "Starte ein registriertes Spiel, um die Live-Ansicht zu aktivieren.";
-    private string additionalRunningGamesText = string.Empty;
-    private Visibility activeGameVisibility = Visibility.Collapsed;
-    private Visibility activeEmptyVisibility = Visibility.Visible;
-    private Visibility recentGamesVisibility = Visibility.Collapsed;
-    private Visibility recentEmptyVisibility = Visibility.Visible;
-    private string chartMaximumText = "2 h";
-    private string chartMiddleText = "1 h";
-    private string activeDailyProgressText = string.Empty;
-    private double activeDailyProgressPercent;
-    private string activeDailyProgressColor = ProgressNormalColor;
-    private Visibility activeDailyProgressVisibility = Visibility.Collapsed;
 
     public DashboardViewModel(
         IPlaytimeStatisticsService statistics,
@@ -68,76 +39,100 @@ public sealed class DashboardViewModel : ObservableObject
         this.games = games;
         this.clock = clock;
         this.gameIcons = gameIcons;
-        RefreshCommand = new AsyncRelayCommand(RefreshAsync);
-        ToggleTrackingCommand = new AsyncRelayCommand(ToggleTrackingAsync);
     }
 
-    public string TodayText { get => todayText; private set => SetProperty(ref todayText, value); }
+    [ObservableProperty]
+    public partial string TodayText { get; private set; } = "0 min";
 
-    public string TodaySessionText { get => todaySessionText; private set => SetProperty(ref todaySessionText, value); }
+    [ObservableProperty]
+    public partial string TodaySessionText { get; private set; } = "Keine Sessions";
 
-    public string TodayComparisonText { get => todayComparisonText; private set => SetProperty(ref todayComparisonText, value); }
+    [ObservableProperty]
+    public partial string TodayComparisonText { get; private set; } = "Keine Änderung";
 
-    public string TodayComparisonBrush { get => todayComparisonBrush; private set => SetProperty(ref todayComparisonBrush, value); }
+    [ObservableProperty]
+    public partial string TodayComparisonBrush { get; private set; } = MutedColor;
 
-    public string WeekText { get => weekText; private set => SetProperty(ref weekText, value); }
+    [ObservableProperty]
+    public partial string WeekText { get; private set; } = "0 min";
 
-    public string WeekSessionText { get => weekSessionText; private set => SetProperty(ref weekSessionText, value); }
+    [ObservableProperty]
+    public partial string WeekSessionText { get; private set; } = "Keine Sessions";
 
-    public string WeekComparisonText { get => weekComparisonText; private set => SetProperty(ref weekComparisonText, value); }
+    [ObservableProperty]
+    public partial string WeekComparisonText { get; private set; } = "Keine Änderung";
 
-    public string WeekComparisonBrush { get => weekComparisonBrush; private set => SetProperty(ref weekComparisonBrush, value); }
+    [ObservableProperty]
+    public partial string WeekComparisonBrush { get; private set; } = MutedColor;
 
-    public string TotalText { get => totalText; private set => SetProperty(ref totalText, value); }
+    [ObservableProperty]
+    public partial string TotalText { get; private set; } = "0 min";
 
-    public string GamesPlayedText { get => gamesPlayedText; private set => SetProperty(ref gamesPlayedText, value); }
+    [ObservableProperty]
+    public partial string GamesPlayedText { get; private set; } = "Noch keine Spiele";
 
-    public string PauseButtonText { get => pauseButtonText; private set => SetProperty(ref pauseButtonText, value); }
+    [ObservableProperty]
+    public partial string PauseButtonText { get; private set; } = "Tracking pausieren";
 
-    public string StatusText { get => statusText; private set => SetProperty(ref statusText, value); }
+    [ObservableProperty]
+    public partial string StatusText { get; private set; } = "Tracking wird vorbereitet";
 
-    public string StatusDetailText { get => statusDetailText; private set => SetProperty(ref statusDetailText, value); }
+    [ObservableProperty]
+    public partial string StatusDetailText { get; private set; } = "Spielzeit wird automatisch erfasst";
 
-    public string ActiveGameName { get => activeGameName; private set => SetProperty(ref activeGameName, value); }
+    [ObservableProperty]
+    public partial string ActiveGameName { get; private set; } = "Kein aktives Spiel";
 
-    public string ActiveGameInitials { get => activeGameInitials; private set => SetProperty(ref activeGameInitials, value); }
+    [ObservableProperty]
+    public partial string ActiveGameInitials { get; private set; } = "YF";
 
-    public string? ActiveGameIconPath { get => activeGameIconPath; private set => SetProperty(ref activeGameIconPath, value); }
+    [ObservableProperty]
+    public partial string? ActiveGameIconPath { get; private set; }
 
-    public string ActiveElapsedText { get => activeElapsedText; private set => SetProperty(ref activeElapsedText, value); }
+    [ObservableProperty]
+    public partial string ActiveElapsedText { get; private set; } = "00:00:00";
 
-    public string ActiveGameHint { get => activeGameHint; private set => SetProperty(ref activeGameHint, value); }
+    [ObservableProperty]
+    public partial string ActiveGameHint { get; private set; } = "Starte ein registriertes Spiel, um die Live-Ansicht zu aktivieren.";
 
-    public string AdditionalRunningGamesText { get => additionalRunningGamesText; private set => SetProperty(ref additionalRunningGamesText, value); }
+    [ObservableProperty]
+    public partial string AdditionalRunningGamesText { get; private set; } = string.Empty;
 
-    public Visibility ActiveGameVisibility { get => activeGameVisibility; private set => SetProperty(ref activeGameVisibility, value); }
+    [ObservableProperty]
+    public partial Visibility ActiveGameVisibility { get; private set; } = Visibility.Collapsed;
 
-    public Visibility ActiveEmptyVisibility { get => activeEmptyVisibility; private set => SetProperty(ref activeEmptyVisibility, value); }
+    [ObservableProperty]
+    public partial Visibility ActiveEmptyVisibility { get; private set; } = Visibility.Visible;
 
-    public Visibility RecentGamesVisibility { get => recentGamesVisibility; private set => SetProperty(ref recentGamesVisibility, value); }
+    [ObservableProperty]
+    public partial Visibility RecentGamesVisibility { get; private set; } = Visibility.Collapsed;
 
-    public Visibility RecentEmptyVisibility { get => recentEmptyVisibility; private set => SetProperty(ref recentEmptyVisibility, value); }
+    [ObservableProperty]
+    public partial Visibility RecentEmptyVisibility { get; private set; } = Visibility.Visible;
 
-    public string ChartMaximumText { get => chartMaximumText; private set => SetProperty(ref chartMaximumText, value); }
+    [ObservableProperty]
+    public partial string ChartMaximumText { get; private set; } = "2 h";
 
-    public string ChartMiddleText { get => chartMiddleText; private set => SetProperty(ref chartMiddleText, value); }
+    [ObservableProperty]
+    public partial string ChartMiddleText { get; private set; } = "1 h";
 
-    public string ActiveDailyProgressText { get => activeDailyProgressText; private set => SetProperty(ref activeDailyProgressText, value); }
+    [ObservableProperty]
+    public partial string ActiveDailyProgressText { get; private set; } = string.Empty;
 
-    public double ActiveDailyProgressPercent { get => activeDailyProgressPercent; private set => SetProperty(ref activeDailyProgressPercent, value); }
+    [ObservableProperty]
+    public partial double ActiveDailyProgressPercent { get; private set; }
 
-    public string ActiveDailyProgressColor { get => activeDailyProgressColor; private set => SetProperty(ref activeDailyProgressColor, value); }
+    [ObservableProperty]
+    public partial string ActiveDailyProgressColor { get; private set; } = ProgressNormalColor;
 
-    public Visibility ActiveDailyProgressVisibility { get => activeDailyProgressVisibility; private set => SetProperty(ref activeDailyProgressVisibility, value); }
+    [ObservableProperty]
+    public partial Visibility ActiveDailyProgressVisibility { get; private set; } = Visibility.Collapsed;
 
     public ObservableCollection<WeeklyBarViewModel> WeekDays { get; } = [];
 
     public ObservableCollection<RecentGameItemViewModel> RecentGames { get; } = [];
 
-    public IAsyncRelayCommand RefreshCommand { get; }
-
-    public IAsyncRelayCommand ToggleTrackingCommand { get; }
-
+    [RelayCommand]
     public async Task RefreshAsync()
     {
         if (isRefreshing)
@@ -190,6 +185,7 @@ public sealed class DashboardViewModel : ObservableObject
         ActiveElapsedText = TimeFormatter.FormatClock(clock.UtcNow - activeStartedAtUtc.Value);
     }
 
+    [RelayCommand]
     private async Task ToggleTrackingAsync()
     {
         if (trackingService.State.IsPaused)
@@ -455,28 +451,28 @@ public sealed class WeeklyBarViewModel : ObservableObject
     }
 }
 
-public sealed class RecentGameItemViewModel(long gameId) : ObservableObject
+public sealed partial class RecentGameItemViewModel(long gameId) : ObservableObject
 {
     private string name = string.Empty;
-    private string initials = string.Empty;
-    private string? iconPath;
-    private string totalPlaytime = string.Empty;
-    private string lastSession = string.Empty;
-    private string lastSessionBrush = "#B5B1A7";
 
     public long GameId { get; } = gameId;
 
     public string Name { get => name; private set => SetProperty(ref name, value); }
 
-    public string Initials { get => initials; private set => SetProperty(ref initials, value); }
+    [ObservableProperty]
+    public partial string Initials { get; private set; } = string.Empty;
 
-    public string? IconPath { get => iconPath; private set => SetProperty(ref iconPath, value); }
+    [ObservableProperty]
+    public partial string? IconPath { get; private set; }
 
-    public string TotalPlaytime { get => totalPlaytime; private set => SetProperty(ref totalPlaytime, value); }
+    [ObservableProperty]
+    public partial string TotalPlaytime { get; private set; } = string.Empty;
 
-    public string LastSession { get => lastSession; private set => SetProperty(ref lastSession, value); }
+    [ObservableProperty]
+    public partial string LastSession { get; private set; } = string.Empty;
 
-    public string LastSessionBrush { get => lastSessionBrush; private set => SetProperty(ref lastSessionBrush, value); }
+    [ObservableProperty]
+    public partial string LastSessionBrush { get; private set; } = "#B5B1A7";
 
     public void Update(
         string newName,

@@ -19,6 +19,8 @@ internal static partial class LauncherManifestParsers
 
     internal sealed record UninstallCatalog(bool IsLauncherInstalled, IReadOnlyList<UninstallGame> Games);
 
+    internal sealed record HumbleInstallation(string MachineName, string Name, string InstallDirectory, string? ExecutablePath);
+
     /// <summary>
     /// Riot Client: je Spiel ein Windows-Uninstall-Eintrag ("Riot Game valorant.live") mit
     /// <c>RiotClientServices.exe --uninstall-product=valorant --uninstall-patchline=live</c>.
@@ -114,46 +116,41 @@ internal static partial class LauncherManifestParsers
     public static IReadOnlyDictionary<string, int> ParseSteamPlaytimes(string contents)
     {
         var playtimes = new Dictionary<string, int>(StringComparer.Ordinal);
-        var path = new List<string>();
-        string? key = null;
-        foreach (Match token in VdfTokenRegex().Matches(contents))
+        foreach (var (path, key, value) in EnumerateVdfValues(contents))
         {
-            switch (token.Value)
+            if (path.Count >= 3
+                && string.Equals(key, "Playtime", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(path[^2], "apps", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(path[^3], "Steam", StringComparison.OrdinalIgnoreCase)
+                && int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var minutes))
             {
-                case "{":
-                    path.Add(key ?? string.Empty);
-                    key = null;
-                    break;
-                case "}":
-                    if (path.Count > 0)
-                    {
-                        path.RemoveAt(path.Count - 1);
-                    }
-
-                    key = null;
-                    break;
-                default:
-                    if (key is null)
-                    {
-                        key = token.Groups[1].Value;
-                        break;
-                    }
-
-                    if (path.Count >= 3
-                        && string.Equals(key, "Playtime", StringComparison.OrdinalIgnoreCase)
-                        && string.Equals(path[^2], "apps", StringComparison.OrdinalIgnoreCase)
-                        && string.Equals(path[^3], "Steam", StringComparison.OrdinalIgnoreCase)
-                        && int.TryParse(token.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var minutes))
-                    {
-                        playtimes[path[^1]] = minutes;
-                    }
-
-                    key = null;
-                    break;
+                playtimes[path[^1]] = minutes;
             }
         }
 
         return playtimes;
+    }
+
+    /// <summary>
+    /// Liest aus Steams <c>config\loginusers.vdf</c> das Konto mit <c>MostRecent</c> und gibt
+    /// dessen Ordnernamen unter <c>userdata</c> zurück. Die Datei führt SteamID64-Werte,
+    /// der Ordner heißt nach der 32-Bit-Konto-Id in deren unteren Bits.
+    /// </summary>
+    public static string? ParseSteamMostRecentAccountId(string contents)
+    {
+        foreach (var (path, key, value) in EnumerateVdfValues(contents))
+        {
+            if (path.Count == 2
+                && string.Equals(path[0], "users", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(key, "MostRecent", StringComparison.OrdinalIgnoreCase)
+                && value == "1"
+                && ulong.TryParse(path[1], NumberStyles.None, CultureInfo.InvariantCulture, out var steamId64))
+            {
+                return (steamId64 & 0xFFFFFFFF).ToString(CultureInfo.InvariantCulture);
+            }
+        }
+
+        return null;
     }
 
     public static EpicManifest? ParseEpicManifest(string contents)
@@ -237,6 +234,150 @@ internal static partial class LauncherManifestParsers
         return string.IsNullOrWhiteSpace(identityName) || executables.Length == 0
             ? null
             : new XboxManifest(identityName.Trim(), displayName?.Trim(), executables);
+    }
+
+    /// <summary>
+    /// Amazon Games: <c>fuel.json</c> im Spielordner nennt unter <c>Main.Command</c> die
+    /// Start-EXE relativ zum Spielordner. Eine kaputte Datei kostet nur die Start-EXE,
+    /// nicht das Spiel, deshalb liefert sie hier <c>null</c> statt einer Ausnahme.
+    /// </summary>
+    public static string? ParseAmazonLaunchCommand(string contents)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(contents);
+            return document.RootElement.ValueKind == JsonValueKind.Object
+                && document.RootElement.TryGetProperty("Main", out var main)
+                && main.ValueKind == JsonValueKind.Object
+                    ? GetString(main, "Command")
+                    : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// itch.io: Das Urteil (<c>verdict</c>), das butler beim Installieren speichert, nennt die
+    /// startbaren Dateien relativ zu <c>basePath</c>.
+    /// </summary>
+    public static IReadOnlyList<string> ParseItchLaunchPaths(string? verdict, string installDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(verdict))
+        {
+            return [];
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(verdict);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("candidates", out var candidates)
+                || candidates.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            var basePath = GetString(root, "basePath") is { Length: > 0 } path ? path : installDirectory;
+            return candidates.EnumerateArray()
+                .Where(candidate => candidate.ValueKind == JsonValueKind.Object)
+                .Select(candidate => GetString(candidate, "path"))
+                .Where(candidate => !string.IsNullOrWhiteSpace(candidate))
+                .Select(candidate => Path.Combine(basePath, candidate!))
+                .ToArray();
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Humble App: <c>config.json</c> führt unter <c>game-collection-4</c> die ganze Sammlung;
+    /// installiert sind Einträge mit Status <c>downloaded</c> oder <c>installed</c>. Ältere
+    /// App-Versionen legten Spiele ohne <c>filePath</c> unter <c>downloadFilePath\machineName</c> ab.
+    /// </summary>
+    public static IReadOnlyList<HumbleInstallation> ParseHumbleInstallations(string contents)
+    {
+        using var document = JsonDocument.Parse(contents);
+        if (document.RootElement.ValueKind != JsonValueKind.Object
+            || !document.RootElement.TryGetProperty("game-collection-4", out var collection)
+            || collection.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var games = new List<HumbleInstallation>();
+        foreach (var entry in collection.EnumerateArray().Where(entry => entry.ValueKind == JsonValueKind.Object))
+        {
+            var machineName = GetString(entry, "machineName");
+            var name = GetString(entry, "gameName");
+            if (GetString(entry, "status") is not ("downloaded" or "installed")
+                || string.IsNullOrWhiteSpace(machineName)
+                || string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            var installDirectory = GetString(entry, "filePath") is { Length: > 0 } filePath
+                ? filePath
+                : GetString(entry, "downloadFilePath") is { Length: > 0 } downloadPath
+                    ? Path.Combine(downloadPath, machineName)
+                    : null;
+            if (installDirectory is null)
+            {
+                continue;
+            }
+
+            var executable = GetString(entry, "executablePath");
+            games.Add(new HumbleInstallation(
+                machineName,
+                name,
+                installDirectory,
+                string.IsNullOrWhiteSpace(executable) ? null : Path.Combine(installDirectory, executable)));
+        }
+
+        return games;
+    }
+
+    /// <summary>
+    /// Liefert jedes Schlüssel-Wert-Paar einer VDF-Datei mit dem Pfad der umschließenden
+    /// Blöcke. Der Pfad ist nur bis zum nächsten Element gültig.
+    /// </summary>
+    private static IEnumerable<(IReadOnlyList<string> Path, string Key, string Value)> EnumerateVdfValues(string contents)
+    {
+        var path = new List<string>();
+        string? key = null;
+        foreach (Match token in VdfTokenRegex().Matches(contents))
+        {
+            switch (token.Value)
+            {
+                case "{":
+                    path.Add(key ?? string.Empty);
+                    key = null;
+                    break;
+                case "}":
+                    if (path.Count > 0)
+                    {
+                        path.RemoveAt(path.Count - 1);
+                    }
+
+                    key = null;
+                    break;
+                default:
+                    if (key is null)
+                    {
+                        key = token.Groups[1].Value;
+                        break;
+                    }
+
+                    yield return (path, key, token.Groups[1].Value);
+                    key = null;
+                    break;
+            }
+        }
     }
 
     private static string? ReadVdfValue(string contents, string key)

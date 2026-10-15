@@ -11,5 +11,8 @@ public enum GameSource
     Ubisoft = 6,
     EaApp = 7,
     Riot = 8,
-    Rockstar = 9
+    Rockstar = 9,
+    Amazon = 10,
+    Itch = 11,
+    Humble = 12
 }

@@ -27,48 +27,22 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
     private readonly IEaInstallationCatalog eaInstallations;
 
     public WindowsGameInstallationProvider(ILogger<WindowsGameInstallationProvider> logger)
-        : this(
-            logger,
-            new WindowsXboxPackageCatalog(),
-            new WindowsDirectoryLinkResolver(),
-            LocateSteamRoot,
-            new WindowsEaInstallationCatalog())
-    {
-    }
-
-    internal WindowsGameInstallationProvider(
-        ILogger<WindowsGameInstallationProvider> logger,
-        IXboxPackageCatalog xboxPackages)
-        : this(
-            logger,
-            xboxPackages,
-            new WindowsDirectoryLinkResolver(),
-            LocateSteamRoot,
-            new WindowsEaInstallationCatalog())
+        : this(logger, new WindowsXboxPackageCatalog())
     {
     }
 
     internal WindowsGameInstallationProvider(
         ILogger<WindowsGameInstallationProvider> logger,
         IXboxPackageCatalog xboxPackages,
-        IDirectoryLinkResolver directoryLinks,
-        Func<string?> steamRootLocator)
-        : this(logger, xboxPackages, directoryLinks, steamRootLocator, new WindowsEaInstallationCatalog())
-    {
-    }
-
-    internal WindowsGameInstallationProvider(
-        ILogger<WindowsGameInstallationProvider> logger,
-        IXboxPackageCatalog xboxPackages,
-        IDirectoryLinkResolver directoryLinks,
-        Func<string?> steamRootLocator,
-        IEaInstallationCatalog eaInstallations)
+        IDirectoryLinkResolver? directoryLinks = null,
+        Func<string?>? steamRootLocator = null,
+        IEaInstallationCatalog? eaInstallations = null)
     {
         this.logger = logger;
         this.xboxPackages = xboxPackages;
-        this.directoryLinks = directoryLinks;
-        this.steamRootLocator = steamRootLocator;
-        this.eaInstallations = eaInstallations;
+        this.directoryLinks = directoryLinks ?? new WindowsDirectoryLinkResolver();
+        this.steamRootLocator = steamRootLocator ?? LocateSteamRoot;
+        this.eaInstallations = eaInstallations ?? new WindowsEaInstallationCatalog();
     }
 
     public Task<LauncherDiscoveryResult> DiscoverAsync(CancellationToken cancellationToken)
@@ -85,6 +59,9 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
         DiscoverSafely(GameSource.EaApp, () => DiscoverEaApp(games, cancellationToken), sources);
         DiscoverSafely(GameSource.Riot, () => DiscoverUninstallCatalog(games, GameSource.Riot, LauncherManifestParsers.ParseRiotInstallations, cancellationToken), sources);
         DiscoverSafely(GameSource.Rockstar, () => DiscoverUninstallCatalog(games, GameSource.Rockstar, LauncherManifestParsers.ParseRockstarInstallations, cancellationToken), sources);
+        DiscoverSafely(GameSource.Amazon, () => DiscoverAmazon(games, cancellationToken), sources);
+        DiscoverSafely(GameSource.Itch, () => DiscoverItch(games, cancellationToken), sources);
+        DiscoverSafely(GameSource.Humble, () => DiscoverHumble(games, cancellationToken), sources);
 
         // Einige bei Steam oder Epic gekaufte EA- und Rockstar-Spiele registrieren sich zusätzlich bei
         // EA app bzw. Rockstar Games Launcher. In diesem Fall bleibt der eigentliche Store die Quelle
@@ -317,6 +294,79 @@ public sealed class WindowsGameInstallationProvider : IGameInstallationProvider
         }
 
         return foundRoot;
+    }
+
+    private static bool DiscoverAmazon(ICollection<GameInstallationInfo> games, CancellationToken cancellationToken)
+    {
+        var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Amazon Games");
+        var database = Path.Combine(root, "Data", "Games", "Sql", "GameInstallInfo.sqlite");
+        if (!File.Exists(database))
+        {
+            return Directory.Exists(root);
+        }
+
+        foreach (var game in LauncherDatabases.ReadAmazonGames(database))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var fuel = Path.Combine(game.InstallDirectory, "fuel.json");
+            var command = File.Exists(fuel) ? LauncherManifestParsers.ParseAmazonLaunchCommand(File.ReadAllText(fuel)) : null;
+            AddInstallation(
+                games,
+                GameSource.Amazon,
+                game.Id,
+                game.Name,
+                game.InstallDirectory,
+                command is null ? [] : [Path.Combine(game.InstallDirectory, command)]);
+        }
+
+        return true;
+    }
+
+    private static bool DiscoverItch(ICollection<GameInstallationInfo> games, CancellationToken cancellationToken)
+    {
+        var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "itch");
+        var database = Path.Combine(root, "db", "butler.db");
+        if (!File.Exists(database))
+        {
+            return Directory.Exists(root);
+        }
+
+        foreach (var cave in LauncherDatabases.ReadItchCaves(database))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            AddInstallation(
+                games,
+                GameSource.Itch,
+                cave.GameId,
+                cave.Name,
+                cave.InstallDirectory,
+                LauncherManifestParsers.ParseItchLaunchPaths(cave.Verdict, cave.InstallDirectory));
+        }
+
+        return true;
+    }
+
+    private static bool DiscoverHumble(ICollection<GameInstallationInfo> games, CancellationToken cancellationToken)
+    {
+        var config = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Humble App", "config.json");
+        if (!File.Exists(config))
+        {
+            return false;
+        }
+
+        foreach (var game in LauncherManifestParsers.ParseHumbleInstallations(File.ReadAllText(config)))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            AddInstallation(
+                games,
+                GameSource.Humble,
+                game.MachineName,
+                game.Name,
+                game.InstallDirectory,
+                game.ExecutablePath is null ? [] : [game.ExecutablePath]);
+        }
+
+        return true;
     }
 
     private static bool DiscoverBattleNet(ICollection<GameInstallationInfo> games, CancellationToken cancellationToken)

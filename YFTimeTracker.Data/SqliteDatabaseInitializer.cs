@@ -5,17 +5,12 @@ using YFTimeTracker.Core.Models;
 
 namespace YFTimeTracker.Data;
 
-public interface IDatabaseInitializer
-{
-    Task InitializeAsync(CancellationToken cancellationToken);
-}
-
 public sealed class SqliteDatabaseInitializer(
     IDbContextFactory<YFTimeTrackerDbContext> contextFactory,
     IAppPathProvider appPathProvider,
     IBackupService backupService,
     ISettingsStore settings,
-    ILogger<SqliteDatabaseInitializer> logger) : IDatabaseInitializer
+    ILogger<SqliteDatabaseInitializer> logger)
 {
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {

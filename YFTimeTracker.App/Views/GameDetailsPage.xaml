@@ -416,11 +416,11 @@
                                 </Grid>
                                 <Button
                                     HorizontalAlignment="Stretch"
-                                    Command="{Binding ImportSteamPlaytimeCommand}"
+                                    Command="{Binding ImportLauncherPlaytimeCommand}"
                                     Style="{StaticResource YFOutlineButtonStyle}"
-                                    Content="Aus Steam übernehmen"
-                                    ToolTipService.ToolTip="Liest die Spielzeit, die Steam auf diesem PC gespeichert hat, und zieht die hier bereits erfasste Zeit ab."
-                                    Visibility="{Binding SteamImportVisibility}" />
+                                    Content="{Binding LauncherPlaytimeImportText}"
+                                    ToolTipService.ToolTip="Liest die Spielzeit, die der Launcher auf diesem PC gespeichert hat, und zieht die hier bereits erfasste Zeit ab."
+                                    Visibility="{Binding LauncherPlaytimeImportVisibility}" />
                                 <TextBox
                                     Header="Tags"
                                     PlaceholderText="z. B. Shooter, Multiplayer"

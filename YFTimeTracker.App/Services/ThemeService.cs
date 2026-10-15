@@ -4,7 +4,14 @@ using YFTimeTracker.Core.Models;
 
 namespace YFTimeTracker.App.Services;
 
-public sealed class ThemeService(ISettingsStore settings) : IThemeService
+public enum AppThemePreference
+{
+    System,
+    Light,
+    Dark
+}
+
+public sealed class ThemeService(ISettingsStore settings)
 {
     public AppThemePreference CurrentPreference { get; private set; } = AppThemePreference.Dark;
 

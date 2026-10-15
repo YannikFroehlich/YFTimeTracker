@@ -13,7 +13,7 @@ public sealed class PlaytimeLimitNotifier(
     ITrayService trayService,
     INotificationLogRepository notificationLog,
     IClock clock,
-    ILogger<PlaytimeLimitNotifier> logger) : IPlaytimeLimitNotifier
+    ILogger<PlaytimeLimitNotifier> logger) : IDisposable
 {
     // Obergrenze für die errechnete Wartezeit. Sie fängt Fälle ab, in denen die Spielzeit nicht
     // durch die laufende Session wächst, etwa wenn nachträglich eine Session von Hand ergänzt wird.

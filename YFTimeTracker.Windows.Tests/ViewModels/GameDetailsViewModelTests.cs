@@ -249,19 +249,20 @@ public sealed class GameDetailsViewModelTests
         var game = CreateGame();
         var sessions = new FakeSessionRepository([CreateSession(1, game, now.AddHours(-2), now.AddHours(-1))]);
         var catalog = new FakeCatalog(game);
-        var steam = new FakeSteamPlaytimeReader(new Dictionary<string, int> { ["1234"] = 610 });
+        var steam = new FakePlaytimeReader(GameSource.Steam, new Dictionary<string, int> { ["1234"] = 610 });
         var viewModel = new GameDetailsViewModel(
             new FakeGameRepository(game),
             catalog,
             sessions,
             new FakeSessionEditor(sessions, game),
             new FixedClock(now),
-            steamPlaytime: steam);
+            playtimeReaders: [steam]);
 
         await viewModel.LoadAsync(game.Id);
-        Assert.AreEqual(Microsoft.UI.Xaml.Visibility.Visible, viewModel.SteamImportVisibility);
+        Assert.AreEqual(Microsoft.UI.Xaml.Visibility.Visible, viewModel.LauncherPlaytimeImportVisibility);
+        Assert.AreEqual("Aus Steam übernehmen", viewModel.LauncherPlaytimeImportText);
 
-        await viewModel.ImportSteamPlaytimeCommand.ExecuteAsync(null);
+        await viewModel.ImportLauncherPlaytimeCommand.ExecuteAsync(null);
 
         // 10 h 10 min laut Steam, 1 h davon ist schon als Session erfasst.
         Assert.AreEqual(9d, viewModel.BaselinePlaytimeHours);
@@ -272,17 +273,16 @@ public sealed class GameDetailsViewModelTests
         Assert.AreEqual(550, game.BaselinePlaytimeMinutes);
 
         steam.Playtimes.Clear();
-        await viewModel.ImportSteamPlaytimeCommand.ExecuteAsync(null);
+        await viewModel.ImportLauncherPlaytimeCommand.ExecuteAsync(null);
         Assert.AreEqual("Steam hat zu diesem Spiel keine Spielzeit gespeichert.", viewModel.StatusMessage);
         Assert.AreEqual(550, game.BaselinePlaytimeMinutes);
     }
 
     [TestMethod]
-    public async Task Steam_import_is_hidden_for_games_from_other_sources()
+    public async Task Gog_game_imports_from_the_gog_reader()
     {
         var game = CreateGame();
-        game.Source = GameSource.Manual;
-        game.ExternalGameId = null;
+        game.Source = GameSource.Gog;
         var sessions = new FakeSessionRepository([]);
         var viewModel = new GameDetailsViewModel(
             new FakeGameRepository(game),
@@ -290,20 +290,50 @@ public sealed class GameDetailsViewModelTests
             sessions,
             new FakeSessionEditor(sessions, game),
             new FixedClock(DateTimeOffset.Parse("2026-08-31T12:00:00Z")),
-            steamPlaytime: new FakeSteamPlaytimeReader([]));
+            playtimeReaders:
+            [
+                new FakePlaytimeReader(GameSource.Steam, new Dictionary<string, int> { ["1234"] = 999 }),
+                new FakePlaytimeReader(GameSource.Gog, new Dictionary<string, int> { ["1234"] = 125 })
+            ]);
+
+        await viewModel.LoadAsync(game.Id);
+        Assert.AreEqual("Aus GOG Galaxy übernehmen", viewModel.LauncherPlaytimeImportText);
+
+        await viewModel.ImportLauncherPlaytimeCommand.ExecuteAsync(null);
+
+        Assert.AreEqual(2d, viewModel.BaselinePlaytimeHours);
+        Assert.AreEqual(5d, viewModel.BaselinePlaytimeMinutes);
+        StringAssert.StartsWith(viewModel.StatusMessage, "GOG Galaxy meldet");
+    }
+
+    [TestMethod]
+    public async Task Launcher_import_is_hidden_without_a_reader_for_the_source()
+    {
+        var game = CreateGame();
+        game.Source = GameSource.Epic;
+        var sessions = new FakeSessionRepository([]);
+        var viewModel = new GameDetailsViewModel(
+            new FakeGameRepository(game),
+            new FakeCatalog(game),
+            sessions,
+            new FakeSessionEditor(sessions, game),
+            new FixedClock(DateTimeOffset.Parse("2026-08-31T12:00:00Z")),
+            playtimeReaders: [new FakePlaytimeReader(GameSource.Steam, [])]);
 
         await viewModel.LoadAsync(game.Id);
 
-        Assert.AreEqual(Microsoft.UI.Xaml.Visibility.Collapsed, viewModel.SteamImportVisibility);
-        Assert.IsFalse(viewModel.ImportSteamPlaytimeCommand.CanExecute(null));
+        Assert.AreEqual(Microsoft.UI.Xaml.Visibility.Collapsed, viewModel.LauncherPlaytimeImportVisibility);
+        Assert.IsFalse(viewModel.ImportLauncherPlaytimeCommand.CanExecute(null));
     }
 
-    private sealed class FakeSteamPlaytimeReader(Dictionary<string, int> playtimes) : ISteamPlaytimeReader
+    private sealed class FakePlaytimeReader(GameSource source, Dictionary<string, int> playtimes) : ILauncherPlaytimeReader
     {
+        public GameSource Source => source;
+
         public Dictionary<string, int> Playtimes { get; } = playtimes;
 
-        public Task<int?> GetPlaytimeMinutesAsync(string appId, CancellationToken cancellationToken) =>
-            Task.FromResult(Playtimes.TryGetValue(appId, out var minutes) ? minutes : (int?)null);
+        public Task<int?> GetPlaytimeMinutesAsync(string externalGameId, CancellationToken cancellationToken) =>
+            Task.FromResult(Playtimes.TryGetValue(externalGameId, out var minutes) ? minutes : (int?)null);
     }
 
     private static GameDetailsViewModel CreateViewModel(Game game, FakeSessionRepository sessions, DateTimeOffset now)
@@ -384,11 +414,6 @@ public sealed class GameDetailsViewModelTests
     private static DateTimeOffset ToUtc(DateTime local)
     {
         return TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(local, DateTimeKind.Unspecified), TimeZoneInfo.Local);
-    }
-
-    private sealed class FixedClock(DateTimeOffset now) : IClock
-    {
-        public DateTimeOffset UtcNow { get; } = now;
     }
 
     private sealed class FakeCatalog(Game game) : IGameCatalogService

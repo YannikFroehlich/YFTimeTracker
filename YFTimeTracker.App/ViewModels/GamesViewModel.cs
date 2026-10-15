@@ -10,7 +10,7 @@ using YFTimeTracker.Core.Validation;
 
 namespace YFTimeTracker.App.ViewModels;
 
-public sealed class GamesViewModel : ObservableObject
+public sealed partial class GamesViewModel : ObservableObject
 {
     private readonly IGameCatalogService catalog;
     private readonly IGameSessionRepository sessions;
@@ -21,22 +21,11 @@ public sealed class GamesViewModel : ObservableObject
     private readonly IGameIconService? gameIcons;
     private readonly List<GameListItemViewModel> allGames = [];
     private GameListItemViewModel? selectedGame;
-    private GameListItemViewModel? selectedMergeTarget;
-    private SessionListItemViewModel? selectedSession;
     private LibrarySourceFilterOption selectedSourceFilter;
     private LibraryStatusFilterOption selectedStatusFilter;
     private LibrarySortOption selectedSortOption;
     private LibraryTagFilterOption selectedTagFilter;
     private string searchText = string.Empty;
-    private string resultSummary = "0 Spiele";
-    private string emptyStateText = "Noch keine Spiele in der Bibliothek.";
-    private Visibility gamesVisibility = Visibility.Collapsed;
-    private Visibility emptyVisibility = Visibility.Visible;
-    private string displayName = string.Empty;
-    private string executablePath = string.Empty;
-    private string manualStartText = DateTime.Now.AddHours(-1).ToString("g", CultureInfo.CurrentCulture);
-    private string manualEndText = DateTime.Now.ToString("g", CultureInfo.CurrentCulture);
-    private string statusMessage = "Bereit";
     private bool isSyncingGames;
 
     public GamesViewModel(
@@ -68,6 +57,9 @@ public sealed class GamesViewModel : ObservableObject
             new LibrarySourceFilterOption(GameSource.EaApp, "EA app"),
             new LibrarySourceFilterOption(GameSource.Riot, "Riot Client"),
             new LibrarySourceFilterOption(GameSource.Rockstar, "Rockstar"),
+            new LibrarySourceFilterOption(GameSource.Amazon, "Amazon Games"),
+            new LibrarySourceFilterOption(GameSource.Itch, "itch.io"),
+            new LibrarySourceFilterOption(GameSource.Humble, "Humble App"),
             new LibrarySourceFilterOption(GameSource.Manual, "Manuell")
         ];
         selectedSourceFilter = SourceFilters[0];
@@ -88,16 +80,6 @@ public sealed class GamesViewModel : ObservableObject
         selectedSortOption = SortOptions[0];
         selectedTagFilter = TagFilters[0];
 
-        RefreshCommand = new AsyncRelayCommand(RefreshAsync);
-        ClearFiltersCommand = new RelayCommand(ClearFilters);
-        NewGameCommand = new RelayCommand(NewGame);
-        BrowseExecutableCommand = new AsyncRelayCommand(BrowseExecutableAsync);
-        AddOrUpdateGameCommand = new AsyncRelayCommand(AddOrUpdateGameAsync);
-        DeleteSelectedGameCommand = new AsyncRelayCommand(DeleteSelectedGameAsync);
-        MergeSelectedGameCommand = new AsyncRelayCommand(MergeSelectedGameAsync);
-        AddManualSessionCommand = new AsyncRelayCommand(AddManualSessionAsync);
-        DeleteSelectedSessionCommand = new AsyncRelayCommand(DeleteSelectedSessionAsync);
-        TogglePinCommand = new AsyncRelayCommand<long>(TogglePinAsync);
     }
 
     public ObservableCollection<GameListItemViewModel> Games { get; } = [];
@@ -172,29 +154,17 @@ public sealed class GamesViewModel : ObservableObject
         }
     }
 
-    public string ResultSummary
-    {
-        get => resultSummary;
-        private set => SetProperty(ref resultSummary, value);
-    }
+    [ObservableProperty]
+    public partial string ResultSummary { get; private set; } = "0 Spiele";
 
-    public string EmptyStateText
-    {
-        get => emptyStateText;
-        private set => SetProperty(ref emptyStateText, value);
-    }
+    [ObservableProperty]
+    public partial string EmptyStateText { get; private set; } = "Noch keine Spiele in der Bibliothek.";
 
-    public Visibility GamesVisibility
-    {
-        get => gamesVisibility;
-        private set => SetProperty(ref gamesVisibility, value);
-    }
+    [ObservableProperty]
+    public partial Visibility GamesVisibility { get; private set; } = Visibility.Collapsed;
 
-    public Visibility EmptyVisibility
-    {
-        get => emptyVisibility;
-        private set => SetProperty(ref emptyVisibility, value);
-    }
+    [ObservableProperty]
+    public partial Visibility EmptyVisibility { get; private set; } = Visibility.Visible;
 
     public GameListItemViewModel? SelectedGame
     {
@@ -227,76 +197,31 @@ public sealed class GamesViewModel : ObservableObject
 
     public ObservableCollection<GameListItemViewModel> MergeTargets { get; } = [];
 
-    public GameListItemViewModel? SelectedMergeTarget
-    {
-        get => selectedMergeTarget;
-        set
-        {
-            if (SetProperty(ref selectedMergeTarget, value))
-            {
-                OnPropertyChanged(nameof(CanMergeSelectedGame));
-            }
-        }
-    }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanMergeSelectedGame))]
+    public partial GameListItemViewModel? SelectedMergeTarget { get; set; }
 
     public bool CanMergeSelectedGame => SelectedGame is not null && SelectedMergeTarget is not null;
 
-    public SessionListItemViewModel? SelectedSession
-    {
-        get => selectedSession;
-        set => SetProperty(ref selectedSession, value);
-    }
+    [ObservableProperty]
+    public partial SessionListItemViewModel? SelectedSession { get; set; }
 
-    public string DisplayName
-    {
-        get => displayName;
-        set => SetProperty(ref displayName, value);
-    }
+    [ObservableProperty]
+    public partial string DisplayName { get; set; } = string.Empty;
 
-    public string ExecutablePath
-    {
-        get => executablePath;
-        set => SetProperty(ref executablePath, value);
-    }
+    [ObservableProperty]
+    public partial string ExecutablePath { get; set; } = string.Empty;
 
-    public string ManualStartText
-    {
-        get => manualStartText;
-        set => SetProperty(ref manualStartText, value);
-    }
+    [ObservableProperty]
+    public partial string ManualStartText { get; set; } = DateTime.Now.AddHours(-1).ToString("g", CultureInfo.CurrentCulture);
 
-    public string ManualEndText
-    {
-        get => manualEndText;
-        set => SetProperty(ref manualEndText, value);
-    }
+    [ObservableProperty]
+    public partial string ManualEndText { get; set; } = DateTime.Now.ToString("g", CultureInfo.CurrentCulture);
 
-    public string StatusMessage
-    {
-        get => statusMessage;
-        private set => SetProperty(ref statusMessage, value);
-    }
+    [ObservableProperty]
+    public partial string StatusMessage { get; private set; } = "Bereit";
 
-    public IAsyncRelayCommand RefreshCommand { get; }
-
-    public IRelayCommand ClearFiltersCommand { get; }
-
-    public IRelayCommand NewGameCommand { get; }
-
-    public IAsyncRelayCommand BrowseExecutableCommand { get; }
-
-    public IAsyncRelayCommand AddOrUpdateGameCommand { get; }
-
-    public IAsyncRelayCommand DeleteSelectedGameCommand { get; }
-
-    public IAsyncRelayCommand MergeSelectedGameCommand { get; }
-
-    public IAsyncRelayCommand AddManualSessionCommand { get; }
-
-    public IAsyncRelayCommand DeleteSelectedSessionCommand { get; }
-
-    public IAsyncRelayCommand<long> TogglePinCommand { get; }
-
+    [RelayCommand]
     public async Task RefreshAsync()
     {
         try
@@ -443,6 +368,7 @@ public sealed class GamesViewModel : ObservableObject
         EmptyVisibility = Games.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    [RelayCommand]
     private void ClearFilters()
     {
         searchText = string.Empty;
@@ -479,6 +405,7 @@ public sealed class GamesViewModel : ObservableObject
         OnPropertyChanged(nameof(SelectedTagFilter));
     }
 
+    [RelayCommand]
     private async Task TogglePinAsync(long gameId)
     {
         var item = allGames.FirstOrDefault(game => game.Id == gameId);
@@ -503,6 +430,7 @@ public sealed class GamesViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
     private void NewGame()
     {
         SelectedGame = null;
@@ -513,6 +441,7 @@ public sealed class GamesViewModel : ObservableObject
         StatusMessage = "Neues Spiel: Name und EXE-Pfad eingeben.";
     }
 
+    [RelayCommand]
     private async Task BrowseExecutableAsync()
     {
         var path = await filePicker.PickExecutableAsync(CancellationToken.None);
@@ -528,6 +457,7 @@ public sealed class GamesViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
     private async Task AddOrUpdateGameAsync()
     {
         try
@@ -583,6 +513,7 @@ public sealed class GamesViewModel : ObservableObject
         OnPropertyChanged(nameof(CanMergeSelectedGame));
     }
 
+    [RelayCommand]
     private async Task MergeSelectedGameAsync()
     {
         if (SelectedGame is not { } source || SelectedMergeTarget is not { } target)
@@ -611,6 +542,7 @@ public sealed class GamesViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
     private async Task DeleteSelectedGameAsync()
     {
         if (SelectedGame is null)
@@ -626,6 +558,7 @@ public sealed class GamesViewModel : ObservableObject
         StatusMessage = "Spiel gelöscht";
     }
 
+    [RelayCommand]
     private async Task AddManualSessionAsync()
     {
         if (SelectedGame is null)
@@ -653,6 +586,7 @@ public sealed class GamesViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
     private async Task DeleteSelectedSessionAsync()
     {
         if (SelectedSession is null)

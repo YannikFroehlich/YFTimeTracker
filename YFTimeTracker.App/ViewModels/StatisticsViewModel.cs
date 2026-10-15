@@ -12,7 +12,7 @@ using YFTimeTracker.Core.Services;
 
 namespace YFTimeTracker.App.ViewModels;
 
-public sealed class StatisticsViewModel : ObservableObject
+public sealed partial class StatisticsViewModel : ObservableObject
 {
     private static readonly CultureInfo GermanCulture = CultureInfo.GetCultureInfo("de-DE");
     private const string BarColor = "#77736A";
@@ -43,41 +43,6 @@ public sealed class StatisticsViewModel : ObservableObject
     private string? lastExportedFilePath;
     private int refreshVersion;
     private int calendarRefreshVersion;
-    private string periodDescription = "Die letzten 30 Tage";
-    private string totalDurationText = "0 min";
-    private string sessionCountText = "Keine Sessions";
-    private string averageDurationText = "0 min";
-    private string gamesPlayedText = "Keine Spiele";
-    private string comparisonText = "Keine Änderung zur Vorperiode";
-    private string comparisonColor = MutedColor;
-    private string chartMaximumText = "2 h";
-    private string chartMiddleText = "1 h";
-    private double chartMinimumWidth = 560;
-    private string topGameText = "Noch keine Daten";
-    private string topGameDetailText = "Starte ein Spiel, um dein Ranking aufzubauen.";
-    private string favoriteWeekdayText = "Noch keine Daten";
-    private string favoriteWeekdayDetailText = "Dein aktivster Wochentag erscheint hier.";
-    private string longestSessionText = "0 min";
-    private string longestSessionDetailText = "Noch keine abgeschlossene Spielzeit";
-    private string medianDurationText = "0 min";
-    private string preferredTimeOfDayText = "Noch keine Daten";
-    private string preferredTimeOfDayDetailText = "Deine bevorzugte Tageszeit erscheint hier.";
-    private string recordDayText = "Noch keine Daten";
-    private string recordDayDetailText = "Dein spielstärkster Kalendertag erscheint hier.";
-    private string statusMessage = "Statistiken werden aus deinen lokalen Sessions berechnet.";
-    private Visibility dataVisibility = Visibility.Collapsed;
-    private Visibility emptyVisibility = Visibility.Visible;
-    private Visibility tagSharesVisibility = Visibility.Collapsed;
-    private Visibility deviceSharesVisibility = Visibility.Collapsed;
-    private IReadOnlyList<Point> trendLinePoints = [];
-    private IReadOnlyList<Point> trendAreaPoints = [];
-    private string topGameShareText = "–";
-    private bool isExportEnabled;
-    private bool isExportFolderAvailable;
-    private string calendarDescriptionText = "Tägliche Spielzeit im Kalenderjahr";
-    private string calendarSummaryText = "Keine aktiven Tage";
-    private string calendarPeakText = "Noch kein aktivster Tag";
-    private string calendarStreakText = "Noch keine Serie";
     private IReadOnlyList<int> calendarYears;
 
     public StatisticsViewModel(
@@ -104,9 +69,6 @@ public sealed class StatisticsViewModel : ObservableObject
         selectedPeriod = Periods[1];
         selectedCalendarYear = TimeZoneInfo.ConvertTime(clock.UtcNow, TimeZoneInfo.Local).Year;
         calendarYears = [selectedCalendarYear];
-        RefreshCommand = new AsyncRelayCommand(RefreshAsync);
-        ExportCsvCommand = new AsyncRelayCommand(ExportCsvAsync);
-        OpenExportFolderCommand = new RelayCommand(OpenExportFolder);
     }
 
     public IReadOnlyList<StatisticsPeriodOption> Periods { get; }
@@ -123,7 +85,8 @@ public sealed class StatisticsViewModel : ObservableObject
         }
     }
 
-    public string PeriodDescription { get => periodDescription; private set => SetProperty(ref periodDescription, value); }
+    [ObservableProperty]
+    public partial string PeriodDescription { get; private set; } = "Die letzten 30 Tage";
 
     public int SelectedCalendarYear
     {
@@ -137,77 +100,111 @@ public sealed class StatisticsViewModel : ObservableObject
         }
     }
 
-    public string TotalDurationText { get => totalDurationText; private set => SetProperty(ref totalDurationText, value); }
+    [ObservableProperty]
+    public partial string TotalDurationText { get; private set; } = "0 min";
 
-    public string SessionCountText { get => sessionCountText; private set => SetProperty(ref sessionCountText, value); }
+    [ObservableProperty]
+    public partial string SessionCountText { get; private set; } = "Keine Sessions";
 
-    public string AverageDurationText { get => averageDurationText; private set => SetProperty(ref averageDurationText, value); }
+    [ObservableProperty]
+    public partial string AverageDurationText { get; private set; } = "0 min";
 
-    public string GamesPlayedText { get => gamesPlayedText; private set => SetProperty(ref gamesPlayedText, value); }
+    [ObservableProperty]
+    public partial string GamesPlayedText { get; private set; } = "Keine Spiele";
 
-    public string ComparisonText { get => comparisonText; private set => SetProperty(ref comparisonText, value); }
+    [ObservableProperty]
+    public partial string ComparisonText { get; private set; } = "Keine Änderung zur Vorperiode";
 
-    public string ComparisonColor { get => comparisonColor; private set => SetProperty(ref comparisonColor, value); }
+    [ObservableProperty]
+    public partial string ComparisonColor { get; private set; } = MutedColor;
 
-    public string ChartMaximumText { get => chartMaximumText; private set => SetProperty(ref chartMaximumText, value); }
+    [ObservableProperty]
+    public partial string ChartMaximumText { get; private set; } = "2 h";
 
-    public string ChartMiddleText { get => chartMiddleText; private set => SetProperty(ref chartMiddleText, value); }
+    [ObservableProperty]
+    public partial string ChartMiddleText { get; private set; } = "1 h";
 
-    public double ChartMinimumWidth { get => chartMinimumWidth; private set => SetProperty(ref chartMinimumWidth, value); }
+    [ObservableProperty]
+    public partial double ChartMinimumWidth { get; private set; } = 560;
 
-    public string TopGameText { get => topGameText; private set => SetProperty(ref topGameText, value); }
+    [ObservableProperty]
+    public partial string TopGameText { get; private set; } = "Noch keine Daten";
 
-    public string TopGameDetailText { get => topGameDetailText; private set => SetProperty(ref topGameDetailText, value); }
+    [ObservableProperty]
+    public partial string TopGameDetailText { get; private set; } = "Starte ein Spiel, um dein Ranking aufzubauen.";
 
-    public string FavoriteWeekdayText { get => favoriteWeekdayText; private set => SetProperty(ref favoriteWeekdayText, value); }
+    [ObservableProperty]
+    public partial string FavoriteWeekdayText { get; private set; } = "Noch keine Daten";
 
-    public string FavoriteWeekdayDetailText { get => favoriteWeekdayDetailText; private set => SetProperty(ref favoriteWeekdayDetailText, value); }
+    [ObservableProperty]
+    public partial string FavoriteWeekdayDetailText { get; private set; } = "Dein aktivster Wochentag erscheint hier.";
 
-    public string LongestSessionText { get => longestSessionText; private set => SetProperty(ref longestSessionText, value); }
+    [ObservableProperty]
+    public partial string LongestSessionText { get; private set; } = "0 min";
 
-    public string LongestSessionDetailText { get => longestSessionDetailText; private set => SetProperty(ref longestSessionDetailText, value); }
+    [ObservableProperty]
+    public partial string LongestSessionDetailText { get; private set; } = "Noch keine abgeschlossene Spielzeit";
 
-    public string MedianDurationText { get => medianDurationText; private set => SetProperty(ref medianDurationText, value); }
+    [ObservableProperty]
+    public partial string MedianDurationText { get; private set; } = "0 min";
 
-    public string PreferredTimeOfDayText { get => preferredTimeOfDayText; private set => SetProperty(ref preferredTimeOfDayText, value); }
+    [ObservableProperty]
+    public partial string PreferredTimeOfDayText { get; private set; } = "Noch keine Daten";
 
-    public string PreferredTimeOfDayDetailText { get => preferredTimeOfDayDetailText; private set => SetProperty(ref preferredTimeOfDayDetailText, value); }
+    [ObservableProperty]
+    public partial string PreferredTimeOfDayDetailText { get; private set; } = "Deine bevorzugte Tageszeit erscheint hier.";
 
-    public string RecordDayText { get => recordDayText; private set => SetProperty(ref recordDayText, value); }
+    [ObservableProperty]
+    public partial string RecordDayText { get; private set; } = "Noch keine Daten";
 
-    public string RecordDayDetailText { get => recordDayDetailText; private set => SetProperty(ref recordDayDetailText, value); }
+    [ObservableProperty]
+    public partial string RecordDayDetailText { get; private set; } = "Dein spielstärkster Kalendertag erscheint hier.";
 
-    public string StatusMessage { get => statusMessage; private set => SetProperty(ref statusMessage, value); }
+    [ObservableProperty]
+    public partial string StatusMessage { get; private set; } = "Statistiken werden aus deinen lokalen Sessions berechnet.";
 
-    public Visibility DataVisibility { get => dataVisibility; private set => SetProperty(ref dataVisibility, value); }
+    [ObservableProperty]
+    public partial Visibility DataVisibility { get; private set; } = Visibility.Collapsed;
 
-    public Visibility EmptyVisibility { get => emptyVisibility; private set => SetProperty(ref emptyVisibility, value); }
+    [ObservableProperty]
+    public partial Visibility EmptyVisibility { get; private set; } = Visibility.Visible;
 
-    public Visibility TagSharesVisibility { get => tagSharesVisibility; private set => SetProperty(ref tagSharesVisibility, value); }
+    [ObservableProperty]
+    public partial Visibility TagSharesVisibility { get; private set; } = Visibility.Collapsed;
 
     /// <summary>
     /// Nur sichtbar, wenn im Zeitraum Spielzeit von mehr als einem Geraet
     /// vorliegt - auf einem einzelnen PC waere der Ring eine Vollkreis-Aussage.
     /// </summary>
-    public Visibility DeviceSharesVisibility { get => deviceSharesVisibility; private set => SetProperty(ref deviceSharesVisibility, value); }
+    [ObservableProperty]
+    public partial Visibility DeviceSharesVisibility { get; private set; } = Visibility.Collapsed;
 
-    public IReadOnlyList<Point> TrendLinePoints { get => trendLinePoints; private set => SetProperty(ref trendLinePoints, value); }
+    [ObservableProperty]
+    public partial IReadOnlyList<Point> TrendLinePoints { get; private set; } = [];
 
-    public IReadOnlyList<Point> TrendAreaPoints { get => trendAreaPoints; private set => SetProperty(ref trendAreaPoints, value); }
+    [ObservableProperty]
+    public partial IReadOnlyList<Point> TrendAreaPoints { get; private set; } = [];
 
-    public string TopGameShareText { get => topGameShareText; private set => SetProperty(ref topGameShareText, value); }
+    [ObservableProperty]
+    public partial string TopGameShareText { get; private set; } = "–";
 
-    public bool IsExportEnabled { get => isExportEnabled; private set => SetProperty(ref isExportEnabled, value); }
+    [ObservableProperty]
+    public partial bool IsExportEnabled { get; private set; }
 
-    public bool IsExportFolderAvailable { get => isExportFolderAvailable; private set => SetProperty(ref isExportFolderAvailable, value); }
+    [ObservableProperty]
+    public partial bool IsExportFolderAvailable { get; private set; }
 
-    public string CalendarDescriptionText { get => calendarDescriptionText; private set => SetProperty(ref calendarDescriptionText, value); }
+    [ObservableProperty]
+    public partial string CalendarDescriptionText { get; private set; } = "Tägliche Spielzeit im Kalenderjahr";
 
-    public string CalendarSummaryText { get => calendarSummaryText; private set => SetProperty(ref calendarSummaryText, value); }
+    [ObservableProperty]
+    public partial string CalendarSummaryText { get; private set; } = "Keine aktiven Tage";
 
-    public string CalendarPeakText { get => calendarPeakText; private set => SetProperty(ref calendarPeakText, value); }
+    [ObservableProperty]
+    public partial string CalendarPeakText { get; private set; } = "Noch kein aktivster Tag";
 
-    public string CalendarStreakText { get => calendarStreakText; private set => SetProperty(ref calendarStreakText, value); }
+    [ObservableProperty]
+    public partial string CalendarStreakText { get; private set; } = "Noch keine Serie";
 
     public ObservableCollection<StatisticsTrendPointViewModel> Timeline { get; } = [];
 
@@ -231,12 +228,7 @@ public sealed class StatisticsViewModel : ObservableObject
 
     public IReadOnlyList<int> CalendarYears { get => calendarYears; private set => SetProperty(ref calendarYears, value); }
 
-    public IAsyncRelayCommand RefreshCommand { get; }
-
-    public IAsyncRelayCommand ExportCsvCommand { get; }
-
-    public IRelayCommand OpenExportFolderCommand { get; }
-
+    [RelayCommand]
     public async Task RefreshAsync()
     {
         var requestedVersion = Interlocked.Increment(ref refreshVersion);
@@ -306,6 +298,7 @@ public sealed class StatisticsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
     private async Task ExportCsvAsync()
     {
         if (lastReport is not { Games.Count: > 0 } report)
@@ -332,6 +325,7 @@ public sealed class StatisticsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
     private void OpenExportFolder()
     {
         if (lastExportedFilePath is not null)
@@ -353,7 +347,7 @@ public sealed class StatisticsViewModel : ObservableObject
             builder.AppendLine(string.Join(';',
                 (index + 1).ToString(GermanCulture),
                 CsvField(game.Name),
-                CsvField(FormatSource(game.Source)),
+                CsvField(GameSourceNames.Label(game.Source)),
                 CsvField(TimeFormatter.Format(game.Duration)),
                 game.Duration.TotalHours.ToString("0.00", GermanCulture),
                 share.ToString("0.0", GermanCulture),
@@ -471,7 +465,7 @@ public sealed class StatisticsViewModel : ObservableObject
                 $"{index + 1}",
                 game.Name,
                 GetInitials(game.Name),
-                FormatSource(game.Source),
+                GameSourceNames.Label(game.Source),
                 TimeFormatter.Format(game.Duration),
                 $"{share:0.#} %",
                 FormatCount(game.SessionCount, "Session", "Sessions", "Keine Sessions"),
@@ -919,20 +913,6 @@ public sealed class StatisticsViewModel : ObservableObject
     {
         return count == 0 ? empty : $"{count} {(count == 1 ? singular : plural)}";
     }
-
-    private static string FormatSource(GameSource source) => source switch
-    {
-        GameSource.Steam => "STEAM",
-        GameSource.Epic => "EPIC",
-        GameSource.Gog => "GOG",
-        GameSource.Xbox => "XBOX",
-        GameSource.BattleNet => "BATTLE.NET",
-        GameSource.Ubisoft => "UBISOFT",
-        GameSource.EaApp => "EA APP",
-        GameSource.Riot => "RIOT",
-        GameSource.Rockstar => "ROCKSTAR",
-        _ => "MANUELL"
-    };
 
     private static string GetInitials(string name)
     {

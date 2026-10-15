@@ -237,11 +237,6 @@ public sealed class StatisticsViewModelTests
             devices ?? []);
     }
 
-    private sealed class FixedClock(DateTimeOffset now) : IClock
-    {
-        public DateTimeOffset UtcNow { get; } = now;
-    }
-
     private sealed class FakeStatisticsService(PlaytimeStatistics report) : IPlaytimeStatisticsService
     {
         public Task<DashboardStats> GetDashboardStatsAsync(TimeZoneInfo localTimeZone, CancellationToken cancellationToken) =>

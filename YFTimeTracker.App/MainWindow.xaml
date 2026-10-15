@@ -268,6 +268,9 @@
                                                 <ComboBoxItem Content="EA app" Tag="EaApp" />
                                                 <ComboBoxItem Content="Riot Client" Tag="Riot" />
                                                 <ComboBoxItem Content="Rockstar Games Launcher" Tag="Rockstar" />
+                                                <ComboBoxItem Content="Amazon Games" Tag="Amazon" />
+                                                <ComboBoxItem Content="itch.io" Tag="Itch" />
+                                                <ComboBoxItem Content="Humble App" Tag="Humble" />
                                             </ComboBox>
                                         </StackPanel>
                                         <StackPanel Spacing="5">

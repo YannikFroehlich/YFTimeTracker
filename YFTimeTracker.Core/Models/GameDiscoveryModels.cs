@@ -36,6 +36,9 @@ public sealed record LauncherDiscoveryResult(
             [GameSource.Ubisoft] = LauncherAvailability.NotInstalled,
             [GameSource.EaApp] = LauncherAvailability.NotInstalled,
             [GameSource.Riot] = LauncherAvailability.NotInstalled,
-            [GameSource.Rockstar] = LauncherAvailability.NotInstalled
+            [GameSource.Rockstar] = LauncherAvailability.NotInstalled,
+            [GameSource.Amazon] = LauncherAvailability.NotInstalled,
+            [GameSource.Itch] = LauncherAvailability.NotInstalled,
+            [GameSource.Humble] = LauncherAvailability.NotInstalled
         });
 }

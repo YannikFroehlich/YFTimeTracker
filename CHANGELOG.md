@@ -2,6 +2,13 @@
 
 Änderungen an YFTimeTracker aus Nutzersicht. Der jeweils oberste Abschnitt wird der App einmalig beim ersten Start nach einem Update als "Was ist neu"-Dialog angezeigt.
 
+## 1.14.0 – 2026-10-15
+- Neu: Amazon Games, itch.io und die Humble App werden erkannt. Darüber installierte Spiele landen beim ersten Start automatisch in der Bibliothek – wie bei den anderen Launchern rein lokal und ohne Anmeldung. Unter **Einstellungen → Tracking** steht, ob die drei Launcher gefunden wurden.
+- Neu: Bei GOG-Spielen füllt „Aus GOG Galaxy übernehmen“ in den Spieldetails die Basis-Spielzeit mit der Spielzeit, die GOG Galaxy auf diesem PC gespeichert hat. Wie bei Steam wird bereits hier erfasste Zeit abgezogen, und übernommen wird der Wert erst mit „Speichern“.
+- Behoben: Sind auf einem PC mehrere Steam-Konten angemeldet gewesen, konnte „Aus Steam übernehmen“ die Spielzeit eines anderen Kontos lesen. Jetzt zählt das zuletzt angemeldete Konto.
+- Verbessert: Aktuelle Versionen der Datenbank- und Laufzeitbibliotheken.
+- Hinweis: Wer den Kontoabgleich auf mehreren PCs nutzt, aktualisiert am besten alle zeitnah. Ältere Versionen zeigen Amazon-, itch.io- und Humble-Spiele als „Manuell“ an.
+
 ## 1.13.0 – 2026-10-11
 - Neu: Neues App-Icon im Design der App und der Website – eine Stoppuhr mit YF-Monogramm und orangenem Zeitbogen statt des bisherigen blauen Logos. Es erscheint in Taskleiste, Startmenü, Infobereich und auf der Website.
 - Verbessert: Der Statuspunkt am Symbol im Infobereich (Tracking läuft oder pausiert) ist kleiner und verdeckt das Logo nicht mehr.
