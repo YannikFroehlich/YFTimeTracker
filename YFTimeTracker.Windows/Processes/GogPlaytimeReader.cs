@@ -40,7 +40,8 @@ public sealed class GogPlaytimeReader : ILauncherPlaytimeReader
             await using var connection = LauncherDatabases.OpenReadOnly(databasePath);
             await using var command = connection.CreateCommand();
             // ponytail: kein Filter auf userId. Nutzen mehrere GOG-Konten denselben PC,
-            // gilt der höchste Wert; genauer wäre das Konto aus der Tabelle Users.
+            // gilt der höchste Wert. Galaxy markiert das angemeldete Konto nirgends
+            // (Users führt nur id); denkbar wäre das zuletzt aktive aus LastPlayedDates.
             command.CommandText = "SELECT MAX(minutesInGame) FROM GameTimes WHERE releaseKey = $releaseKey";
             command.Parameters.AddWithValue("$releaseKey", "gog_" + productId);
             var result = await command.ExecuteScalarAsync(cancellationToken);
