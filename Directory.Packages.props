@@ -23,6 +23,6 @@
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="System.Security.Permissions" Version="10.0.14" />
     <PackageVersion Include="Velopack" Version="1.2.161" />
-    <PackageVersion Include="coverlet.collector" Version="10.1.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.1.1" />
   </ItemGroup>
 </Project>
