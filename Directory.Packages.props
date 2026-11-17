@@ -21,7 +21,7 @@
     <PackageVersion Include="Serilog.Extensions.Hosting" Version="10.0.0" />
     <PackageVersion Include="Serilog.Extensions.Logging" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageVersion Include="System.Security.Permissions" Version="10.0.15" />
+    <PackageVersion Include="System.Security.Permissions" Version="11.0.0" />
     <PackageVersion Include="Velopack" Version="1.2.161" />
     <PackageVersion Include="coverlet.collector" Version="10.1.1" />
   </ItemGroup>
