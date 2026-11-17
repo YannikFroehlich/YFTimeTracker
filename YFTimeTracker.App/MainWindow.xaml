@@ -384,6 +384,7 @@
                                                                 Click="DeleteNotification_Click"
                                                                 PointerPressed="DeleteNotification_PointerPressed"
                                                                 Tag="{x:Bind Id}"
+                                                                AutomationProperties.Name="Benachrichtigung löschen"
                                                                 ToolTipService.ToolTip="Benachrichtigung löschen">
                                                                 <FontIcon FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Glyph="&#xE711;" />
                                                             </Button>

@@ -151,7 +151,7 @@
                         SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}" />
                     <StackPanel x:Name="FilterButtons" Grid.Column="3" Orientation="Horizontal" Spacing="6">
                         <Button Command="{Binding ClearFiltersCommand}" Style="{StaticResource YFOutlineButtonStyle}" Content="Zurücksetzen" />
-                        <Button Width="42" Command="{Binding RefreshCommand}" Style="{StaticResource YFIconButtonStyle}" ToolTipService.ToolTip="Sessions aktualisieren">
+                        <Button Width="42" Command="{Binding RefreshCommand}" Style="{StaticResource YFIconButtonStyle}" AutomationProperties.Name="Sessions aktualisieren" ToolTipService.ToolTip="Sessions aktualisieren">
                             <FontIcon FontSize="13" Glyph="&#xE72C;" />
                         </Button>
                     </StackPanel>

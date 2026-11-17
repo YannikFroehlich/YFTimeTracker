@@ -23,7 +23,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Button Width="42" Height="42" Click="BackToLibrary_Click" Style="{StaticResource YFIconButtonStyle}" ToolTipService.ToolTip="Zurück zur Bibliothek">
+                <Button Width="42" Height="42" Click="BackToLibrary_Click" Style="{StaticResource YFIconButtonStyle}" AutomationProperties.Name="Zurück zur Bibliothek" ToolTipService.ToolTip="Zurück zur Bibliothek">
                     <FontIcon FontSize="16" Glyph="&#xE72B;" />
                 </Button>
                 <StackPanel Grid.Column="1">

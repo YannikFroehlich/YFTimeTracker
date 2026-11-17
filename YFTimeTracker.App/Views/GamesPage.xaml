@@ -133,6 +133,7 @@
                                     Height="34"
                                     Command="{Binding RefreshCommand}"
                                     Style="{StaticResource YFIconButtonStyle}"
+                                    AutomationProperties.Name="Bibliothek aktualisieren"
                                     ToolTipService.ToolTip="Bibliothek aktualisieren">
                                     <FontIcon FontSize="13" Glyph="&#xE72C;" />
                                 </Button>
@@ -225,6 +226,7 @@
                                             Style="{StaticResource YFIconButtonStyle}"
                                             Tag="{Binding Id}"
                                             ToolTipService.Placement="Left"
+                                            AutomationProperties.Name="{Binding PinTooltip}"
                                             ToolTipService.ToolTip="{Binding PinTooltip}">
                                             <FontIcon FontSize="13" Glyph="{Binding PinGlyph}" />
                                         </Button>
@@ -236,6 +238,7 @@
                                             Click="OpenGameDetails_Click"
                                             Style="{StaticResource YFIconButtonStyle}"
                                             Tag="{Binding Id}"
+                                            AutomationProperties.Name="Spieldetails öffnen"
                                             ToolTipService.ToolTip="Spieldetails öffnen">
                                             <FontIcon FontSize="13" Glyph="&#xE76C;" />
                                         </Button>

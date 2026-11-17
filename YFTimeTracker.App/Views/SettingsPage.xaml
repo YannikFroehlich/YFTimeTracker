@@ -277,7 +277,7 @@
                                             <TextBlock HorizontalAlignment="Center" FontSize="9" FontWeight="SemiBold" Foreground="{ThemeResource YFWarningTextBrush}" Text="{Binding KindText}" />
                                         </Border>
                                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontFamily="{StaticResource YFMonoFontFamily}" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding Path}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Path}" />
-                                        <Button Grid.Column="2" Width="34" Height="34" Click="RemoveTrackingExclusion_Click" Style="{StaticResource YFIconButtonStyle}" Tag="{Binding Id}" ToolTipService.ToolTip="Ausschluss entfernen">
+                                        <Button Grid.Column="2" Width="34" Height="34" Click="RemoveTrackingExclusion_Click" Style="{StaticResource YFIconButtonStyle}" Tag="{Binding Id}" AutomationProperties.Name="Ausschluss entfernen" ToolTipService.ToolTip="Ausschluss entfernen">
                                             <FontIcon FontSize="13" Glyph="&#xE74D;" />
                                         </Button>
                                     </Grid>
