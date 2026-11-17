@@ -44,7 +44,7 @@
                         DisplayMemberPath="Label"
                         ItemsSource="{Binding Years}"
                         SelectedItem="{Binding SelectedYear, Mode=TwoWay}" />
-                    <Button Command="{Binding RefreshCommand}" Style="{StaticResource YFOutlineButtonStyle}">
+                    <Button AutomationProperties.Name="Aktualisieren" Command="{Binding RefreshCommand}" Style="{StaticResource YFOutlineButtonStyle}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon FontSize="13" Glyph="&#xE72C;" />
                             <TextBlock Text="Aktualisieren" />
@@ -52,6 +52,7 @@
                     </Button>
                     <Button
                         x:Name="ShareButton"
+                        AutomationProperties.Name="Als Bild teilen"
                         Click="ShareButton_Click"
                         IsEnabled="{Binding IsShareEnabled}"
                         Style="{StaticResource YFOutlineButtonStyle}">
@@ -324,6 +325,7 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{ThemeResource YFMutedBrush}" Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis" />
                     <Button
+                        AutomationProperties.Name="Ordner öffnen"
                         Grid.Column="1"
                         Padding="10,6"
                         Command="{Binding OpenExportFolderCommand}"

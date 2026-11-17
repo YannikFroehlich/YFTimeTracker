@@ -35,13 +35,13 @@
                     VerticalAlignment="Center"
                     Orientation="Horizontal"
                     Spacing="9">
-                    <Button Command="{Binding ExportCsvCommand}" IsEnabled="{Binding IsExportEnabled}" Style="{StaticResource YFOutlineButtonStyle}">
+                    <Button AutomationProperties.Name="Als CSV exportieren" Command="{Binding ExportCsvCommand}" IsEnabled="{Binding IsExportEnabled}" Style="{StaticResource YFOutlineButtonStyle}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon FontSize="13" Glyph="&#xE896;" />
                             <TextBlock Text="Als CSV exportieren" />
                         </StackPanel>
                     </Button>
-                    <Button Command="{Binding NewSessionCommand}" Style="{StaticResource YFAccentButtonStyle}">
+                    <Button AutomationProperties.Name="Session hinzufügen" Command="{Binding NewSessionCommand}" Style="{StaticResource YFAccentButtonStyle}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon FontSize="13" Glyph="&#xE710;" />
                             <TextBlock Text="Session hinzufügen" />
@@ -357,6 +357,7 @@
                         <TextBlock Grid.Column="1" Style="{StaticResource YFMutedTextStyle}" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
                     </Grid>
                     <Button
+                        AutomationProperties.Name="Ordner öffnen"
                         Grid.Column="1"
                         Padding="10,6"
                         Command="{Binding OpenExportFolderCommand}"

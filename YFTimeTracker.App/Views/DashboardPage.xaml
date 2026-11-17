@@ -31,6 +31,7 @@
                     <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Deine Spielzeit auf einen Blick" TextWrapping="Wrap" />
                 </StackPanel>
                 <Button
+                    AutomationProperties.Name="Aktualisieren"
                     Grid.Column="1"
                     VerticalAlignment="Center"
                     Command="{Binding RefreshCommand}"

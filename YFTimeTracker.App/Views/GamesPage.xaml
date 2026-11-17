@@ -28,6 +28,7 @@
                     <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Verwalte Spiele und korrigiere aufgezeichnete Sessions" TextWrapping="Wrap" />
                 </StackPanel>
                 <Button
+                    AutomationProperties.Name="Neues Spiel"
                     Grid.Column="1"
                     VerticalAlignment="Center"
                     Command="{Binding NewGameCommand}"

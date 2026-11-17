@@ -215,6 +215,7 @@
                         </Border>
 
                         <Button
+                            AutomationProperties.Name="Einrichtungs-Assistent erneut öffnen"
                             HorizontalAlignment="Stretch"
                             Click="OpenSetupAssistant_Click"
                             Style="{StaticResource YFOutlineButtonStyle}">
@@ -243,13 +244,13 @@
                         </Grid>
 
                         <StackPanel x:Name="ExclusionActions" Orientation="Horizontal" Spacing="10">
-                            <Button Command="{Binding AddExecutableExclusionCommand}" Style="{StaticResource YFOutlineButtonStyle}">
+                            <Button AutomationProperties.Name="EXE ausschließen" Command="{Binding AddExecutableExclusionCommand}" Style="{StaticResource YFOutlineButtonStyle}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon FontSize="13" Glyph="&#xE8B7;" />
                                     <TextBlock Text="EXE ausschließen" />
                                 </StackPanel>
                             </Button>
-                            <Button Command="{Binding AddDirectoryExclusionCommand}" Style="{StaticResource YFOutlineButtonStyle}">
+                            <Button AutomationProperties.Name="Ordner ausschließen" Command="{Binding AddDirectoryExclusionCommand}" Style="{StaticResource YFOutlineButtonStyle}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon FontSize="13" Glyph="&#xE8B7;" />
                                     <TextBlock Text="Ordner ausschließen" />
@@ -319,13 +320,13 @@
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="10">
-                                <Button HorizontalAlignment="Stretch" Command="{Binding ExportCommand}" Style="{StaticResource YFAccentButtonStyle}">
+                                <Button AutomationProperties.Name="Daten exportieren" HorizontalAlignment="Stretch" Command="{Binding ExportCommand}" Style="{StaticResource YFAccentButtonStyle}">
                                     <StackPanel Orientation="Horizontal" Spacing="9">
                                         <FontIcon FontSize="14" Glyph="&#xE74E;" />
                                         <TextBlock Text="Daten exportieren" />
                                     </StackPanel>
                                 </Button>
-                                <Button HorizontalAlignment="Stretch" Click="ImportBackup_Click" Style="{StaticResource YFOutlineButtonStyle}">
+                                <Button AutomationProperties.Name="Sicherung importieren" HorizontalAlignment="Stretch" Click="ImportBackup_Click" Style="{StaticResource YFOutlineButtonStyle}">
                                     <StackPanel Orientation="Horizontal" Spacing="9">
                                         <FontIcon FontSize="14" Glyph="&#xE8B5;" />
                                         <TextBlock Text="Sicherung importieren" />
@@ -389,7 +390,7 @@
                                     Style="{StaticResource YFMutedTextStyle}"
                                     Text="{Binding ExternalBackupFolderPathDisplay}"
                                     TextTrimming="CharacterEllipsis" />
-                                <Button Grid.Column="1" Command="{Binding ChooseBackupFolderCommand}" Style="{StaticResource YFOutlineButtonStyle}">
+                                <Button AutomationProperties.Name="Ordner wählen" Grid.Column="1" Command="{Binding ChooseBackupFolderCommand}" Style="{StaticResource YFOutlineButtonStyle}">
                                     <StackPanel Orientation="Horizontal" Spacing="9">
                                         <FontIcon FontSize="14" Glyph="&#xE8B7;" />
                                         <TextBlock Text="Ordner wählen" />
@@ -407,7 +408,7 @@
                                     Style="{StaticResource YFMutedTextStyle}"
                                     Text="{Binding CloudBackupHintText}"
                                     TextWrapping="Wrap" />
-                                <Button Grid.Column="1" Command="{Binding DownloadCloudBackupsCommand}" Style="{StaticResource YFOutlineButtonStyle}">
+                                <Button AutomationProperties.Name="Aus Konto laden" Grid.Column="1" Command="{Binding DownloadCloudBackupsCommand}" Style="{StaticResource YFOutlineButtonStyle}">
                                     <StackPanel Orientation="Horizontal" Spacing="9">
                                         <FontIcon FontSize="14" Glyph="&#xE896;" />
                                         <TextBlock Text="Aus Konto laden" />
@@ -466,6 +467,7 @@
                             </ListView>
 
                             <Button
+                                AutomationProperties.Name="Ausgewählte Sicherung wiederherstellen"
                                 Click="RestoreBackup_Click"
                                 IsEnabled="{Binding CanRestoreSelectedBackup}"
                                 Style="{StaticResource YFOutlineButtonStyle}">
@@ -514,6 +516,7 @@
 
                             <StackPanel Grid.Column="1" MinWidth="210" VerticalAlignment="Center" Spacing="10">
                                 <Button
+                                    AutomationProperties.Name="Auf Updates prüfen"
                                     HorizontalAlignment="Stretch"
                                     Click="CheckForUpdates_Click"
                                     IsEnabled="{Binding CanCheckForUpdates}"
@@ -524,6 +527,7 @@
                                     </StackPanel>
                                 </Button>
                                 <Button
+                                    AutomationProperties.Name="Update installieren"
                                     HorizontalAlignment="Stretch"
                                     Click="InstallUpdate_Click"
                                     Style="{StaticResource YFAccentButtonStyle}"
@@ -588,13 +592,13 @@
                             </StackPanel>
 
                             <StackPanel x:Name="DiagnosticsActions" Grid.Column="1" MinWidth="235" VerticalAlignment="Center" Spacing="10">
-                                <Button HorizontalAlignment="Stretch" Command="{Binding OpenLogDirectoryCommand}" Style="{StaticResource YFOutlineButtonStyle}">
+                                <Button AutomationProperties.Name="Logordner öffnen" HorizontalAlignment="Stretch" Command="{Binding OpenLogDirectoryCommand}" Style="{StaticResource YFOutlineButtonStyle}">
                                     <StackPanel Orientation="Horizontal" Spacing="9">
                                         <FontIcon FontSize="14" Glyph="&#xED25;" />
                                         <TextBlock Text="Logordner öffnen" />
                                     </StackPanel>
                                 </Button>
-                                <Button HorizontalAlignment="Stretch" Command="{Binding ExportDiagnosticsCommand}" Style="{StaticResource YFAccentButtonStyle}">
+                                <Button AutomationProperties.Name="Diagnosebericht exportieren" HorizontalAlignment="Stretch" Command="{Binding ExportDiagnosticsCommand}" Style="{StaticResource YFAccentButtonStyle}">
                                     <StackPanel Orientation="Horizontal" Spacing="9">
                                         <FontIcon FontSize="14" Glyph="&#xE74E;" />
                                         <TextBlock Text="Diagnosebericht exportieren" />
@@ -616,6 +620,7 @@
                                 <TextBlock Margin="0,4,0,0" Style="{StaticResource YFMutedTextStyle}" Text="{Binding TrackingDiagnosticsSummaryText}" TextWrapping="Wrap" />
                             </StackPanel>
                             <Button
+                                AutomationProperties.Name="Liste leeren"
                                 Grid.Column="1"
                                 Padding="10,6"
                                 Command="{Binding ClearTrackingDiagnosticsCommand}"
@@ -685,6 +690,7 @@
                     </Grid>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                         <Button
+                            AutomationProperties.Name="Ordner öffnen"
                             Padding="10,6"
                             Command="{Binding OpenExportFolderCommand}"
                             IsEnabled="{Binding IsExportFolderAvailable}"

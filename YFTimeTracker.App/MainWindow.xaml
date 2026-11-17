@@ -311,6 +311,7 @@
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16">
                         <Grid Width="42" Height="42">
                             <Button
+                                AutomationProperties.Name="Benachrichtigungen"
                                 Width="42"
                                 Height="42"
                                 Padding="0"
@@ -330,6 +331,7 @@
                                                 <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold" Text="Benachrichtigungen" />
                                                 <Button
                                                     x:Name="ClearAllNotificationsButton"
+                                                    AutomationProperties.Name="Alle löschen"
                                                     Grid.Column="1"
                                                     Padding="10,4"
                                                     Click="ClearAllNotifications_Click"
@@ -412,6 +414,7 @@
                                 Visibility="Collapsed" />
                         </Grid>
                         <Button
+                            AutomationProperties.Name="Profil bearbeiten"
                             Padding="6,4,12,4"
                             Background="{ThemeResource YFOutlineButtonBackgroundBrush}"
                             BorderBrush="{ThemeResource YFStrokeBrush}"
