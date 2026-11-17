@@ -135,6 +135,7 @@
                         Style="{StaticResource YFTextBoxStyle}"
                         Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     <ComboBox
+                        AutomationProperties.Name="Spiel filtern"
                         x:Name="GameFilterBox"
                         Grid.Column="1"
                         HorizontalAlignment="Stretch"
@@ -143,6 +144,7 @@
                         PlaceholderText="Alle Spiele"
                         SelectedItem="{Binding SelectedGameFilter, Mode=TwoWay}" />
                     <ComboBox
+                        AutomationProperties.Name="Zeitraum"
                         x:Name="PeriodFilterBox"
                         Grid.Column="2"
                         HorizontalAlignment="Stretch"
@@ -183,6 +185,7 @@
                             </StackPanel>
                             <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Orientation="Horizontal" Spacing="9">
                                 <ComboBox
+                                    AutomationProperties.Name="Gerät filtern"
                                     x:Name="DeviceFilterBox"
                                     MinWidth="170"
                                     DisplayMemberPath="Name"
@@ -290,10 +293,12 @@
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
                                 <DatePicker
+                                    AutomationProperties.Name="Startdatum"
                                     HorizontalAlignment="Stretch"
                                     Date="{Binding EditorStartDate, Mode=TwoWay}"
                                     IsEnabled="{Binding EditorFieldsEnabled}" />
                                 <TimePicker
+                                    AutomationProperties.Name="Startzeit"
                                     Grid.Row="1"
                                     HorizontalAlignment="Stretch"
                                     ClockIdentifier="24HourClock"
@@ -311,10 +316,12 @@
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
                                 <DatePicker
+                                    AutomationProperties.Name="Enddatum"
                                     HorizontalAlignment="Stretch"
                                     Date="{Binding EditorEndDate, Mode=TwoWay}"
                                     IsEnabled="{Binding EditorFieldsEnabled}" />
                                 <TimePicker
+                                    AutomationProperties.Name="Endzeit"
                                     Grid.Row="1"
                                     HorizontalAlignment="Stretch"
                                     ClockIdentifier="24HourClock"

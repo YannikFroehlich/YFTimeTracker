@@ -65,6 +65,7 @@
                         Style="{StaticResource YFTextBoxStyle}"
                         Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     <ComboBox
+                        AutomationProperties.Name="Launcher filtern"
                         x:Name="SourceFilterBox"
                         Grid.Column="1"
                         HorizontalAlignment="Stretch"
@@ -72,6 +73,7 @@
                         ItemsSource="{Binding SourceFilters}"
                         SelectedItem="{Binding SelectedSourceFilter, Mode=TwoWay}" />
                     <ComboBox
+                        AutomationProperties.Name="Status filtern"
                         x:Name="StatusFilterBox"
                         Grid.Column="2"
                         HorizontalAlignment="Stretch"
@@ -79,6 +81,7 @@
                         ItemsSource="{Binding StatusFilters}"
                         SelectedItem="{Binding SelectedStatusFilter, Mode=TwoWay}" />
                     <ComboBox
+                        AutomationProperties.Name="Sortierung"
                         x:Name="SortBox"
                         Grid.Column="3"
                         HorizontalAlignment="Stretch"
@@ -86,6 +89,7 @@
                         ItemsSource="{Binding SortOptions}"
                         SelectedItem="{Binding SelectedSortOption, Mode=TwoWay}" />
                     <ComboBox
+                        AutomationProperties.Name="Tag filtern"
                         x:Name="TagFilterBox"
                         Grid.Row="1"
                         Grid.ColumnSpan="5"

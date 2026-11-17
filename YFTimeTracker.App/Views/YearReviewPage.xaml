@@ -40,6 +40,7 @@
                     Orientation="Horizontal"
                     Spacing="9">
                     <ComboBox
+                        AutomationProperties.Name="Jahr"
                         Width="120"
                         DisplayMemberPath="Label"
                         ItemsSource="{Binding Years}"

@@ -98,6 +98,7 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <NumberBox
+                                AutomationProperties.Name="Scan-Intervall in Sekunden"
                                 Minimum="1"
                                 Maximum="60"
                                 SpinButtonPlacementMode="Compact"
@@ -119,6 +120,7 @@
                                 </NumberBox.Header>
                             </NumberBox>
                             <NumberBox
+                                AutomationProperties.Name="Heartbeat in Sekunden"
                                 Grid.Column="1"
                                 Minimum="5"
                                 Maximum="300"
@@ -167,6 +169,7 @@
                             <StackPanel Spacing="10">
                                 <TextBlock Style="{StaticResource YFCaptionStyle}" Text="DESIGN" />
                                 <ComboBox
+                                    AutomationProperties.Name="Design"
                                     HorizontalAlignment="Stretch"
                                     DisplayMemberPath="Label"
                                     ItemsSource="{Binding ThemeOptions}"
@@ -375,6 +378,7 @@
                             </StackPanel>
 
                             <ComboBox
+                                AutomationProperties.Name="Zusätzliches Sicherungsziel"
                                 HorizontalAlignment="Stretch"
                                 DisplayMemberPath="Label"
                                 ItemsSource="{Binding BackupDestinationOptions}"

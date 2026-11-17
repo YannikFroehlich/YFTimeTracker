@@ -120,7 +120,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBox Style="{StaticResource YFTextBoxStyle}" Text="{Binding GameName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox AutomationProperties.Name="Spielname" Style="{StaticResource YFTextBoxStyle}" Text="{Binding GameName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <Button Grid.Column="1" Command="{Binding SaveGameCommand}" Style="{StaticResource YFAccentButtonStyle}" Content="Speichern" />
                             </Grid>
                         </StackPanel>
@@ -313,13 +313,13 @@
                                 </StackPanel>
                                 <StackPanel Spacing="7">
                                     <TextBlock Style="{StaticResource YFCaptionStyle}" Text="START (LOKAL)" />
-                                    <DatePicker HorizontalAlignment="Stretch" Date="{Binding EditorStartDate, Mode=TwoWay}" IsEnabled="{Binding SessionEditorEnabled}" />
-                                    <TimePicker HorizontalAlignment="Stretch" ClockIdentifier="24HourClock" IsEnabled="{Binding SessionEditorEnabled}" Time="{Binding EditorStartTime, Mode=TwoWay}" />
+                                    <DatePicker AutomationProperties.Name="Startdatum" HorizontalAlignment="Stretch" Date="{Binding EditorStartDate, Mode=TwoWay}" IsEnabled="{Binding SessionEditorEnabled}" />
+                                    <TimePicker AutomationProperties.Name="Startzeit" HorizontalAlignment="Stretch" ClockIdentifier="24HourClock" IsEnabled="{Binding SessionEditorEnabled}" Time="{Binding EditorStartTime, Mode=TwoWay}" />
                                 </StackPanel>
                                 <StackPanel Spacing="7">
                                     <TextBlock Style="{StaticResource YFCaptionStyle}" Text="ENDE (LOKAL)" />
-                                    <DatePicker HorizontalAlignment="Stretch" Date="{Binding EditorEndDate, Mode=TwoWay}" IsEnabled="{Binding SessionEditorEnabled}" />
-                                    <TimePicker HorizontalAlignment="Stretch" ClockIdentifier="24HourClock" IsEnabled="{Binding SessionEditorEnabled}" Time="{Binding EditorEndTime, Mode=TwoWay}" />
+                                    <DatePicker AutomationProperties.Name="Enddatum" HorizontalAlignment="Stretch" Date="{Binding EditorEndDate, Mode=TwoWay}" IsEnabled="{Binding SessionEditorEnabled}" />
+                                    <TimePicker AutomationProperties.Name="Endzeit" HorizontalAlignment="Stretch" ClockIdentifier="24HourClock" IsEnabled="{Binding SessionEditorEnabled}" Time="{Binding EditorEndTime, Mode=TwoWay}" />
                                 </StackPanel>
                                 <Button HorizontalAlignment="Stretch" Command="{Binding SaveSessionCommand}" Style="{StaticResource YFAccentButtonStyle}" Content="{Binding SessionSaveButtonText}" />
                                 <Button HorizontalAlignment="Stretch" Click="DeleteSession_Click" IsEnabled="{Binding CanDeleteSelectedSession}" Style="{StaticResource YFDangerButtonStyle}" Content="Ausgewählte Session löschen" />

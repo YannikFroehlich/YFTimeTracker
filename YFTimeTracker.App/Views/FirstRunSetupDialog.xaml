@@ -93,7 +93,7 @@
                             <TextBlock FontWeight="SemiBold" Text="Spielzeit automatisch erfassen" />
                             <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Startet und beendet Sessions anhand laufender Spiele." TextWrapping="Wrap" />
                         </StackPanel>
-                        <ToggleSwitch x:Name="TrackingToggle" Grid.Column="2" VerticalAlignment="Center" OffContent="Pausiert" OnContent="Aktiv" />
+                        <ToggleSwitch AutomationProperties.Name="Spielzeit automatisch erfassen" x:Name="TrackingToggle" Grid.Column="2" VerticalAlignment="Center" OffContent="Pausiert" OnContent="Aktiv" />
                     </Grid>
                 </Border>
 
@@ -111,7 +111,7 @@
                             <TextBlock FontWeight="SemiBold" Text="Steam, Epic, GOG, Xbox, EA app und weitere erkennen" TextWrapping="Wrap" />
                             <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Liest lokale Installationen und übernimmt ein Spiel erst beim tatsächlichen Start." TextWrapping="Wrap" />
                         </StackPanel>
-                        <ToggleSwitch x:Name="LauncherToggle" Grid.Column="2" VerticalAlignment="Center" OffContent="Aus" OnContent="Aktiv" />
+                        <ToggleSwitch AutomationProperties.Name="Launcher-Erkennung" x:Name="LauncherToggle" Grid.Column="2" VerticalAlignment="Center" OffContent="Aus" OnContent="Aktiv" />
                     </Grid>
                 </Border>
 
@@ -148,7 +148,7 @@
                             <TextBlock FontWeight="SemiBold" Text="Beim Schließen im Tray behalten" />
                             <TextBlock Style="{StaticResource YFMutedTextStyle}" Text="Das Fenster verschwindet, die Zeiterfassung läuft weiter." TextWrapping="Wrap" />
                         </StackPanel>
-                        <ToggleSwitch x:Name="TrayToggle" Grid.Column="2" VerticalAlignment="Center" OffContent="App beenden" OnContent="Im Tray" />
+                        <ToggleSwitch AutomationProperties.Name="Beim Schließen im Tray behalten" x:Name="TrayToggle" Grid.Column="2" VerticalAlignment="Center" OffContent="App beenden" OnContent="Im Tray" />
                     </Grid>
                 </Border>
 
@@ -166,7 +166,7 @@
                             <TextBlock FontWeight="SemiBold" Text="Mit Windows starten" />
                             <TextBlock x:Name="StartupHelpText" Style="{StaticResource YFMutedTextStyle}" Text="Startet minimiert und beginnt automatisch mit der Erfassung." TextWrapping="Wrap" />
                         </StackPanel>
-                        <ToggleSwitch x:Name="StartupToggle" Grid.Column="2" VerticalAlignment="Center" OffContent="Aus" OnContent="Aktiv" />
+                        <ToggleSwitch AutomationProperties.Name="Mit Windows starten" x:Name="StartupToggle" Grid.Column="2" VerticalAlignment="Center" OffContent="Aus" OnContent="Aktiv" />
                     </Grid>
                 </Border>
 

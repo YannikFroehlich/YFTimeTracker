@@ -49,6 +49,7 @@
                     Orientation="Horizontal"
                     Spacing="9">
                     <ComboBox
+                        AutomationProperties.Name="Zeitraum"
                         Width="150"
                         DisplayMemberPath="Label"
                         ItemsSource="{Binding Periods}"
@@ -528,6 +529,7 @@
                             <TextBlock Margin="0,4,0,0" Style="{StaticResource YFMutedTextStyle}" Text="{Binding CalendarDescriptionText}" />
                         </StackPanel>
                         <ComboBox
+                            AutomationProperties.Name="Jahr der Kalender-Heatmap"
                             Grid.Column="1"
                             Width="104"
                             VerticalAlignment="Center"
