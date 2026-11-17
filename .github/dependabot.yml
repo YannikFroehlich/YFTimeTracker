@@ -10,6 +10,22 @@ updates:
       time: "06:00"
       timezone: "Europe/Berlin"
     open-pull-requests-limit: 10
+    # Die Microsoft.*-Laufzeitpakete folgen den .NET-Hauptversionen. Das Projekt
+    # bleibt auf net10.0 (LTS, Support bis November 2028); net11.0 ist STS und
+    # endet früher. Major-Updates dieser Pakete daher ignorieren, bis das
+    # Projekt auf net12.0 (LTS, November 2027) wechselt - dann diesen Block
+    # entfernen. Patch-Updates auf der 10.0.x-Linie laufen weiter.
+    ignore:
+      - dependency-name: "Microsoft.EntityFrameworkCore*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.Data.Sqlite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.Win32.SystemEvents"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "System.Security.Permissions"
+        update-types: ["version-update:semver-major"]
     groups:
       entity-framework-core:
         patterns:
