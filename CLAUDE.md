@@ -35,6 +35,12 @@ Build a local, reproducible self-contained release package (also runs the full t
 .\scripts\New-Release.ps1 -Version 0.5.0
 ```
 
+Check the running app for controls that screen readers cannot name (starts the app, walks every page via UI Automation, exits non-zero on a finding):
+
+```powershell
+.\scripts\Test-AccessibilityNames.ps1
+```
+
 Regenerate app icon/asset variants after changing `YFTimeTrackerLogo.png`:
 
 ```powershell

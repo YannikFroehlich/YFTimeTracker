@@ -74,6 +74,7 @@ GitHub Actions führt dieselben Schritte in Release-Konfiguration bei jedem Push
 Je nach Änderung sind zusätzlich manuell zu prüfen:
 
 - breite und schmale App-Fenster bei UI-Änderungen
+- Barrierefreiheit bei UI-Änderungen:  startet die App und meldet jedes fokussierbare Bedienelement ohne Namen für die Sprachausgabe
 - leere Datenbank sowie vorhandene Spiele und Sessions
 - Tracking-Start, Sessionende, Pause und Tray-Betrieb
 - Launcher-Erkennung mit einem unterstützten Store, einschließlich EA app
